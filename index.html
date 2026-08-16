@@ -41,6 +41,18 @@
     }catch(e){ console.error("PWA-Manifest konnte nicht erstellt werden", e); }
   })();
 </script>
+<script>
+  // Service Worker registrieren — nötig, damit Erinnerungs-Benachrichtigungen auch bei
+  // installierter App zuverlässig angezeigt werden können, und verbessert nebenbei die
+  // "Zum Home-Bildschirm hinzufügen"-Erkennung der Browser.
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(e){
+        console.log("Service Worker konnte nicht registriert werden (Erinnerungen laufen dann nur, solange die App offen ist).", e);
+      });
+    });
+  }
+</script>
 <style>
   :root{
     --bg:#f7f1de;
@@ -1207,6 +1219,21 @@
       <div class="filter-row" id="themeModeRow"></div>
     </div>
 
+    <div class="legal-card">
+      <h2>🔔 Erinnerungen</h2>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Wenn aktiv, meldet sich KOUKI mit einer Benachrichtigung auf deinem Handy, falls du an einem Tag noch nichts eingetragen hast — und mit einem motivierenden Spruch, wenn du länger nichts eingetragen hast. Alles läuft rein lokal auf deinem Gerät, es werden keine Daten irgendwohin übertragen.</p>
+      <div class="filter-row" id="reminderEnabledRow"></div>
+      <p id="reminderStatusText" class="rank-hint" style="margin:10px 0 0;"></p>
+
+      <div id="reminderOptionsBlock" style="display:none;margin-top:14px;">
+        <p class="measure-label">Erinnerung "Tag nicht eingetragen" ab wie viel Uhr?</p>
+        <div class="filter-row" id="reminderHourRow"></div>
+        <p class="measure-label" style="margin-top:14px;">Motivations-Nachricht nach wie vielen Tagen Pause?</p>
+        <div class="filter-row" id="reminderGapRow"></div>
+        <p class="rank-hint" style="margin-top:10px;">Hinweis: Solange die App geöffnet ist (auch im Hintergrund-Tab), werden die Erinnerungen zuverlässig geprüft. Bei installierter App (Zum Home-Bildschirm hinzufügen) versucht KOUKI zusätzlich, dich auch bei geschlossener App zu erinnern — das hängt aber vom Betriebssystem ab und ist auf Android/Chrome deutlich zuverlässiger als auf iPhone/Safari, wo Apple das aktuell einschränkt.</p>
+      </div>
+    </div>
+
     <div class="legal-medbox">
       <p>⚕️ <strong>Wichtiger Hinweis:</strong> Alle Inhalte dieser App — Trainingspläne, Kalorien- und Makroberechnungen, Rezepte, der Kraft-Rang sowie sämtliche weiteren Angaben — sind unverbindliche, allgemeine Empfehlungen. Sie ersetzen keine ärztliche, ernährungsmedizinische oder physiotherapeutische Beratung. <strong>Bei akuten gesundheitlichen Beschwerden, Schmerzen, Verletzungen oder Unsicherheiten wende dich bitte umgehend an eine Ärztin, einen Arzt oder im Notfall an den Rettungsdienst (112).</strong></p>
     </div>
@@ -1514,7 +1541,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[] };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" } };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -1572,6 +1599,12 @@ function normalizeState(){
   if(!state.favoriteFoods) state.favoriteFoods = [];
   if(!state.exerciseSwaps) state.exerciseSwaps = {};
   if(!state.shoppingList) state.shoppingList = [];
+  if(!state.reminderSettings) state.reminderSettings = { enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" };
+  if(typeof state.reminderSettings.enabled !== "boolean") state.reminderSettings.enabled = false;
+  if(typeof state.reminderSettings.eveningHour !== "number") state.reminderSettings.eveningHour = 20;
+  if(typeof state.reminderSettings.inactivityDays !== "number") state.reminderSettings.inactivityDays = 3;
+  if(typeof state.reminderSettings.lastDailyPromptDate !== "string") state.reminderSettings.lastDailyPromptDate = "";
+  if(typeof state.reminderSettings.lastMotivationDate !== "string") state.reminderSettings.lastMotivationDate = "";
   migrateHistoryToSets();
   migrateCompletedDayColor();
 }
@@ -1600,6 +1633,8 @@ async function saveState(){
   catch(e){ console.error("Speichern fehlgeschlagen", e); }
   try{ if(typeof cloudSyncEnabled !== "undefined" && cloudSyncEnabled) scheduleCloudPush(); }
   catch(e){ /* Cloud-Sync noch nicht initialisiert, ignorieren */ }
+  try{ if(typeof mirrorReminderState === "function") mirrorReminderState(); }
+  catch(e){ /* Erinnerungs-Spiegel noch nicht initialisiert, ignorieren */ }
 }
 
 function exportBackup(){
@@ -5350,12 +5385,274 @@ if(accountPasswordLoginBtnEl) accountPasswordLoginBtnEl.onclick = signInWithPass
 const accountLogoutBtnEl = document.getElementById("accountLogoutBtn");
 if(accountLogoutBtnEl) accountLogoutBtnEl.onclick = logoutAccount;
 
+// --- Erinnerungen / Push-Benachrichtigungen (rein lokal, kein Server nötig) ---
+const REMINDER_MOTIVATION_MESSAGES = [
+  { title: "Hey, ich bin für dich da 💪", body: "Schon eine Weile nichts eingetragen — kein Stress. Lass uns weitermachen, du schaffst das!" },
+  { title: "Bleib am Ball! ⚽", body: "Ein kleiner Eintrag heute reicht schon. Bleib nicht auf der Strecke — mach weiter!" },
+  { title: "Dranbleiben zahlt sich aus 🔥", body: "Du hast schon so viel geschafft. Mach da weiter, wo du aufgehört hast." },
+  { title: "Ich bin für dich da 🙌", body: "Egal wie lange die Pause war — jeder neue Eintrag zählt. Auf geht's!" },
+];
+const REMINDER_DB_NAME = "kouki-reminders";
+const REMINDER_STORE_NAME = "mirror";
+
+function reminderIdbOpen(){
+  return new Promise(function(resolve, reject){
+    try{
+      const req = indexedDB.open(REMINDER_DB_NAME, 1);
+      req.onupgradeneeded = function(){ req.result.createObjectStore(REMINDER_STORE_NAME); };
+      req.onsuccess = function(){ resolve(req.result); };
+      req.onerror = function(){ reject(req.error); };
+    }catch(e){ reject(e); }
+  });
+}
+async function reminderIdbPut(value){
+  const db = await reminderIdbOpen();
+  return new Promise(function(resolve, reject){
+    const tx = db.transaction(REMINDER_STORE_NAME, "readwrite");
+    tx.objectStore(REMINDER_STORE_NAME).put(value, "state");
+    tx.oncomplete = function(){ resolve(); };
+    tx.onerror = function(){ reject(tx.error); };
+  });
+}
+async function reminderIdbGet(){
+  const db = await reminderIdbOpen();
+  return new Promise(function(resolve, reject){
+    const tx = db.transaction(REMINDER_STORE_NAME, "readonly");
+    const req = tx.objectStore(REMINDER_STORE_NAME).get("state");
+    req.onsuccess = function(){ resolve(req.result || null); };
+    req.onerror = function(){ reject(req.error); };
+  });
+}
+
+// Prüft, ob an einem bestimmten Datum ("YYYY-MM-DD") irgendetwas eingetragen wurde —
+// Training, Ernährung, Wasser, Schritte, Supplements, Körpergewicht oder Maße.
+function hasDataOnDate(dateStr){
+  if(!dateStr) return false;
+  if(state.completedDays && state.completedDays.indexOf(dateStr) !== -1) return true;
+  if(state.waterLog && state.waterLog[dateStr]) return true;
+  if(state.stepsLog && state.stepsLog[dateStr]) return true;
+  if(state.nutritionLog && state.nutritionLog[dateStr] && state.nutritionLog[dateStr].length) return true;
+  if(state.suppLog && state.suppLog[dateStr] && Object.keys(state.suppLog[dateStr]).some(function(k){ return !!state.suppLog[dateStr][k]; })) return true;
+  if(state.bodyweight && state.bodyweight.some(function(e){ return e && e.date === dateStr; })) return true;
+  if(state.measurements){
+    const groups = ["waist","arm","thigh"];
+    for(let i=0;i<groups.length;i++){
+      const arr = state.measurements[groups[i]];
+      if(arr && arr.some(function(e){ return e && e.date === dateStr; })) return true;
+    }
+  }
+  if(state.history){
+    const ids = Object.keys(state.history);
+    for(let j=0;j<ids.length;j++){
+      const h = state.history[ids[j]] || [];
+      if(h.some(function(e){ return e && e.date === dateStr; })) return true;
+    }
+  }
+  return false;
+}
+function reminderDaysBetween(a, b){
+  const da = new Date(a + "T00:00:00");
+  const db_ = new Date(b + "T00:00:00");
+  return Math.round((db_ - da) / 86400000);
+}
+// Sucht rückwärts das jüngste Datum mit einem Eintrag (max. 120 Tage zurück).
+function findLastEntryDate(){
+  const d = new Date();
+  for(let i=0;i<=120;i++){
+    const ds = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    if(hasDataOnDate(ds)) return ds;
+    d.setDate(d.getDate()-1);
+  }
+  return null;
+}
+// Schreibt den für Erinnerungen nötigen Mini-Stand in IndexedDB, damit der Service Worker
+// auch bei geschlossener App (Periodic Background Sync, wo vom Browser unterstützt) prüfen kann.
+function mirrorReminderState(){
+  try{
+    const icon = (document.querySelector('link[rel="icon"]') || {}).href || "";
+    reminderIdbPut({
+      lastEntryDate: findLastEntryDate(),
+      icon: icon,
+      settings: state.reminderSettings
+    }).catch(function(e){ console.log("Erinnerungs-Spiegel konnte nicht gespeichert werden", e); });
+  }catch(e){ /* IndexedDB evtl. nicht verfügbar — Erinnerungen laufen dann nur bei geöffneter App */ }
+}
+// Übernimmt Änderungen, die der Service Worker im Hintergrund an lastDailyPromptDate /
+// lastMotivationDate vorgenommen hat, damit die App nicht doppelt benachrichtigt.
+async function reconcileReminderMirror(){
+  try{
+    const mirror = await reminderIdbGet();
+    if(mirror && mirror.settings){
+      if(mirror.settings.lastDailyPromptDate && mirror.settings.lastDailyPromptDate > state.reminderSettings.lastDailyPromptDate){
+        state.reminderSettings.lastDailyPromptDate = mirror.settings.lastDailyPromptDate;
+      }
+      if(mirror.settings.lastMotivationDate && mirror.settings.lastMotivationDate > state.reminderSettings.lastMotivationDate){
+        state.reminderSettings.lastMotivationDate = mirror.settings.lastMotivationDate;
+      }
+    }
+  }catch(e){ /* ignorieren, kein kritischer Pfad */ }
+}
+async function sendLocalNotification(title, body, tag){
+  try{
+    if(typeof Notification === "undefined" || Notification.permission !== "granted") return false;
+    const icon = (document.querySelector('link[rel="icon"]') || {}).href || undefined;
+    let reg = null;
+    if("serviceWorker" in navigator){
+      try{ reg = await navigator.serviceWorker.getRegistration(); }catch(e){}
+    }
+    if(reg && reg.showNotification){
+      await reg.showNotification(title, { body: body, icon: icon, badge: icon, tag: tag || "kouki-reminder", renotify: true });
+    } else {
+      new Notification(title, { body: body, icon: icon, tag: tag || "kouki-reminder" });
+    }
+    return true;
+  }catch(e){ console.error("Benachrichtigung fehlgeschlagen", e); return false; }
+}
+// Haupt-Check: läuft, solange die App offen/im Hintergrund-Tab ist. Für geschlossene,
+// installierte Apps übernimmt bestmöglich der Service Worker per Periodic Background Sync.
+async function checkReminders(){
+  try{
+    if(!state.reminderSettings || !state.reminderSettings.enabled) return;
+    if(typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    await reconcileReminderMirror();
+
+    const today = todayKey();
+    const now = new Date();
+    const last = findLastEntryDate();
+    const daysSince = last ? reminderDaysBetween(last, today) : 999;
+    const todayHasData = hasDataOnDate(today);
+    const eveningHour = state.reminderSettings.eveningHour || 20;
+
+    if(!todayHasData && now.getHours() >= eveningHour && state.reminderSettings.lastDailyPromptDate !== today){
+      const sent = await sendLocalNotification(
+        "Achtung: Tag nicht eingetragen ⚠️",
+        "Für heute wurden noch keine Daten eingetragen. Bitte hol's nach!",
+        "kouki-daily"
+      );
+      if(sent){ state.reminderSettings.lastDailyPromptDate = today; await saveState(); }
+      return;
+    }
+
+    const gapThreshold = state.reminderSettings.inactivityDays || 3;
+    if(daysSince >= gapThreshold){
+      const lastMotivation = state.reminderSettings.lastMotivationDate;
+      const cooldownOk = !lastMotivation || reminderDaysBetween(lastMotivation, today) >= gapThreshold;
+      if(cooldownOk){
+        const m = REMINDER_MOTIVATION_MESSAGES[Math.floor(Math.random() * REMINDER_MOTIVATION_MESSAGES.length)];
+        const sent = await sendLocalNotification(m.title, m.body, "kouki-motivation");
+        if(sent){ state.reminderSettings.lastMotivationDate = today; await saveState(); }
+      }
+    }
+  }catch(e){ console.error("Erinnerungs-Check fehlgeschlagen", e); }
+}
+async function registerReminderPeriodicSync(){
+  try{
+    if(!("serviceWorker" in navigator)) return false;
+    const reg = await navigator.serviceWorker.ready;
+    if(!("periodicSync" in reg)) return false;
+    if(!("permissions" in navigator)) return false;
+    const status = await navigator.permissions.query({ name: "periodic-background-sync" });
+    if(status.state !== "granted") return false;
+    await reg.periodicSync.register("kouki-daily-check", { minInterval: 20 * 60 * 60 * 1000 });
+    return true;
+  }catch(e){ console.log("Periodic Background Sync nicht verfügbar", e); return false; }
+}
+async function setReminderEnabled(enabled){
+  if(enabled){
+    try{
+      if(typeof Notification === "undefined"){ showToast("Benachrichtigungen werden von diesem Browser nicht unterstützt"); return; }
+      let permission = Notification.permission;
+      if(permission === "default") permission = await Notification.requestPermission();
+      if(permission !== "granted"){
+        showToast("Ohne Erlaubnis kann KOUKI dich leider nicht benachrichtigen");
+        state.reminderSettings.enabled = false;
+        renderReminderSettings();
+        return;
+      }
+      state.reminderSettings.enabled = true;
+      await saveState();
+      registerReminderPeriodicSync();
+      showToast("Erinnerungen aktiviert");
+      checkReminders();
+    }catch(e){ console.error("Erinnerungen konnten nicht aktiviert werden", e); }
+  } else {
+    state.reminderSettings.enabled = false;
+    await saveState();
+    try{
+      if("serviceWorker" in navigator){
+        const reg = await navigator.serviceWorker.ready;
+        if(reg && "periodicSync" in reg) await reg.periodicSync.unregister("kouki-daily-check");
+      }
+    }catch(e){}
+    showToast("Erinnerungen deaktiviert");
+  }
+  renderReminderSettings();
+}
+function reminderStatusMessage(){
+  if(typeof Notification === "undefined") return "Benachrichtigungen werden von diesem Browser nicht unterstützt.";
+  if(!state.reminderSettings.enabled) return "Erinnerungen sind aus.";
+  if(Notification.permission === "denied") return "Benachrichtigungen sind für diese Seite in deinem Browser blockiert — bitte in den Browser-/Handy-Einstellungen erlauben.";
+  if(Notification.permission === "granted") return "Erinnerungen sind aktiv ✅";
+  return "Erinnerungen sind aktiv, warten aber noch auf deine Erlaubnis fürs Benachrichtigen.";
+}
+function renderReminderSettings(){
+  const enabledRow = document.getElementById("reminderEnabledRow");
+  if(enabledRow){
+    const opts = [ { key:"on", label:"🔔 Ein" }, { key:"off", label:"🔕 Aus" } ];
+    enabledRow.innerHTML = opts.map(function(o){
+      const active = (o.key === "on") === !!state.reminderSettings.enabled;
+      return '<div class="filter-chip' + (active ? ' active' : '') + '" data-reminder-toggle="' + o.key + '">' + o.label + '</div>';
+    }).join("");
+    enabledRow.querySelectorAll("[data-reminder-toggle]").forEach(function(el){
+      el.onclick = function(){ setReminderEnabled(el.getAttribute("data-reminder-toggle") === "on"); };
+    });
+  }
+  const statusEl = document.getElementById("reminderStatusText");
+  if(statusEl) statusEl.textContent = reminderStatusMessage();
+  const optionsBlock = document.getElementById("reminderOptionsBlock");
+  if(optionsBlock) optionsBlock.style.display = state.reminderSettings.enabled ? "" : "none";
+
+  const hourRow = document.getElementById("reminderHourRow");
+  if(hourRow){
+    const hours = [18, 19, 20, 21, 22];
+    hourRow.innerHTML = hours.map(function(h){
+      return '<div class="filter-chip' + (state.reminderSettings.eveningHour === h ? ' active' : '') + '" data-reminder-hour="' + h + '">' + h + ' Uhr</div>';
+    }).join("");
+    hourRow.querySelectorAll("[data-reminder-hour]").forEach(function(el){
+      el.onclick = function(){
+        state.reminderSettings.eveningHour = parseInt(el.getAttribute("data-reminder-hour"), 10);
+        saveState();
+        renderReminderSettings();
+      };
+    });
+  }
+  const gapRow = document.getElementById("reminderGapRow");
+  if(gapRow){
+    const gaps = [2, 3, 5, 7];
+    gapRow.innerHTML = gaps.map(function(g){
+      return '<div class="filter-chip' + (state.reminderSettings.inactivityDays === g ? ' active' : '') + '" data-reminder-gap="' + g + '">' + g + ' Tage</div>';
+    }).join("");
+    gapRow.querySelectorAll("[data-reminder-gap]").forEach(function(el){
+      el.onclick = function(){
+        state.reminderSettings.inactivityDays = parseInt(el.getAttribute("data-reminder-gap"), 10);
+        saveState();
+        renderReminderSettings();
+      };
+    });
+  }
+}
+
 function init(){
   try{ loadTheme(); }catch(e){ console.error("Theme-Ladefehler", e); }
   try{ renderAll(); }catch(e){ console.error("Erster Render-Durchlauf fehlgeschlagen", e); }
   loadState()
     .then(function(){ try{ renderAll(); }catch(e){ console.error("Render nach Laden fehlgeschlagen", e); } })
     .catch(function(e){ console.error("Initialisierung ohne Speicher fortgesetzt", e); })
+    .then(function(){
+      try{ renderReminderSettings(); }catch(e){ console.error("Erinnerungs-Einstellungen konnten nicht angezeigt werden", e); }
+      try{ mirrorReminderState(); }catch(e){}
+      checkReminders();
+    })
     .then(hideSplash);
   setTimeout(function(){
     initAccountSession().catch(function(e){ console.error("Konto-Initialisierung übersprungen", e); });
@@ -5366,6 +5663,11 @@ function init(){
     }
   }, 3000);
 }
+// Solange die App offen ist (auch als Hintergrund-Tab), regelmäßig auf fällige Erinnerungen prüfen.
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible") checkReminders();
+});
+setInterval(checkReminders, 30 * 60 * 1000);
 function hideSplash(){
   const splash = document.getElementById("splashScreen");
   if(!splash) return;
