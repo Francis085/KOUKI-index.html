@@ -3054,6 +3054,7 @@ async function resetChecks(){
 
 let restInterval = null;
 let restRemaining = 0;
+let restEndAt = 0;
 function updateRestDisplay(){
   const m = Math.floor(restRemaining/60), s = restRemaining%60;
   document.getElementById("restTime").textContent = String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
@@ -3080,10 +3081,13 @@ function startRestTimer(seconds, exId){
   currentRestExerciseId = exId || null;
   clearInterval(restInterval);
   restRemaining = seconds;
+  restEndAt = Date.now() + seconds * 1000;
   updateRestDisplay();
   document.getElementById("restBar").classList.add("show");
   restInterval = setInterval(function(){
-    restRemaining--;
+    // Über die feste Zielzeit statt reinem Runterzählen — bleibt auch korrekt,
+    // wenn das Intervall zwischenzeitlich (z. B. App im Hintergrund) ausgesetzt wurde.
+    restRemaining = Math.max(0, Math.round((restEndAt - Date.now()) / 1000));
     if(restRemaining <= 0){
       clearInterval(restInterval);
       restRemaining = 0;
@@ -3096,7 +3100,32 @@ function startRestTimer(seconds, exId){
 function hideRestBar(){
   clearInterval(restInterval);
   restInterval = null;
-  document.getElementById("restBar").classList.remove("show");
+  const bar = document.getElementById("restBar");
+  if(bar) bar.classList.remove("show");
+}
+// Sorgt dafür, dass die Pausen-Leiste beim Zurückkehren in die App (z. B. nach dem
+// Sperrbildschirm oder App-Wechsel) nie "hängen" bleibt: läuft noch ein Timer, wird die
+// Restzeit anhand der echten Zielzeit korrigiert; läuft keiner, wird die Leiste sicher versteckt.
+function reconcileRestBarOnResume(){
+  try{
+    const bar = document.getElementById("restBar");
+    if(!bar) return;
+    if(restInterval){
+      const remaining = Math.round((restEndAt - Date.now()) / 1000);
+      if(remaining <= 0){
+        clearInterval(restInterval);
+        restInterval = null;
+        restRemaining = 0;
+        updateRestDisplay();
+        bar.classList.remove("show");
+      } else {
+        restRemaining = remaining;
+        updateRestDisplay();
+      }
+    } else if(bar.classList.contains("show")){
+      bar.classList.remove("show");
+    }
+  }catch(e){ console.error("Pausen-Leiste konnte nicht synchronisiert werden", e); }
 }
 function saveCustomRestTime(){
   if(currentRestExerciseId){
@@ -5299,7 +5328,7 @@ function onAccountLoggedOut(){
   setAccountStatus("Nicht angemeldet — Daten bleiben lokal auf diesem Gerät.");
   const row = document.getElementById("accountLoginRow");
   const logoutBtn = document.getElementById("accountLogoutBtn");
-  if(row) row.style.display = "flex";
+  if(row) row.style.display = "block";
   if(logoutBtn) logoutBtn.style.display = "none";
 }
 
@@ -5643,6 +5672,7 @@ function renderReminderSettings(){
 }
 
 function init(){
+  try{ hideRestBar(); }catch(e){}
   try{ loadTheme(); }catch(e){ console.error("Theme-Ladefehler", e); }
   try{ renderAll(); }catch(e){ console.error("Erster Render-Durchlauf fehlgeschlagen", e); }
   loadState()
@@ -5665,9 +5695,15 @@ function init(){
 }
 // Solange die App offen ist (auch als Hintergrund-Tab), regelmäßig auf fällige Erinnerungen prüfen.
 document.addEventListener("visibilitychange", function(){
-  if(document.visibilityState === "visible") checkReminders();
+  if(document.visibilityState === "visible"){
+    checkReminders();
+    reconcileRestBarOnResume();
+  }
 });
 setInterval(checkReminders, 30 * 60 * 1000);
+// iOS zeigt beim Zurückkehren aus dem App-Wechsler teils "pageshow" statt "visibilitychange" —
+// sicherheitshalber auch hier die Pausen-Leiste absichern.
+window.addEventListener("pageshow", function(){ reconcileRestBarOnResume(); });
 function hideSplash(){
   const splash = document.getElementById("splashScreen");
   if(!splash) return;
