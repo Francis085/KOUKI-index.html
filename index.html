@@ -1146,6 +1146,7 @@
         </div>
       </div>
       <div id="measureLatest"></div>
+      <div id="measureChartArea" style="margin-top:12px;"></div>
     </div>
 
     <div class="rank-card" id="bmrCard">
@@ -1235,6 +1236,13 @@
       <div class="rank-head"><span class="rank-title">Wochenvolumen</span></div>
       <p class="rank-hint">Anzahl geloggter Sätze pro Muskelgruppe in dieser Kalenderwoche (Mo–So).</p>
       <div id="volumeGrid"></div>
+    </div>
+
+    <div class="rank-card" style="margin-top:14px;">
+      <div class="rank-head"><span class="rank-title">📈 Volumen-Verlauf</span></div>
+      <p class="rank-hint">Sätze pro Woche über die letzten Wochen — zeigt, ob du dein Volumen wirklich steigerst oder nur gleich hältst.</p>
+      <div class="filter-row" id="volumeTrendGroupRow"></div>
+      <div id="volumeTrendArea"></div>
     </div>
 
     <div class="rank-card" style="margin-top:14px;">
@@ -2948,6 +2956,95 @@ function renderWeeklyVolume(){
   }).join("");
 }
 
+// --- Volumen-Verlauf über mehrere Wochen ---
+let volumeTrendGroup = null; // null = alle Muskelgruppen zusammen
+const VOLUME_TREND_WEEKS = 10;
+function volumeTrendWeeks(numWeeks, group){
+  const result = [];
+  const thisMonday = mondayOf(new Date());
+  for(let i = numWeeks - 1; i >= 0; i--){
+    const monday = new Date(thisMonday);
+    monday.setDate(thisMonday.getDate() - i * 7);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const counts = volumeByGroupInRange(ymd(monday), ymd(sunday));
+    let total = 0;
+    if(group){
+      total = counts[group] || 0;
+    } else {
+      Object.keys(counts).forEach(function(g){ total += counts[g]; });
+    }
+    result.push({
+      start: ymd(monday),
+      label: String(monday.getDate()).padStart(2,"0") + "." + String(monday.getMonth()+1).padStart(2,"0") + ".",
+      count: total,
+      isCurrent: i === 0,
+    });
+  }
+  return result;
+}
+// Welche Muskelgruppen tauchen im Betrachtungszeitraum überhaupt auf?
+function volumeTrendAvailableGroups(){
+  const thisMonday = mondayOf(new Date());
+  const start = new Date(thisMonday);
+  start.setDate(thisMonday.getDate() - (VOLUME_TREND_WEEKS - 1) * 7);
+  const end = new Date(thisMonday);
+  end.setDate(thisMonday.getDate() + 6);
+  const counts = volumeByGroupInRange(ymd(start), ymd(end));
+  return Object.keys(counts).filter(function(g){ return counts[g] > 0; }).sort();
+}
+function renderVolumeTrend(){
+  const groupRow = document.getElementById("volumeTrendGroupRow");
+  const area = document.getElementById("volumeTrendArea");
+  if(!groupRow || !area) return;
+
+  const groups = volumeTrendAvailableGroups();
+  // Gewählte Gruppe zurücksetzen, wenn sie im Zeitraum nicht mehr vorkommt
+  if(volumeTrendGroup && groups.indexOf(volumeTrendGroup) === -1) volumeTrendGroup = null;
+
+  groupRow.innerHTML = '<div class="filter-chip' + (!volumeTrendGroup ? " active" : "") + '" data-voltrend="">Alle</div>' +
+    groups.map(function(g){
+      return '<div class="filter-chip' + (volumeTrendGroup === g ? " active" : "") + '" data-voltrend="' + escapeHtml(g) + '">' + escapeHtml(g) + '</div>';
+    }).join("");
+  groupRow.querySelectorAll("[data-voltrend]").forEach(function(el){
+    el.onclick = function(){
+      volumeTrendGroup = el.getAttribute("data-voltrend") || null;
+      renderVolumeTrend();
+    };
+  });
+
+  const weeks = volumeTrendWeeks(VOLUME_TREND_WEEKS, volumeTrendGroup);
+  const withData = weeks.filter(function(w){ return w.count > 0; });
+  if(withData.length < 2){
+    area.innerHTML = '<p class="rank-hint" style="margin:0;">Für einen Verlauf braucht es geloggte Sätze in mindestens zwei Wochen. Bleib dran — hier wächst dann deine Kurve.</p>';
+    return;
+  }
+  const max = Math.max.apply(null, weeks.map(function(w){ return w.count; })) || 1;
+  let html = weeks.map(function(w){
+    const pct = Math.round((w.count / max) * 100);
+    return '<div class="vol-row">' +
+      '<span class="vol-label"' + (w.isCurrent ? ' style="font-weight:700;color:var(--text-strong);"' : '') + '>' + w.label + (w.isCurrent ? " (jetzt)" : "") + '</span>' +
+      '<div class="vol-bar-track"><div class="vol-bar-fill" style="width:' + pct + '%;"></div></div>' +
+      '<span class="vol-count">' + w.count + '</span></div>';
+  }).join("");
+
+  // Kurze Einordnung: letzte abgeschlossene Woche gegen den Schnitt der Wochen davor.
+  const completed = weeks.slice(0, weeks.length - 1).filter(function(w){ return w.count > 0; });
+  if(completed.length >= 2){
+    const lastDone = completed[completed.length - 1];
+    const earlier = completed.slice(0, completed.length - 1);
+    const avg = earlier.reduce(function(s,w){ return s + w.count; }, 0) / earlier.length;
+    const diff = lastDone.count - avg;
+    const pctDiff = avg > 0 ? Math.round((diff / avg) * 100) : 0;
+    let verdict;
+    if(Math.abs(pctDiff) < 10) verdict = "etwa auf dem Niveau der Wochen davor (Ø " + Math.round(avg) + " Sätze).";
+    else if(pctDiff > 0) verdict = "rund " + pctDiff + "% über dem Schnitt der Wochen davor (Ø " + Math.round(avg) + " Sätze) — du steigerst.";
+    else verdict = "rund " + Math.abs(pctDiff) + "% unter dem Schnitt der Wochen davor (Ø " + Math.round(avg) + " Sätze).";
+    html += '<p class="rank-hint" style="margin-top:8px;">Letzte abgeschlossene Woche: <strong style="color:var(--text-strong);">' + lastDone.count + ' Sätze</strong> — ' + verdict + '</p>';
+  }
+  area.innerHTML = html;
+}
+
 // --- Schwachstellen-System ---
 function toggleWeakPoint(group){
   const idx = state.weakPoints.indexOf(group);
@@ -4127,6 +4224,33 @@ function renderMeasurements(){
       (last ? (last.value + ' cm (' + formatDate(last.date) + ')') : '–') + '</span></div>';
   }).join("");
   el.innerHTML = rows;
+  renderMeasureCharts();
+}
+// Kurvenverlauf je Körpermaß — dieselbe Sparkline-Technik wie beim Körpergewicht,
+// plus Veränderung gegenüber dem ersten Eintrag als Einordnung.
+function renderMeasureCharts(){
+  const area = document.getElementById("measureChartArea");
+  if(!area) return;
+  const keys = Object.keys(MEASURE_LABELS);
+  const blocks = keys.map(function(k){
+    const list = state.measurements[k] || [];
+    if(list.length < 2) return "";
+    const vals = list.map(function(m){ return m.value; });
+    const svg = sparklineSVG(vals, "var(--olive)");
+    if(!svg) return "";
+    const first = vals[0], last = vals[vals.length - 1];
+    const diff = Math.round((last - first) * 10) / 10;
+    const sign = diff > 0 ? "+" : "";
+    const arrow = diff > 0 ? "▲" : (diff < 0 ? "▼" : "▬");
+    return '<div style="margin-bottom:12px;">' +
+      '<div class="measure-latest-row" style="margin-bottom:2px;">' +
+        '<span>' + MEASURE_LABELS[k] + '</span>' +
+        '<span>' + arrow + ' ' + sign + diff + ' cm seit ' + formatDate(list[0].date) + '</span>' +
+      '</div>' + svg +
+    '</div>';
+  }).filter(function(b){ return b; }).join("");
+  area.innerHTML = blocks ||
+    '<p class="rank-hint" style="margin:0;">Trage ein Maß an mindestens zwei verschiedenen Tagen ein, um hier den Verlauf zu sehen.</p>';
 }
 document.querySelectorAll(".measure-add-btn").forEach(function(btn){
   btn.onclick = function(){
@@ -5798,6 +5922,7 @@ function renderAll(){
   renderBmr();
   renderRankCard();
   renderWeeklyVolume();
+  renderVolumeTrend();
   renderWeekRecap();
   renderWeakPoints();
   renderCalendar();
