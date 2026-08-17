@@ -3873,8 +3873,24 @@ document.getElementById("celebrateCloseBtn").onclick = function(){
 // Zeichnet eine teilbare 1080x1080-Bildkarte für den/die neuen PR(s) mit den aktuellen
 // Theme-Farben (aus den CSS-Variablen ausgelesen, da Canvas kein var() versteht).
 function drawPRShareCard(prDetails){
+  const items = prDetails.slice(0, 6);
+  const LIST_START_Y = 580;
+  const ITEM_HEIGHT = 120;
+  const MIN_CANVAS_HEIGHT = 1080;
+  const FOOTER_GAP = 90; // Mindestabstand zwischen letztem PR-Eintrag und dem "KOUKI"-Schriftzug
+  const FOOTER_SUB_GAP = 38;
+  const BOTTOM_PADDING = 60;
+
+  // Höhe der Karte richtet sich nach der Anzahl der PRs, damit der Marken-Schriftzug
+  // unten nie mit dem letzten Eintrag überlappt — bei wenigen PRs bleibt die Karte
+  // wie gewohnt kompakt-quadratisch, bei vielen PRs wächst sie einfach mit.
+  const lastWeightY = items.length ? LIST_START_Y + (items.length - 1) * ITEM_HEIGHT + 50 : LIST_START_Y;
+  const footerKoukiY = Math.max(MIN_CANVAS_HEIGHT - 98, lastWeightY + FOOTER_GAP);
+  const footerSubY = footerKoukiY + FOOTER_SUB_GAP;
+  const canvasHeight = Math.max(MIN_CANVAS_HEIGHT, footerSubY + BOTTOM_PADDING);
+
   const canvas = document.createElement("canvas");
-  canvas.width = 1080; canvas.height = 1080;
+  canvas.width = 1080; canvas.height = canvasHeight;
   const ctx = canvas.getContext("2d");
   const cs = getComputedStyle(document.documentElement);
   const olive = (cs.getPropertyValue("--olive") || "#292820").trim() || "#292820";
@@ -3895,23 +3911,23 @@ function drawPRShareCard(prDetails){
   const dateStr = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
   ctx.fillText(dateStr, 540, 460);
 
-  let y = 580;
-  prDetails.slice(0, 5).forEach(function(pr){
+  let y = LIST_START_Y;
+  items.forEach(function(pr){
     ctx.font = "700 42px 'Baloo 2', sans-serif";
     ctx.fillStyle = "#ffffff";
     ctx.fillText(pr.name, 540, y);
     ctx.font = "600 36px 'JetBrains Mono', monospace";
     ctx.fillStyle = yellow;
     ctx.fillText(pr.weight + " kg" + (pr.reps ? (" × " + pr.reps) : ""), 540, y + 50);
-    y += 120;
+    y += ITEM_HEIGHT;
   });
 
   ctx.font = "800 44px 'Baloo 2', sans-serif";
   ctx.fillStyle = "#ffffff";
-  ctx.fillText("KOUKI", 540, 980);
+  ctx.fillText("KOUKI", 540, footerKoukiY);
   ctx.font = "500 24px 'Inter', sans-serif";
   ctx.fillStyle = "rgba(255,255,255,.6)";
-  ctx.fillText("Dein Gesundheitsbegleiter", 540, 1018);
+  ctx.fillText("Dein Gesundheitsbegleiter", 540, footerSubY);
 
   return canvas;
 }
