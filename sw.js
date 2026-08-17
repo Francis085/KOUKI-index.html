@@ -128,3 +128,73 @@ self.addEventListener("notificationclick", function(event){
     })
   );
 });
+
+// --- Offline-Caching: App-Shell zwischenspeichern, damit KOUKI auch ganz ohne
+// Internetverbindung startet und nutzbar bleibt (z. B. im Gym ohne Empfang). ---
+const APP_CACHE_NAME = "kouki-app-cache-v1";
+const APP_SHELL_URLS = ["./", "./index.html"];
+
+self.addEventListener("install", function(event){
+  event.waitUntil(
+    caches.open(APP_CACHE_NAME).then(function(cache){
+      return cache.addAll(APP_SHELL_URLS).catch(function(e){ console.log("App-Shell konnte nicht vollständig vorab zwischengespeichert werden", e); });
+    })
+  );
+});
+self.addEventListener("activate", function(event){
+  event.waitUntil(
+    caches.keys().then(function(names){
+      return Promise.all(names.filter(function(n){ return n !== APP_CACHE_NAME; }).map(function(n){ return caches.delete(n); }));
+    })
+  );
+});
+
+// Stale-while-revalidate: sofort aus dem Cache antworten (funktioniert offline & ist
+// schnell), im Hintergrund aber immer neu vom Netz laden und den Cache aktualisieren —
+// damit App-Updates trotzdem automatisch ankommen, statt für immer im alten Stand
+// hängen zu bleiben.
+function staleWhileRevalidate(request){
+  return caches.open(APP_CACHE_NAME).then(function(cache){
+    return cache.match(request).then(function(cached){
+      const networkFetch = fetch(request).then(function(response){
+        if(response && response.ok) cache.put(request, response.clone());
+        return response;
+      }).catch(function(){ return cached; });
+      return cached || networkFetch;
+    });
+  });
+}
+
+self.addEventListener("fetch", function(event){
+  const req = event.request;
+  if(req.method !== "GET") return; // Schreibende Anfragen (z. B. an Supabase) nie aus dem Cache beantworten
+  const url = new URL(req.url);
+
+  // Die App selbst (gleiche Origin): stale-while-revalidate.
+  if(url.origin === self.location.origin){
+    event.respondWith(staleWhileRevalidate(req));
+    return;
+  }
+
+  // Google Fonts: ändern sich praktisch nie — cache-first mit Netz-Fallback,
+  // damit Schriften auch offline sauber laden.
+  if(url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com"){
+    event.respondWith(
+      caches.open(APP_CACHE_NAME).then(function(cache){
+        return cache.match(req).then(function(cached){
+          if(cached) return cached;
+          return fetch(req).then(function(response){
+            if(response && response.ok) cache.put(req, response.clone());
+            return response;
+          }).catch(function(){ return cached; });
+        });
+      })
+    );
+    return;
+  }
+
+  // Alles andere (Supabase, Open Food Facts, Barcode-Scanner-Bibliothek, ...) bewusst
+  // unverändert durchs Netz — dynamische bzw. authentifizierte Anfragen sollen nicht
+  // ungewollt zwischengespeichert werden. Ohne Netz schlagen sie fehl, das fängt der
+  // App-Code an den jeweiligen Stellen bereits ab (z. B. Cloud-Sync-Hinweis).
+});
