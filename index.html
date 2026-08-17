@@ -1555,7 +1555,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" } };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" }, barbellWeight:20 };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -1563,6 +1563,8 @@ let openHistory = {};
 let openInfo = {};
 let openWarmup = {};
 let openSwap = {};
+let openPlates = {};
+let plateWeightOverride = {};
 let builderDraft = null;
 const RING_CIRC = 2 * Math.PI * 42;
 
@@ -1619,6 +1621,7 @@ function normalizeState(){
   if(typeof state.reminderSettings.inactivityDays !== "number") state.reminderSettings.inactivityDays = 3;
   if(typeof state.reminderSettings.lastDailyPromptDate !== "string") state.reminderSettings.lastDailyPromptDate = "";
   if(typeof state.reminderSettings.lastMotivationDate !== "string") state.reminderSettings.lastMotivationDate = "";
+  if(typeof state.barbellWeight !== "number" || state.barbellWeight < 0) state.barbellWeight = 20;
   migrateHistoryToSets();
   migrateCompletedDayColor();
 }
@@ -2841,11 +2844,17 @@ function buildExerciseCard(ex, dayColor, el){
       swapBtn.textContent = "🔄";
       swapBtn.title = "Übung austauschen";
       swapBtn.onclick = function(){ toggleSwap(ex.id); };
+      const platesBtn = document.createElement("div");
+      platesBtn.className = "icon-btn";
+      platesBtn.textContent = "🏋";
+      platesBtn.title = "Hantelscheiben berechnen";
+      platesBtn.onclick = function(){ togglePlates(ex.id); };
       actions.appendChild(restBtn);
       actions.appendChild(histBtn);
       actions.appendChild(infoBtn);
       actions.appendChild(warmupBtn);
       actions.appendChild(swapBtn);
+      actions.appendChild(platesBtn);
 
       top.appendChild(info);
       top.appendChild(actions);
@@ -3028,6 +3037,39 @@ function buildExerciseCard(ex, dayColor, el){
         el.appendChild(panel);
       }
 
+      if(openPlates[ex.id]){
+        const panel = document.createElement("div");
+        panel.className = "history-panel open";
+        let defaultWeight = plateWeightOverride[ex.id];
+        if(defaultWeight === undefined){
+          defaultWeight = null;
+          entry.sets.forEach(function(s){
+            const w = parseFloat(s.weight);
+            if(!isNaN(w) && (defaultWeight === null || w > defaultWeight)) defaultWeight = w;
+          });
+          if(defaultWeight === null && pr) defaultWeight = pr.weight;
+        }
+        let inner = '<p class="hist-pr">🏋 Hantelscheiben-Rechner</p>';
+        inner += '<div class="measure-input-row" style="margin-bottom:8px;">' +
+          '<div style="flex:1;"><p class="measure-label" style="margin:0 0 4px;">Zielgewicht (kg)</p>' +
+          '<input type="number" inputmode="decimal" id="plateWeightInput-' + ex.id + '" value="' + (defaultWeight !== null && defaultWeight !== undefined ? defaultWeight : "") + '" placeholder="z. B. 80" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;"></div>' +
+          '<div style="flex:1;"><p class="measure-label" style="margin:0 0 4px;">Stange (kg)</p>' +
+          '<input type="number" inputmode="decimal" id="plateBarInput-' + ex.id + '" value="' + state.barbellWeight + '" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;"></div>' +
+        '</div>';
+        inner += '<div id="plateResult-' + ex.id + '"></div>';
+        panel.innerHTML = inner;
+        el.appendChild(panel);
+        const wInput = panel.querySelector("#plateWeightInput-" + ex.id);
+        const bInput = panel.querySelector("#plateBarInput-" + ex.id);
+        const onPlateInput = function(){
+          plateWeightOverride[ex.id] = wInput.value === "" ? null : parseFloat(wInput.value);
+          renderPlateResult(ex.id);
+        };
+        wInput.oninput = onPlateInput;
+        bInput.oninput = onPlateInput;
+        renderPlateResult(ex.id);
+      }
+
       if(openSwap[ex.id]){
         const panel = document.createElement("div");
         panel.className = "history-panel open";
@@ -3182,6 +3224,60 @@ function beep(){
     o.start(); o.stop(ctx.currentTime + 0.6);
   }catch(e){}
   if(navigator.vibrate) navigator.vibrate([200,100,200]);
+}
+// --- Plattenrechner: welche Hantelscheiben pro Seite für ein Zielgewicht aufzulegen sind ---
+const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25];
+const PLATE_COLORS = { 25:"#c1544a", 20:"#3ec2e0", 15:"#e0c85f", 10:"#6f8a4a", 5:"#eae6da", 2.5:"#8A887C", 1.25:"#B98B4E" };
+function calcPlates(targetWeight, barWeight){
+  const perSide = (targetWeight - barWeight) / 2;
+  if(!(perSide > 0)) return { plates: [], perSide: 0, remainder: 0 };
+  const plates = [];
+  let remaining = Math.round(perSide * 100) / 100;
+  PLATE_SIZES.forEach(function(p){
+    while(remaining >= p - 0.01){
+      plates.push(p);
+      remaining -= p;
+    }
+  });
+  return { plates: plates, perSide: perSide, remainder: Math.max(0, Math.round(remaining * 100) / 100) };
+}
+function renderPlateResult(exId){
+  const weightInput = document.getElementById("plateWeightInput-" + exId);
+  const barInput = document.getElementById("plateBarInput-" + exId);
+  const resultEl = document.getElementById("plateResult-" + exId);
+  if(!weightInput || !barInput || !resultEl) return;
+  const target = parseFloat(weightInput.value);
+  const bar = parseFloat(barInput.value);
+  if(isNaN(bar) || bar < 0){ return; }
+  if(!isNaN(bar)){
+    state.barbellWeight = bar;
+    saveState();
+  }
+  if(isNaN(target) || target <= 0){
+    resultEl.innerHTML = '<p class="hist-empty">Zielgewicht eingeben, um die Scheiben zu berechnen.</p>';
+    return;
+  }
+  const r = calcPlates(target, bar);
+  if(target < bar){
+    resultEl.innerHTML = '<p class="hist-empty">Zielgewicht liegt unter dem Stangengewicht.</p>';
+    return;
+  }
+  if(!r.plates.length){
+    resultEl.innerHTML = '<p class="hist-empty">Nur die Stange — keine Scheiben nötig.</p>';
+    return;
+  }
+  let html = '<p class="hist-pr">Pro Seite ' + r.perSide + 'kg:</p>';
+  html += '<div class="hist-list">' + r.plates.map(function(p){
+    return '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:' + (PLATE_COLORS[p] || "var(--ink-soft)") + ';display:inline-block;flex-shrink:0;"></span>' + p + 'kg</span>';
+  }).join("") + '</div>';
+  if(r.remainder > 0){
+    html += '<p class="hist-empty" style="margin-top:8px;">Mit diesem Scheibensatz nicht exakt erreichbar — ' + r.remainder + 'kg pro Seite bleiben übrig.</p>';
+  }
+  resultEl.innerHTML = html;
+}
+function togglePlates(id){
+  openPlates[id] = !openPlates[id];
+  renderContent();
 }
 let currentRestExerciseId = null;
 function getDefaultRestSeconds(ex){
