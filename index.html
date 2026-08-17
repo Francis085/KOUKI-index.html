@@ -1256,6 +1256,12 @@
     </div>
 
     <div class="legal-card">
+      <h2>⏱ Training</h2>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Pausentimer automatisch starten, sobald du einen Satz abhakst — mit der für die Übung hinterlegten Pausenlänge. Bei verknüpften Supersätzen startet er absichtlich nicht, dort geht es ohne Pause zur Partnerübung.</p>
+      <div class="filter-row" id="autoRestRow"></div>
+    </div>
+
+    <div class="legal-card">
       <h2>🔔 Erinnerungen</h2>
       <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Wenn aktiv, meldet sich KOUKI mit einer Benachrichtigung auf deinem Handy, falls du an einem Tag noch nichts eingetragen hast — und mit einem motivierenden Spruch, wenn du länger nichts eingetragen hast. Alles läuft rein lokal auf deinem Gerät, es werden keine Daten irgendwohin übertragen.</p>
       <div class="filter-row" id="reminderEnabledRow"></div>
@@ -1709,7 +1715,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -1720,6 +1726,7 @@ let openSwap = {};
 let openPlates = {};
 let plateWeightOverride = {};
 let openSuperset = {};
+let openSetNote = {};
 let builderDraft = null;
 const RING_CIRC = 2 * Math.PI * 42;
 
@@ -1782,6 +1789,9 @@ function normalizeState(){
   if(!state.mealPlan) state.mealPlan = {};
   if(typeof state.leaderboardOptIn !== "boolean") state.leaderboardOptIn = false;
   if(typeof state.leaderboardNickname !== "string") state.leaderboardNickname = "";
+  if(typeof state.autoRestTimer !== "boolean") state.autoRestTimer = true;
+  if(typeof state.lastBackupDate !== "string") state.lastBackupDate = "";
+  if(typeof state.backupHintDismissedDate !== "string") state.backupHintDismissedDate = "";
   if(typeof state.onboardingSeen !== "boolean"){
     // Bestehende Nutzer (schon Daten vorhanden) sollen das Onboarding nicht nachträglich
     // aufgedrängt bekommen — nur wirklich frische Installationen zeigen es.
@@ -2029,12 +2039,28 @@ function setSetRir(ex, idx, v){
   getEntry(ex).sets[idx].rir = v;
   saveState();
 }
+function setSetNote(ex, idx, v){
+  getEntry(ex).sets[idx].note = v;
+  saveState();
+}
+function toggleSetNote(exId, idx){
+  const key = exId + ":" + idx;
+  openSetNote[key] = !openSetNote[key];
+  renderContent();
+}
 function toggleSetDone(ex, idx){
   const e = getEntry(ex);
   e.sets[idx].done = !e.sets[idx].done;
+  const justChecked = e.sets[idx].done;
   saveState();
   renderContent();
   renderProgressRing();
+  // Pausentimer automatisch starten, sobald ein Satz abgehakt wird (nicht beim Abwählen).
+  // Bei Supersätzen bewusst nicht: dort geht es ohne Pause direkt zur Partnerübung.
+  if(justChecked && state.autoRestTimer){
+    const inSuperset = state.supersets && state.supersets[ex.id];
+    if(!inSuperset) startRestTimer(getDefaultRestSeconds(ex), ex.id);
+  }
 }
 function quickFillFromLastSession(ex){
   const hist = state.history[ex.id];
@@ -2071,8 +2097,14 @@ function dayBestWeight(h){
 }
 function formatSetsForList(h){
   return (h.sets || []).map(function(s){
-    return s.weight + "kg" + (s.reps ? ("×" + s.reps) : "") + (s.rir !== undefined && s.rir !== "" ? (" @RIR" + s.rir) : "");
+    return s.weight + "kg" + (s.reps ? ("×" + s.reps) : "") + (s.rir !== undefined && s.rir !== "" ? (" @RIR" + s.rir) : "") + (s.note ? " 📝" : "");
   }).join(", ");
+}
+// Notizen einer geloggten Einheit, für die Verlaufs-Anzeige.
+function setNotesForHistoryEntry(h){
+  return (h.sets || []).map(function(s, i){
+    return s.note ? { idx: i + 1, note: s.note } : null;
+  }).filter(function(n){ return n; });
 }
 function trendFor(id){
   const h = state.history[id];
@@ -2108,12 +2140,36 @@ function getProgressionSuggestion(ex){
     return { text: "Letztes Training: " + topWeight + "kg geloggt. Trag heute auch die Wiederholungen ein, damit ich dir eine Empfehlung geben kann.", type: "neutral" };
   }
 
+  // RIR (Reps in Reserve) der Top-Sätze mitberücksichtigen: wer bei gleicher Leistung noch
+  // viel Reserve hatte, kann deutlicher steigern als jemand, der am Limit war.
+  const rirVals = topSets.map(function(s){ return parseFloat(s.rir); }).filter(function(v){ return !isNaN(v); });
+  const avgRir = rirVals.length ? (rirVals.reduce(function(a,b){ return a+b; }, 0) / rirVals.length) : null;
+  const rirTxt = avgRir !== null ? (" @ RIR " + (Math.round(avgRir * 10) / 10)) : "";
+  const baseIncrement = ex.type === "grund" ? 2.5 : 1;
+
   const allAtTop = reps.every(function(r){ return r >= range.max; });
   if(allAtTop){
-    const increment = ex.type === "grund" ? 2.5 : 1;
+    // Am oberen Ende der Wiederholungsspanne: Sprung an der Reserve ausrichten.
+    let increment = baseIncrement;
+    let why = "oberes Ende (" + range.max + " Wdh.) erreicht";
+    if(avgRir !== null && avgRir >= 3){
+      increment = baseIncrement * 2;
+      why += " und noch ~" + Math.round(avgRir) + " Wdh. Reserve";
+    } else if(avgRir !== null && avgRir <= 0.5){
+      why += ", aber am Limit — kleiner Schritt";
+    }
     const nextWeight = Math.round((topWeight + increment) * 2) / 2;
     return {
-      text: "Letztes Training: " + topWeight + "kg × " + repsTxt + " — oberes Ende (" + range.max + " Wdh.) erreicht. Versuche heute " + nextWeight + "kg.",
+      text: "Letztes Training: " + topWeight + "kg × " + repsTxt + rirTxt + " — " + why + ". Versuche heute " + nextWeight + "kg.",
+      type: "up"
+    };
+  }
+
+  // Nicht am oberen Ende, aber mit viel Reserve gearbeitet: dann liegt mehr drin, ohne dass
+  // das Gewicht steigen muss — erst die Wiederholungen ausschöpfen.
+  if(avgRir !== null && avgRir >= 3){
+    return {
+      text: "Letztes Training: " + topWeight + "kg × " + repsTxt + rirTxt + " — da war noch ordentlich Reserve. Bleib bei " + topWeight + "kg und geh näher ans Limit (Ziel " + range.min + "–" + range.max + " Wdh. bei RIR 1–2).",
       type: "up"
     };
   }
@@ -2142,7 +2198,7 @@ function getProgressionSuggestion(ex){
   }
 
   return {
-    text: "Letztes Training: " + topWeight + "kg × " + repsTxt + " (Ziel " + range.min + "–" + range.max + "). Versuche heute erneut " + topWeight + "kg mit mehr Wiederholungen.",
+    text: "Letztes Training: " + topWeight + "kg × " + repsTxt + rirTxt + " (Ziel " + range.min + "–" + range.max + "). Versuche heute erneut " + topWeight + "kg mit mehr Wiederholungen.",
     type: "neutral"
   };
 }
@@ -3236,9 +3292,14 @@ function buildExerciseCard(ex, dayColor, el){
         const row = document.createElement("div");
         row.className = "set-row" + (s.done ? " checked" : "");
 
+        // Satz-Nummer doppelt als Notiz-Schalter — hält die enge Satz-Zeile frei von
+        // einem weiteren Knopf. Ein Punkt zeigt, dass zu diesem Satz eine Notiz existiert.
         const label = document.createElement("span");
         label.className = "set-label";
-        label.textContent = (sIdx + 1) + ".";
+        label.style.cursor = "pointer";
+        label.title = "Notiz zu diesem Satz";
+        label.innerHTML = (sIdx + 1) + "." + (s.note ? '<span style="color:var(--olive);font-weight:700;">•</span>' : "");
+        label.onclick = function(){ toggleSetNote(ex.id, sIdx); };
         row.appendChild(label);
 
         const weightInput = document.createElement("input");
@@ -3302,6 +3363,34 @@ function buildExerciseCard(ex, dayColor, el){
         }
 
         setRows.appendChild(row);
+
+        // Notiz-Feld direkt unter dem Satz: sichtbar wenn aufgeklappt oder wenn schon eine
+        // Notiz drinsteht (damit man sie nicht aus Versehen "verliert").
+        const noteKeyLocal = ex.id + ":" + sIdx;
+        if(openSetNote[noteKeyLocal] || s.note){
+          const noteWrap = document.createElement("div");
+          noteWrap.style.cssText = "display:flex;gap:6px;align-items:center;padding:0 2px 2px 18px;";
+          const noteInput = document.createElement("input");
+          noteInput.type = "text";
+          noteInput.placeholder = "Notiz zu Satz " + (sIdx + 1) + " (z. B. Technik, Schmerz, Gefühl)";
+          noteInput.value = s.note || "";
+          noteInput.style.cssText = "flex:1;min-width:0;border:1px solid var(--pastel-border);border-radius:10px;padding:6px 9px;font-size:12px;background:var(--pastel-overlay);color:var(--pastel-text);box-sizing:border-box;";
+          noteInput.oninput = function(){ setSetNote(ex, sIdx, noteInput.value); };
+          noteWrap.appendChild(noteInput);
+          if(s.note){
+            const clearNote = document.createElement("div");
+            clearNote.className = "set-del";
+            clearNote.textContent = "✕";
+            clearNote.title = "Notiz löschen";
+            clearNote.onclick = function(){
+              setSetNote(ex, sIdx, "");
+              openSetNote[noteKeyLocal] = false;
+              renderContent();
+            };
+            noteWrap.appendChild(clearNote);
+          }
+          setRows.appendChild(noteWrap);
+        }
       });
       card.appendChild(setRows);
 
@@ -3326,6 +3415,15 @@ function buildExerciseCard(ex, dayColor, el){
         if(hist.length){
           const chips = hist.slice().reverse().slice(0,10).map(function(h){ return '<span>' + formatDate(h.date) + ': ' + formatSetsForList(h) + '</span>'; }).join("");
           inner += '<div class="hist-list">' + chips + '</div>';
+          // Satz-Notizen der letzten Einheiten ausschreiben — genau dafür sind sie da:
+          // Muster über Wochen erkennen (z. B. wiederkehrende Beschwerden).
+          const notesBlocks = hist.slice().reverse().slice(0,10).map(function(h){
+            const notes = setNotesForHistoryEntry(h);
+            if(!notes.length) return "";
+            return '<p class="hist-empty" style="margin:0 0 4px;">📝 ' + formatDate(h.date) + ': ' +
+              notes.map(function(n){ return "Satz " + n.idx + " – " + escapeHtml(n.note); }).join(" · ") + '</p>';
+          }).filter(function(b){ return b; }).join("");
+          if(notesBlocks) inner += '<div style="margin-top:8px;">' + notesBlocks + '</div>';
         } else {
           inner += '<p class="hist-empty">Noch keine gespeicherten Einheiten für diese Übung.</p>';
         }
@@ -3606,9 +3704,13 @@ async function finishSession(){
       if(!state.history[ex.id]) state.history[ex.id] = [];
       state.history[ex.id].push({
         date: today,
-        sets: performedSets.map(function(s){ return { weight: s.weight, reps: s.reps || "", rir: s.rir || "" }; })
+        sets: performedSets.map(function(s){ return { weight: s.weight, reps: s.reps || "", rir: s.rir || "", note: s.note || "" }; })
       });
       if(state.history[ex.id].length > 30) state.history[ex.id].shift();
+
+      // Satz-Notizen sind jetzt im Verlauf gesichert — im Eingabeformular leeren, damit sie
+      // nicht ungewollt in die nächste Einheit übernommen werden.
+      entry.sets.forEach(function(s){ s.note = ""; });
 
       let bestWeight = null, bestReps = "";
       performedSets.forEach(function(s){
@@ -6563,6 +6665,23 @@ function reminderStatusMessage(){
   if(Notification.permission === "granted") return "Erinnerungen sind aktiv ✅";
   return "Erinnerungen sind aktiv, warten aber noch auf deine Erlaubnis fürs Benachrichtigen.";
 }
+function renderAutoRestSettings(){
+  const row = document.getElementById("autoRestRow");
+  if(!row) return;
+  const opts = [ { key:"on", label:"⏱ Automatisch" }, { key:"off", label:"Manuell starten" } ];
+  row.innerHTML = opts.map(function(o){
+    const active = (o.key === "on") === !!state.autoRestTimer;
+    return '<div class="filter-chip' + (active ? " active" : "") + '" data-autorest="' + o.key + '">' + o.label + '</div>';
+  }).join("");
+  row.querySelectorAll("[data-autorest]").forEach(function(el){
+    el.onclick = function(){
+      state.autoRestTimer = el.getAttribute("data-autorest") === "on";
+      saveState();
+      renderAutoRestSettings();
+      showToast(state.autoRestTimer ? "Pausentimer startet jetzt automatisch" : "Pausentimer nur noch manuell");
+    };
+  });
+}
 function renderReminderSettings(){
   const enabledRow = document.getElementById("reminderEnabledRow");
   if(enabledRow){
@@ -6619,6 +6738,7 @@ function init(){
     .catch(function(e){ console.error("Initialisierung ohne Speicher fortgesetzt", e); })
     .then(function(){
       try{ renderReminderSettings(); }catch(e){ console.error("Erinnerungs-Einstellungen konnten nicht angezeigt werden", e); }
+      try{ renderAutoRestSettings(); }catch(e){ console.error("Trainings-Einstellungen konnten nicht angezeigt werden", e); }
       try{ mirrorReminderState(); }catch(e){}
       checkReminders();
       try{ renderLeaderboardSettings(); }catch(e){ console.error("Freunde-Vergleich-Einstellungen konnten nicht angezeigt werden", e); }
