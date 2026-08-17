@@ -1068,6 +1068,13 @@
       </div>
     </div>
 
+    <div class="bw-card" id="nutritionTrendCard">
+      <div class="bw-head">
+        <span class="bw-title">📊 Kalorien-Trend</span>
+      </div>
+      <div id="nutritionTrendArea"></div>
+    </div>
+
     <div class="bw-card" id="bwCard">
       <div class="bw-head">
         <span class="bw-title">Körpergewicht</span>
@@ -2078,6 +2085,72 @@ function sparklineSVG(points, color){
     '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
     '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="4" fill="' + color + '"/>' +
     '</svg>';
+}
+
+// Wie sparklineSVG(), aber mit optionaler gestrichelter Ziel-Linie und Endwert-Beschriftung —
+// für den Kalorien-Trend im Ernährungsbereich.
+function trendChartSVG(vals, goalValue, color){
+  if(vals.length < 2) return null;
+  const w = 300, h = 110, padL = 8, padR = 8, padT = 22, padB = 10;
+  const allVals = (goalValue !== null && goalValue !== undefined) ? vals.concat([goalValue]) : vals;
+  const min = Math.min.apply(null, allVals), max = Math.max.apply(null, allVals);
+  const range = (max - min) || 1;
+  const stepX = (w - padL - padR) / (vals.length - 1);
+  const yFor = function(v){ return h - padB - ((v - min) / range) * (h - padT - padB); };
+  const coords = vals.map(function(v, i){ return [padL + i * stepX, yFor(v)]; });
+  const path = coords.map(function(c, i){ return (i === 0 ? "M" : "L") + c[0].toFixed(1) + "," + c[1].toFixed(1); }).join(" ");
+  const last = coords[coords.length - 1];
+  let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none">';
+  if(goalValue !== null && goalValue !== undefined){
+    const gy = yFor(goalValue);
+    svg += '<line x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (w - padR) + '" y2="' + gy.toFixed(1) + '" stroke="var(--ink-soft)" stroke-width="1.2" stroke-dasharray="4,4"/>';
+    svg += '<text x="' + padL + '" y="' + (gy - 5).toFixed(1) + '" font-size="9" fill="var(--ink-soft)">Ziel ' + Math.round(goalValue) + '</text>';
+  }
+  svg += '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  svg += '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="4" fill="' + color + '"/>';
+  svg += '<text x="' + last[0].toFixed(1) + '" y="' + (last[1] - 9).toFixed(1) + '" text-anchor="end" font-size="10" font-weight="700" fill="' + color + '">' + Math.round(vals[vals.length - 1]) + '</text>';
+  svg += '</svg>';
+  return svg;
+}
+// Tageswerte (kcal + Makros) für die letzten `days` Kalendertage, älteste zuerst.
+function nutritionTrendDays(days){
+  const result = [];
+  const today = new Date();
+  for(let i = days - 1; i >= 0; i--){
+    const dt = new Date(today);
+    dt.setDate(today.getDate() - i);
+    const key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+    const items = state.nutritionLog[key] || [];
+    const sums = items.reduce(function(acc, it){
+      acc.kcal += it.kcal || 0; acc.p += it.p || 0; acc.c += it.c || 0; acc.f += it.f || 0;
+      return acc;
+    }, { kcal: 0, p: 0, c: 0, f: 0 });
+    result.push({ date: key, kcal: sums.kcal, p: sums.p, c: sums.c, f: sums.f, hasData: items.length > 0 });
+  }
+  return result;
+}
+function renderNutritionTrend(){
+  const el = document.getElementById("nutritionTrendArea");
+  if(!el) return;
+  const daysWithData = nutritionTrendDays(14).filter(function(d){ return d.hasData; });
+  if(daysWithData.length < 2){
+    el.innerHTML = '<p class="rank-hint">Trage an mindestens zwei Tagen etwas ein, um hier deinen Kalorien-Trend zu sehen.</p>';
+    return;
+  }
+  const bw = latestBodyweight();
+  const height = parseFloat(state.bmr.height), age = parseFloat(state.bmr.age), activity = parseFloat(state.bmr.activity);
+  let targetKcal = null;
+  if(bw && height && age && activity){
+    const bmr = computeBMR(bw.weight, height, age, state.bmr.sex);
+    const goal = BMR_GOALS.find(function(g){ return g.key === state.activeGoal; }) || BMR_GOALS[0];
+    targetKcal = Math.max(1200, bmr * activity + goal.adjust);
+  }
+  const kcalVals = daysWithData.map(function(d){ return d.kcal; });
+  const svg = trendChartSVG(kcalVals, targetKcal, "var(--olive)");
+  const n = daysWithData.length;
+  const avg = function(field){ return Math.round(daysWithData.reduce(function(s, d){ return s + d[field]; }, 0) / n); };
+  el.innerHTML = (svg || "") +
+    '<p class="rank-hint" style="margin-top:8px;">Ø letzte ' + n + ' Tage mit Eintrag: <strong style="color:var(--text-strong);">' + avg("kcal") + ' kcal</strong> · ' + avg("p") + 'g Eiweiß · ' + avg("c") + 'g Kohlenhydrate · ' + avg("f") + 'g Fett</p>';
 }
 
 function renderPlanSwitch(){
@@ -3834,6 +3907,7 @@ function renderNutritionLog(){
       btn.onclick = function(){ removeFoodLog(parseInt(btn.getAttribute("data-idx"), 10)); };
     });
   }
+  renderNutritionTrend();
 }
 document.getElementById("manualFoodAddBtn").onclick = function(){
   const nameEl = document.getElementById("manualFoodName");
