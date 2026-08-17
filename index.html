@@ -1394,6 +1394,33 @@
   <button class="btn btn-ghost" id="celebrateCloseBtn" style="display:none;margin-top:8px;pointer-events:auto;">Schließen</button>
 </div>
 
+<div class="reward-overlay" id="onboardingOverlay">
+  <div class="reward-panel">
+    <h3>👋 Willkommen bei KOUKI!</h3>
+    <p class="reward-sub">Dein Gesundheitsbegleiter — ganz kurz das Wichtigste:</p>
+    <div style="display:flex;flex-direction:column;gap:14px;margin:16px 0;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:22px;line-height:1;">🏋️</span>
+        <span style="font-size:13px;color:var(--ink);line-height:1.4;"><strong style="color:var(--text-strong);">Training:</strong> Plan ansehen, Sätze/Gewichte eintragen, Pausentimer starten.</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:22px;line-height:1;">🍎</span>
+        <span style="font-size:13px;color:var(--ink);line-height:1.4;"><strong style="color:var(--text-strong);">Ernährung:</strong> Mahlzeiten loggen, Barcode scannen, Woche vorplanen.</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:22px;line-height:1;">📊</span>
+        <span style="font-size:13px;color:var(--ink);line-height:1.4;"><strong style="color:var(--text-strong);">Fortschritt:</strong> Kraft-Rang, Kalender, Streaks und XP im Blick behalten.</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:22px;line-height:1;">🔔</span>
+        <span style="font-size:13px;color:var(--ink);line-height:1.4;"><strong style="color:var(--text-strong);">Profil:</strong> Erinnerungen aktivieren, App-Design wählen, Backup sichern.</span>
+      </div>
+    </div>
+    <p class="rank-hint" style="margin:0 0 14px;">Alle Daten bleiben lokal auf deinem Gerät — außer du meldest dich freiwillig für Cloud-Sync an.</p>
+    <button class="btn btn-primary" id="onboardingCloseBtn" style="width:100%;">Los geht's →</button>
+  </div>
+</div>
+
 <div class="reward-overlay" id="rewardOverlay">
   <div class="reward-panel">
     <h3>🎉 Woche geschafft!</h3>
@@ -1743,6 +1770,15 @@ function normalizeState(){
   if(!state.mealPlan) state.mealPlan = {};
   if(typeof state.leaderboardOptIn !== "boolean") state.leaderboardOptIn = false;
   if(typeof state.leaderboardNickname !== "string") state.leaderboardNickname = "";
+  if(typeof state.onboardingSeen !== "boolean"){
+    // Bestehende Nutzer (schon Daten vorhanden) sollen das Onboarding nicht nachträglich
+    // aufgedrängt bekommen — nur wirklich frische Installationen zeigen es.
+    const looksExisting = (state.completedDays && state.completedDays.length) ||
+      (state.history && Object.keys(state.history).length) ||
+      (state.bodyweight && state.bodyweight.length) ||
+      (state.nutritionLog && Object.keys(state.nutritionLog).length);
+    state.onboardingSeen = !!looksExisting;
+  }
   migrateHistoryToSets();
   migrateCompletedDayColor();
 }
@@ -6547,7 +6583,10 @@ function init(){
       checkReminders();
       try{ renderLeaderboardSettings(); }catch(e){ console.error("Freunde-Vergleich-Einstellungen konnten nicht angezeigt werden", e); }
     })
-    .then(hideSplash);
+    .then(hideSplash)
+    .then(function(){
+      setTimeout(function(){ try{ showOnboardingIfNeeded(); }catch(e){ console.error("Onboarding konnte nicht angezeigt werden", e); } }, 700);
+    });
   setTimeout(function(){
     initAccountSession().catch(function(e){ console.error("Konto-Initialisierung übersprungen", e); });
   }, 800);
@@ -6568,6 +6607,20 @@ setInterval(checkReminders, 30 * 60 * 1000);
 // iOS zeigt beim Zurückkehren aus dem App-Wechsler teils "pageshow" statt "visibilitychange" —
 // sicherheitshalber auch hier die Pausen-Leiste absichern.
 window.addEventListener("pageshow", function(){ reconcileRestBarOnResume(); });
+function showOnboardingIfNeeded(){
+  if(state.onboardingSeen) return;
+  const overlay = document.getElementById("onboardingOverlay");
+  if(overlay) overlay.classList.add("show");
+}
+const onboardingCloseBtnEl = document.getElementById("onboardingCloseBtn");
+if(onboardingCloseBtnEl){
+  onboardingCloseBtnEl.onclick = function(){
+    state.onboardingSeen = true;
+    saveState();
+    const overlay = document.getElementById("onboardingOverlay");
+    if(overlay) overlay.classList.remove("show");
+  };
+}
 function hideSplash(){
   const splash = document.getElementById("splashScreen");
   if(!splash) return;
