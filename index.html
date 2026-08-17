@@ -42,6 +42,37 @@
   })();
 </script>
 <script>
+  // iOS-Splash-Screen zur Laufzeit passend zur tatsächlichen Bildschirmgröße erzeugen.
+  // Ohne dieses Bild weiß Safari beim Start der installierten App nicht genau, wie groß
+  // der Bildschirm ist, und der Inhalt kann falsch skaliert/nicht zentriert erscheinen
+  // (auf iPhones mit Notch/Dynamic Island besonders auffällig). Da wir es dynamisch mit
+  // den echten Werten des jeweiligen Geräts erzeugen, passt es automatisch für JEDES
+  // iPhone-Modell — keine feste Liste von Bildgrößen nötig.
+  // Wichtig: iOS liest dieses Bild nur beim "Zum Home-Bildschirm hinzufügen" ein, nicht
+  // bei jedem Start — nach einem Update muss das Icon daher einmal neu hinzugefügt werden.
+  (function(){
+    try{
+      const dpr = window.devicePixelRatio || 1;
+      const wPx = Math.round((window.screen.width || window.innerWidth) * dpr);
+      const hPx = Math.round((window.screen.height || window.innerHeight) * dpr);
+      if(wPx > 0 && hPx > 0){
+        const canvas = document.createElement("canvas");
+        canvas.width = wPx; canvas.height = hPx;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#F6F3EC"; // gleiche Farbe wie manifest.background_color
+        ctx.fillRect(0, 0, wPx, hPx);
+        const link = document.createElement("link");
+        link.rel = "apple-touch-startup-image";
+        link.href = canvas.toDataURL("image/png");
+        const wPt = Math.round(window.screen.width || window.innerWidth);
+        const hPt = Math.round(window.screen.height || window.innerHeight);
+        link.media = "(device-width: " + wPt + "px) and (device-height: " + hPt + "px) and (-webkit-device-pixel-ratio: " + dpr + ")";
+        document.head.appendChild(link);
+      }
+    }catch(e){ console.error("Splash-Screen-Bild konnte nicht erstellt werden", e); }
+  })();
+</script>
+<script>
   // Service Worker registrieren — nötig, damit Erinnerungs-Benachrichtigungen auch bei
   // installierter App zuverlässig angezeigt werden können, und verbessert nebenbei die
   // "Zum Home-Bildschirm hinzufügen"-Erkennung der Browser.
