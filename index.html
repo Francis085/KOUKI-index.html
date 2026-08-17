@@ -915,6 +915,7 @@
 
   <div id="frame-home">
     <div class="home-greeting" id="homeGreeting"></div>
+    <div id="backupHintHome"></div>
     <div class="rank-card" id="homeXpCard" style="margin-bottom:14px;"></div>
     <div id="deloadBannerHome"></div>
 
@@ -944,6 +945,7 @@
   <div id="frame-plan" style="display:none;">
     <div class="plan-row">
       <div class="plan-switch" id="planSwitch"></div>
+      <button class="plan-delete" id="duplicatePlanBtn" title="Plan als Vorlage kopieren und anpassen">📋</button>
       <button class="plan-delete" id="deletePlanBtn" style="display:none;" title="Plan löschen">🗑</button>
     </div>
 
@@ -1735,6 +1737,7 @@ let openPlates = {};
 let plateWeightOverride = {};
 let openSuperset = {};
 let openSetNote = {};
+let swapSearch = {};
 let builderDraft = null;
 const RING_CIRC = 2 * Math.PI * 42;
 
@@ -1853,11 +1856,67 @@ function exportBackup(){
     a.click();
     document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    // Datum merken, damit die Backup-Erinnerung weiß, wann zuletzt gesichert wurde.
+    state.lastBackupDate = todayKey();
+    state.backupHintDismissedDate = "";
+    saveState();
+    renderBackupHint();
     showToast("Backup gespeichert");
   }catch(e){
     console.error("Backup-Export fehlgeschlagen", e);
     alert("Backup konnte nicht erstellt werden.");
   }
+}
+// --- Backup-Erinnerung ---
+// Erinnert dezent auf der Startseite, wenn lange kein Backup gezogen wurde. Wichtig, weil
+// alle Daten nur lokal liegen: ein geleerter Browser-Cache löscht sie unwiederbringlich.
+const BACKUP_REMINDER_DAYS = 21;
+function daysSinceDateStr(dateStr){
+  if(!dateStr) return null;
+  const then = new Date(dateStr + "T00:00:00");
+  if(isNaN(then.getTime())) return null;
+  return Math.floor((new Date(todayKey() + "T00:00:00") - then) / 86400000);
+}
+// Genug eigene Daten da, dass ein Verlust wirklich wehtäte?
+function hasMeaningfulData(){
+  const entries = (state.completedDays ? state.completedDays.length : 0) +
+    (state.bodyweight ? state.bodyweight.length : 0) +
+    Object.keys(state.history || {}).length +
+    Object.keys(state.nutritionLog || {}).length;
+  return entries >= 5;
+}
+function backupHintState(){
+  if(!hasMeaningfulData()) return null;
+  const today = todayKey();
+  // Heute schon weggetippt? Dann Ruhe bis morgen.
+  if(state.backupHintDismissedDate === today) return null;
+  const sinceBackup = daysSinceDateStr(state.lastBackupDate);
+  if(sinceBackup === null){
+    return { text: "Du hast noch kein Backup gemacht. Deine Daten liegen nur in diesem Browser — ein geleerter Cache löscht sie unwiederbringlich." };
+  }
+  if(sinceBackup >= BACKUP_REMINDER_DAYS){
+    return { text: "Letztes Backup vor " + sinceBackup + " Tagen. Zieh dir kurz ein neues, damit dein Fortschritt gesichert ist." };
+  }
+  return null;
+}
+function renderBackupHint(){
+  const el = document.getElementById("backupHintHome");
+  if(!el) return;
+  const hint = backupHintState();
+  if(!hint){ el.innerHTML = ""; return; }
+  el.innerHTML = '<div class="progression-tip tip-deload" style="margin-bottom:14px;">' +
+    '<span class="tip-icon">💾</span>' +
+    '<span>' + hint.text + ' <span id="backupHintGoBtn" style="text-decoration:underline;cursor:pointer;font-weight:700;">Jetzt sichern</span></span>' +
+    '<span class="set-del" id="backupHintDismissBtn" title="Heute nicht mehr">✕</span>' +
+  '</div>';
+  const go = document.getElementById("backupHintGoBtn");
+  if(go) go.onclick = exportBackup;
+  const dismiss = document.getElementById("backupHintDismissBtn");
+  if(dismiss) dismiss.onclick = function(){
+    state.backupHintDismissedDate = todayKey();
+    saveState();
+    renderBackupHint();
+  };
 }
 function importBackupFile(file){
   const reader = new FileReader();
@@ -2362,6 +2421,50 @@ function openBuilder(){
   builderDraft = { label:"", days:[ newDraftDay() ] };
   renderBuilder();
 }
+// Bestehenden Plan (auch die eingebauten) als Entwurf in den Baukasten laden, damit man ihn
+// anpassen kann statt alles neu zu tippen. Der Originalplan bleibt unberührt — gespeichert
+// wird als neuer eigener Plan.
+function planToDraft(plan){
+  const groupMap = buildExerciseGroupMap();
+  const days = (plan.dayOrder || Object.keys(plan.days)).map(function(dayKey){
+    const day = plan.days[dayKey];
+    if(!day) return null;
+    const exercises = [];
+    (day.groups || []).forEach(function(g){
+      (g.exercises || []).forEach(function(ex){
+        const libGroup = groupMap[ex.name];
+        if(libGroup){
+          exercises.push({ source:"lib", group:libGroup, libName:ex.name, customName:"", sets:ex.sets || "3x8-12", type:ex.type || "grund" });
+        } else {
+          // Übung ist nicht in der Bibliothek (z. B. selbst eingetippt) — als eigene Übung übernehmen
+          const firstGroup = Object.keys(EXERCISE_LIBRARY)[0];
+          exercises.push({ source:"custom", group:firstGroup, libName:EXERCISE_LIBRARY[firstGroup][0].name, customName:ex.name, sets:ex.sets || "3x8-12", type:ex.type || "grund" });
+        }
+      });
+    });
+    return {
+      label: day.label || "",
+      sub: day.sub || "",
+      exercises: exercises.length ? exercises : [ newDraftExercise() ],
+    };
+  }).filter(function(d){ return d; });
+  return {
+    label: plan.label + " (Kopie)",
+    days: days.length ? days : [ newDraftDay() ],
+  };
+}
+function duplicateCurrentPlan(){
+  const plan = getPlanById(currentPlanId);
+  builderDraft = planToDraft(plan);
+  renderBuilder();
+  showToast('"' + plan.label + '" als Vorlage geladen — jetzt anpassen und speichern');
+  requestAnimationFrame(function(){
+    const area = document.getElementById("builderArea");
+    if(area) area.scrollIntoView({ behavior:"smooth", block:"start" });
+  });
+}
+const duplicatePlanBtnEl = document.getElementById("duplicatePlanBtn");
+if(duplicatePlanBtnEl) duplicatePlanBtnEl.onclick = duplicateCurrentPlan;
 function cancelBuilder(){ builderDraft = null; renderBuilder(); }
 
 function buildExerciseOptions(current){
@@ -2682,6 +2785,7 @@ function toggleSwap(id){
 function swapExercise(id, name, type){
   state.exerciseSwaps[id] = { name: name, type: type };
   openSwap[id] = false;
+  delete swapSearch[id];
   saveState();
   renderContent();
   showToast("Übung ausgetauscht");
@@ -2689,9 +2793,62 @@ function swapExercise(id, name, type){
 function resetSwap(id){
   delete state.exerciseSwaps[id];
   openSwap[id] = false;
+  delete swapSearch[id];
   saveState();
   renderContent();
   showToast("Ursprüngliche Übung wiederhergestellt");
+}
+
+// --- Übungssuche über die komplette Bibliothek ---
+// Umlaute/Groß-Klein tolerant vergleichen, damit "rucken" auch "Rücken" findet.
+function normalizeSearchText(s){
+  return String(s || "").toLowerCase()
+    .replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]/g, "");
+}
+function searchExerciseLibrary(query, excludeName){
+  const q = normalizeSearchText(query);
+  const results = [];
+  Object.keys(EXERCISE_LIBRARY).forEach(function(group){
+    EXERCISE_LIBRARY[group].forEach(function(libEx){
+      if(libEx.name === excludeName) return;
+      // Doppelte Namen (manche Übungen stehen mehrfach in der Bibliothek) nur einmal zeigen
+      if(results.some(function(r){ return r.name === libEx.name; })) return;
+      if(!q || normalizeSearchText(libEx.name).indexOf(q) !== -1 || normalizeSearchText(group).indexOf(q) !== -1){
+        results.push({ name: libEx.name, type: libEx.type, group: group });
+      }
+    });
+  });
+  return results;
+}
+function renderSwapList(exId, currentName, currentGroup){
+  const listEl = document.getElementById("swapList-" + exId);
+  if(!listEl) return;
+  const query = swapSearch[exId] || "";
+  let items, hint;
+  if(query.trim()){
+    items = searchExerciseLibrary(query, currentName);
+    hint = items.length ? (items.length + " Treffer in allen Muskelgruppen") : null;
+  } else {
+    // Ohne Suchbegriff wie bisher: passende Alternativen derselben Muskelgruppe
+    items = searchExerciseLibrary("", currentName).filter(function(r){ return r.group === currentGroup; });
+    hint = items.length ? ("Alternativen für " + (currentGroup || "diese Muskelgruppe") + " — oder oben alle durchsuchen") : null;
+  }
+  if(!items.length){
+    listEl.innerHTML = '<p class="hist-empty" style="margin:0;">' +
+      (query.trim() ? 'Keine Übung gefunden für "' + escapeHtml(query) + '".' :
+      'Keine Alternativen für "' + escapeHtml(currentGroup || "diese Muskelgruppe") + '" hinterlegt — nutze die Suche oben.') + '</p>';
+    return;
+  }
+  listEl.innerHTML = (hint ? '<p class="hist-empty" style="margin:0 0 6px;">' + escapeHtml(hint) + '</p>' : "") +
+    '<div class="hist-list">' + items.map(function(r){
+      return '<span data-swap-name="' + escapeHtml(r.name) + '" data-swap-type="' + r.type + '" style="cursor:pointer;">' +
+        escapeHtml(r.name) + (query.trim() ? ' <span style="opacity:.6;">· ' + escapeHtml(r.group) + '</span>' : "") +
+      '</span>';
+    }).join("") + '</div>';
+  listEl.querySelectorAll("[data-swap-name]").forEach(function(chip){
+    chip.onclick = function(){ swapExercise(exId, chip.getAttribute("data-swap-name"), chip.getAttribute("data-swap-type")); };
+  });
 }
 
 // --- Supersätze: zwei Übungen desselben Tages als Paar verknüpfen (ohne Pause dazwischen) ---
@@ -3641,23 +3798,25 @@ function buildExerciseCard(ex, dayColor, el){
       if(openSwap[ex.id]){
         const panel = document.createElement("div");
         panel.className = "history-panel open";
-        const groupExercises = (EXERCISE_LIBRARY[exGroupLabel] || []).filter(function(libEx){ return libEx.name !== ex.name; });
         let inner = '<p class="hist-pr">🔄 Alternative statt "' + escapeHtml(ex.name) + '" (Sätze/Wdh./Pause bleiben gleich, nur die Übung wechselt)</p>';
-        if(groupExercises.length){
-          inner += '<div class="hist-list" id="swapList-' + ex.id + '">' +
-            groupExercises.map(function(libEx){ return '<span data-swap-name="' + escapeHtml(libEx.name) + '" data-swap-type="' + libEx.type + '" style="cursor:pointer;">' + escapeHtml(libEx.name) + '</span>'; }).join("") +
-            '</div>';
-        } else {
-          inner += '<p class="hist-empty">Keine Alternativen für "' + escapeHtml(exGroupLabel || "diese Muskelgruppe") + '" in der Bibliothek hinterlegt.</p>';
-        }
+        inner += '<input type="text" id="swapSearch-' + ex.id + '" placeholder="🔍 Alle Übungen durchsuchen …" value="' + escapeHtml(swapSearch[ex.id] || "") + '" ' +
+          'style="width:100%;border:1px solid var(--pastel-border);border-radius:12px;padding:8px 11px;font-size:13px;background:var(--pastel-overlay);color:var(--pastel-text);box-sizing:border-box;margin-bottom:8px;">';
+        inner += '<div id="swapList-' + ex.id + '"></div>';
         if(swapOverride){
           inner += '<button class="quickfill-btn" id="swapResetBtn-' + ex.id + '" style="margin-top:10px;">↩ Zurück zur ursprünglichen Übung</button>';
         }
         panel.innerHTML = inner;
         el.appendChild(panel);
-        panel.querySelectorAll("[data-swap-name]").forEach(function(chip){
-          chip.onclick = function(){ swapExercise(ex.id, chip.getAttribute("data-swap-name"), chip.getAttribute("data-swap-type")); };
-        });
+        renderSwapList(ex.id, ex.name, exGroupLabel);
+        const searchInput = panel.querySelector("#swapSearch-" + ex.id);
+        if(searchInput){
+          searchInput.oninput = function(){
+            swapSearch[ex.id] = searchInput.value;
+            // Nur die Ergebnisliste neu aufbauen, nicht die ganze Ansicht — sonst
+            // verliert das Suchfeld den Fokus und der Cursor springt bei jedem Zeichen.
+            renderSwapList(ex.id, ex.name, exGroupLabel);
+          };
+        }
         const resetBtn = document.getElementById("swapResetBtn-" + ex.id);
         if(resetBtn) resetBtn.onclick = function(){ resetSwap(ex.id); };
       }
@@ -5942,6 +6101,7 @@ function renderHome(){
   if(!greetEl) return;
   const hour = new Date().getHours();
   greetEl.textContent = hour < 11 ? "Guten Morgen! ☀️" : hour < 18 ? "Hey, schön dass du da bist 👋" : "Guten Abend! 🌙";
+  renderBackupHint();
 
   const day = activeDays()[currentDay];
   const exs = allExercisesOfActiveDay();
