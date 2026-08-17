@@ -2250,6 +2250,34 @@ function videoSearchUrl(name){
   return "https://www.youtube.com/results?search_query=" + encodeURIComponent(name + " korrekte Ausführung Technik");
 }
 
+// --- Muskelgruppen-Diagramm: eine simple, selbst gezeichnete Körper-Silhouette (kein Foto,
+// keine Lizenzfragen) mit der jeweils trainierten Stelle farbig hervorgehoben. Nutzt die
+// Theme-Variablen, passt sich also automatisch an App-Design und Hell-/Dunkelmodus an.
+function muscleDiagramBodySVG(color){
+  return '<circle cx="50" cy="14" r="12" fill="' + color + '"/>' +
+    '<rect x="33" y="27" width="34" height="42" rx="15" fill="' + color + '"/>' +
+    '<rect x="17" y="29" width="13" height="50" rx="6.5" fill="' + color + '"/>' +
+    '<rect x="70" y="29" width="13" height="50" rx="6.5" fill="' + color + '"/>' +
+    '<rect x="35" y="64" width="13" height="66" rx="6.5" fill="' + color + '"/>' +
+    '<rect x="52" y="64" width="13" height="66" rx="6.5" fill="' + color + '"/>';
+}
+const MUSCLE_DIAGRAM_HIGHLIGHTS = {
+  "Beine": function(c){ return '<rect x="35" y="64" width="13" height="66" rx="6.5" fill="' + c + '"/><rect x="52" y="64" width="13" height="66" rx="6.5" fill="' + c + '"/>'; },
+  "Brust": function(c){ return '<ellipse cx="50" cy="38" rx="15" ry="9" fill="' + c + '"/>'; },
+  "Bauch": function(c){ return '<rect x="41" y="48" width="18" height="18" rx="7" fill="' + c + '"/>'; },
+  "Schultern": function(c){ return '<circle cx="23.5" cy="34" r="8.5" fill="' + c + '"/><circle cx="76.5" cy="34" r="8.5" fill="' + c + '"/>'; },
+  "Bizeps": function(c){ return '<rect x="17" y="29" width="13" height="23" rx="6.5" fill="' + c + '"/><rect x="70" y="29" width="13" height="23" rx="6.5" fill="' + c + '"/>'; },
+  "Trizeps": function(c){ return '<rect x="17" y="52" width="13" height="27" rx="6.5" fill="' + c + '"/><rect x="70" y="52" width="13" height="27" rx="6.5" fill="' + c + '"/>'; },
+  "Rücken": function(c){ return '<rect x="33" y="27" width="34" height="42" rx="15" fill="' + c + '"/>'; },
+};
+function muscleDiagramSVG(groupName){
+  const hlFn = MUSCLE_DIAGRAM_HIGHLIGHTS[groupName];
+  if(!hlFn) return "";
+  return '<svg viewBox="0 0 100 160" style="width:64px;height:102px;flex-shrink:0;" aria-hidden="true">' +
+    muscleDiagramBodySVG("var(--ink-soft)") + hlFn("var(--olive)") +
+    '</svg>';
+}
+
 function toggleHistory(id){
   openHistory[id] = !openHistory[id];
   renderContent();
@@ -2889,15 +2917,20 @@ function buildExerciseCard(ex, dayColor, el){
 
       if(openInfo[ex.id]){
         const mi = muscleInfoFor(ex.name);
+        const diagram = muscleDiagramSVG(exGroup);
         const panel = document.createElement("div");
         panel.className = "history-panel open";
         let inner = "";
+        inner += '<div style="display:flex;gap:14px;align-items:center;">';
+        if(diagram) inner += diagram;
+        inner += '<div style="flex:1;min-width:0;">';
         if(mi){
           inner += '<p class="hist-pr">💪 Hauptmuskel: ' + mi.primary + '</p>';
           inner += '<p class="hist-empty" style="margin-bottom:10px;">Sekundär: ' + mi.secondary + '</p>';
         } else {
           inner += '<p class="hist-empty" style="margin-bottom:10px;">Keine Muskel-Info für diese eigene Übung hinterlegt.</p>';
         }
+        inner += '</div></div>';
         inner += '<a href="' + videoSearchUrl(ex.name) + '" target="_blank" rel="noopener" class="btn btn-primary" style="display:inline-block;text-decoration:none;padding:9px 16px;font-size:12px;">▶ Video-Anleitung suchen</a>';
         inner += '<p class="hist-empty" style="margin-top:8px;">Öffnet eine YouTube-Suche zur korrekten Ausführung in einem neuen Tab.</p>';
         panel.innerHTML = inner;
