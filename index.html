@@ -1319,6 +1319,17 @@
     </div>
 
     <div class="legal-card">
+      <h2>🏆 Freunde-Vergleich</h2>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Optional und nur mit Anmeldung: vergleiche XP und Wochen-Streak mit anderen KOUKI-Nutzern, die sich ebenfalls dafür entschieden haben. Ohne Teilnahme sieht niemand deine Werte, und du siehst keine Rangliste — reiner Opt-in.</p>
+      <div class="filter-row" id="leaderboardOptInRow"></div>
+      <div class="measure-group" id="leaderboardNicknameGroup" style="display:none;margin-top:10px;">
+        <p class="measure-label">Anzeigename (statt E-Mail)</p>
+        <input type="text" id="leaderboardNicknameInput" placeholder="z. B. Phil" maxlength="24" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+      </div>
+      <div id="leaderboardArea" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="legal-card">
       <h2>Daten-Sicherung (Backup)</h2>
       <p>Alle deine Daten liegen ausschließlich lokal in diesem Browser. Wird die App künftig unter einem neuen Link bereitgestellt (z. B. nach einem Update) oder Browserdaten gelöscht, sind diese lokalen Daten nicht automatisch dort verfügbar. Mit einem Backup sicherst du deinen Stand als Datei direkt auf deinem Handy (z. B. in der Dateien-App) und kannst ihn jederzeit — auch unter einem neuen Link — wiederherstellen.</p>
       <div class="backup-btn-row">
@@ -1651,7 +1662,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" }, barbellWeight:20, supersets:{}, mealPlan:{} };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -1721,6 +1732,8 @@ function normalizeState(){
   if(typeof state.barbellWeight !== "number" || state.barbellWeight < 0) state.barbellWeight = 20;
   if(!state.supersets) state.supersets = {};
   if(!state.mealPlan) state.mealPlan = {};
+  if(typeof state.leaderboardOptIn !== "boolean") state.leaderboardOptIn = false;
+  if(typeof state.leaderboardNickname !== "string") state.leaderboardNickname = "";
   migrateHistoryToSets();
   migrateCompletedDayColor();
 }
@@ -5899,6 +5912,7 @@ function onAccountLoggedOut(){
   const logoutBtn = document.getElementById("accountLogoutBtn");
   if(row) row.style.display = "block";
   if(logoutBtn) logoutBtn.style.display = "none";
+  renderLeaderboardSettings();
 }
 
 async function onAccountLoggedIn(user){
@@ -5910,6 +5924,7 @@ async function onAccountLoggedIn(user){
   if(logoutBtn) logoutBtn.style.display = "block";
   await syncFromCloudOrMigrate();
   cloudSyncEnabled = true;
+  renderLeaderboardSettings();
 }
 
 async function syncFromCloudOrMigrate(){
@@ -5942,11 +5957,101 @@ async function pushToCloud(){
   try{
     await client.from("user_data").upsert({ user_id: currentUserId, data: state, updated_at: new Date().toISOString() });
   }catch(e){ console.error("Cloud-Speichern fehlgeschlagen", e); }
+  if(state.leaderboardOptIn) pushLeaderboardStats();
 }
 function scheduleCloudPush(){
   if(!cloudSyncEnabled) return;
   clearTimeout(cloudPushTimer);
   cloudPushTimer = setTimeout(pushToCloud, 1500);
+}
+
+// --- Freunde-Vergleich (opt-in, reine Zusatzfunktion — Cloud-Sync/lokale Nutzung
+// funktionieren unveraendert, wenn nicht teilgenommen wird). Braucht eine zusaetzliche
+// Supabase-Tabelle "leaderboard_stats" mit RLS, siehe Setup-Hinweis in der Doku. ---
+async function pushLeaderboardStats(){
+  const client = getSupabaseClient();
+  if(!client || !currentUserId) return;
+  try{
+    const nickname = (state.leaderboardNickname || "").trim() || "Anonym";
+    await client.from("leaderboard_stats").upsert({
+      user_id: currentUserId,
+      display_name: nickname,
+      week_streak: computeWeekStreak(),
+      longest_week_streak: state.longestWeekStreak,
+      total_workouts: state.completedDays.length,
+      total_xp: state.xp,
+      updated_at: new Date().toISOString(),
+    });
+  }catch(e){ console.error("Freunde-Vergleich-Update fehlgeschlagen", e); }
+}
+async function removeLeaderboardEntry(){
+  const client = getSupabaseClient();
+  if(!client || !currentUserId) return;
+  try{ await client.from("leaderboard_stats").delete().eq("user_id", currentUserId); }
+  catch(e){ console.error("Freunde-Vergleich-Eintrag konnte nicht entfernt werden", e); }
+}
+async function fetchLeaderboard(){
+  const el = document.getElementById("leaderboardArea");
+  if(!el) return;
+  const client = getSupabaseClient();
+  if(!client || !currentUserId){ el.innerHTML = ""; return; }
+  el.innerHTML = '<p class="rank-hint">Lade …</p>';
+  try{
+    const { data, error } = await client.from("leaderboard_stats")
+      .select("user_id,display_name,week_streak,longest_week_streak,total_workouts,total_xp")
+      .order("total_xp", { ascending: false }).limit(50);
+    if(error) throw error;
+    if(!data || !data.length){ el.innerHTML = '<p class="rank-hint">Noch niemand dabei — sei die/der Erste!</p>'; return; }
+    el.innerHTML = data.map(function(row, i){
+      const mine = row.user_id === currentUserId;
+      return '<div class="home-pr-row"' + (mine ? ' style="font-weight:700;color:var(--text-strong);"' : "") + '>' +
+        '<span>' + (i + 1) + '. ' + escapeHtml(row.display_name || "Anonym") + (mine ? " (du)" : "") + '</span>' +
+        '<span>' + Math.round(row.total_xp || 0) + ' XP · 🔥' + (row.week_streak || 0) + '</span></div>';
+    }).join("");
+  }catch(e){
+    console.error("Freunde-Vergleich laden fehlgeschlagen", e);
+    el.innerHTML = '<p class="rank-hint">Konnte gerade nicht geladen werden — evtl. ist die Tabelle "leaderboard_stats" in Supabase noch nicht eingerichtet.</p>';
+  }
+}
+function setLeaderboardOptIn(on){
+  state.leaderboardOptIn = on;
+  saveState();
+  if(on){ pushLeaderboardStats().then(fetchLeaderboard); }
+  else { removeLeaderboardEntry().then(function(){ const el = document.getElementById("leaderboardArea"); if(el) el.innerHTML = ""; }); }
+  renderLeaderboardSettings();
+}
+function renderLeaderboardSettings(){
+  const row = document.getElementById("leaderboardOptInRow");
+  if(!row) return;
+  const opts = [ { key: "on", label: "🏆 Teilnehmen" }, { key: "off", label: "Nicht teilnehmen" } ];
+  row.innerHTML = opts.map(function(o){
+    const active = (o.key === "on") === !!state.leaderboardOptIn;
+    return '<div class="filter-chip' + (active ? " active" : "") + '" data-lb-toggle="' + o.key + '">' + o.label + '</div>';
+  }).join("");
+  row.querySelectorAll("[data-lb-toggle]").forEach(function(el){
+    el.onclick = function(){
+      if(el.getAttribute("data-lb-toggle") === "on" && !currentUserId){
+        showToast("Bitte zuerst über Konto & Cloud-Sync anmelden");
+        return;
+      }
+      setLeaderboardOptIn(el.getAttribute("data-lb-toggle") === "on");
+    };
+  });
+  const nickGroup = document.getElementById("leaderboardNicknameGroup");
+  if(nickGroup) nickGroup.style.display = state.leaderboardOptIn ? "block" : "none";
+  const nickInput = document.getElementById("leaderboardNicknameInput");
+  if(nickInput && document.activeElement !== nickInput) nickInput.value = state.leaderboardNickname || "";
+  if(currentUserId && state.leaderboardOptIn) fetchLeaderboard();
+}
+let leaderboardNickTimer = null;
+const leaderboardNickInputEl = document.getElementById("leaderboardNicknameInput");
+if(leaderboardNickInputEl){
+  leaderboardNickInputEl.oninput = function(){
+    state.leaderboardNickname = leaderboardNickInputEl.value;
+    saveState();
+    clearTimeout(leaderboardNickTimer);
+    leaderboardNickTimer = setTimeout(function(){ pushLeaderboardStats().then(fetchLeaderboard); }, 800);
+  };
 }
 
 let authListenerRegistered = false;
@@ -6280,6 +6385,7 @@ function init(){
       try{ renderReminderSettings(); }catch(e){ console.error("Erinnerungs-Einstellungen konnten nicht angezeigt werden", e); }
       try{ mirrorReminderState(); }catch(e){}
       checkReminders();
+      try{ renderLeaderboardSettings(); }catch(e){ console.error("Freunde-Vergleich-Einstellungen konnten nicht angezeigt werden", e); }
     })
     .then(hideSplash);
   setTimeout(function(){
