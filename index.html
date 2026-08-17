@@ -1384,6 +1384,8 @@
   <div class="celebrate-emoji" id="celebrateEmoji">🏆</div>
   <div class="celebrate-msg" id="celebrateMsg">Neuer PR!</div>
   <div class="confetti-field" id="confettiField"></div>
+  <button class="btn btn-primary" id="celebrateShareBtn" style="display:none;margin-top:16px;pointer-events:auto;">📤 Als Bild teilen</button>
+  <button class="btn btn-ghost" id="celebrateCloseBtn" style="display:none;margin-top:8px;pointer-events:auto;">Schließen</button>
 </div>
 
 <div class="reward-overlay" id="rewardOverlay">
@@ -3356,7 +3358,8 @@ function spawnSparkle(x, y){
 }
 
 let celebrateTimeout = null;
-function celebrate(emoji, msg, big){
+let lastCelebratePRs = null;
+function celebrate(emoji, msg, big, prDetails){
   const overlay = document.getElementById("celebrateOverlay");
   document.getElementById("celebrateEmoji").textContent = emoji;
   document.getElementById("celebrateMsg").textContent = msg;
@@ -3375,8 +3378,92 @@ function celebrate(emoji, msg, big){
   }
   overlay.classList.add("show");
   clearTimeout(celebrateTimeout);
-  celebrateTimeout = setTimeout(function(){ overlay.classList.remove("show"); }, big ? 2200 : 1600);
+  const shareBtn = document.getElementById("celebrateShareBtn");
+  const closeBtn = document.getElementById("celebrateCloseBtn");
+  lastCelebratePRs = (prDetails && prDetails.length) ? prDetails : null;
+  if(lastCelebratePRs){
+    // Bei einem PR nicht automatisch ausblenden — Nutzer soll Zeit zum Teilen haben,
+    // schließt manuell über den Schließen-Knopf.
+    shareBtn.style.display = "inline-block";
+    closeBtn.style.display = "inline-block";
+  } else {
+    shareBtn.style.display = "none";
+    closeBtn.style.display = "none";
+    celebrateTimeout = setTimeout(function(){ overlay.classList.remove("show"); }, big ? 2200 : 1600);
+  }
 }
+document.getElementById("celebrateCloseBtn").onclick = function(){
+  document.getElementById("celebrateOverlay").classList.remove("show");
+};
+// Zeichnet eine teilbare 1080x1080-Bildkarte für den/die neuen PR(s) mit den aktuellen
+// Theme-Farben (aus den CSS-Variablen ausgelesen, da Canvas kein var() versteht).
+function drawPRShareCard(prDetails){
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080; canvas.height = 1080;
+  const ctx = canvas.getContext("2d");
+  const cs = getComputedStyle(document.documentElement);
+  const olive = (cs.getPropertyValue("--olive") || "#292820").trim() || "#292820";
+  const yellow = (cs.getPropertyValue("--yellow") || "#f2e08f").trim() || "#f2e08f";
+  ctx.fillStyle = olive;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.textAlign = "center";
+
+  ctx.font = "170px sans-serif";
+  ctx.fillText("🏆", 540, 300);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 62px 'Baloo 2', sans-serif";
+  ctx.fillText("NEUER PR!", 540, 410);
+
+  ctx.font = "600 32px 'Inter', sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,.75)";
+  const dateStr = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+  ctx.fillText(dateStr, 540, 460);
+
+  let y = 580;
+  prDetails.slice(0, 5).forEach(function(pr){
+    ctx.font = "700 42px 'Baloo 2', sans-serif";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(pr.name, 540, y);
+    ctx.font = "600 36px 'JetBrains Mono', monospace";
+    ctx.fillStyle = yellow;
+    ctx.fillText(pr.weight + " kg" + (pr.reps ? (" × " + pr.reps) : ""), 540, y + 50);
+    y += 120;
+  });
+
+  ctx.font = "800 44px 'Baloo 2', sans-serif";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText("KOUKI", 540, 980);
+  ctx.font = "500 24px 'Inter', sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,.6)";
+  ctx.fillText("Dein Gesundheitsbegleiter", 540, 1018);
+
+  return canvas;
+}
+async function sharePRCard(){
+  if(!lastCelebratePRs || !lastCelebratePRs.length) return;
+  try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch(e){}
+  const canvas = drawPRShareCard(lastCelebratePRs);
+  canvas.toBlob(async function(blob){
+    if(!blob){ showToast("Bild konnte nicht erstellt werden"); return; }
+    const file = new File([blob], "kouki-pr.png", { type: "image/png" });
+    try{
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: "Neuer PR bei KOUKI!", text: "Neuer persönlicher Rekord 🏆" });
+        return;
+      }
+    }catch(e){ /* Teilen abgebrochen oder nicht verfügbar — Download-Fallback unten */ }
+    try{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "kouki-pr-" + todayKey() + ".png";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      showToast("Bild gespeichert");
+    }catch(e){ console.error("PR-Bild konnte nicht gespeichert werden", e); showToast("Bild konnte nicht gespeichert werden"); }
+  }, "image/png");
+}
+document.getElementById("celebrateShareBtn").onclick = sharePRCard;
 
 function showToast(msg){
   const t = document.getElementById("toast");
@@ -3389,6 +3476,7 @@ async function finishSession(){
   const exs = allExercisesOfActiveDay();
   const today = todayKey();
   const newPRs = [];
+  const newPRDetails = [];
   const doneCount = exs.filter(function(ex){ return isEntryDone(ex); }).length;
   exs.forEach(function(ex){
     const entry = getEntry(ex);
@@ -3411,6 +3499,7 @@ async function finishSession(){
         if(!currentPR || bestWeight > currentPR.weight){
           state.prs[ex.id] = { weight: bestWeight, date: today, reps: bestReps };
           newPRs.push(ex.name);
+          newPRDetails.push({ name: ex.name, weight: bestWeight, reps: bestReps });
         }
       }
     }
@@ -3441,7 +3530,7 @@ async function finishSession(){
   }
   const xpSuffix = xpGained > 0 ? (" (+" + xpGained + " XP)") : "";
   if(newPRs.length){
-    celebrate("🏆", "Neuer PR: " + newPRs.join(", ") + xpSuffix, true);
+    celebrate("🏆", "Neuer PR: " + newPRs.join(", ") + xpSuffix, true, newPRDetails);
   } else if(doneCount === exs.length && exs.length > 0){
     celebrate("🥇", "Einheit geschafft!" + xpSuffix, false);
   } else {
