@@ -1172,6 +1172,14 @@
   </div>
 
   <div id="frame-recipes" style="display:none;">
+    <div class="rank-card" id="mealPlanCard">
+      <div class="rank-head"><span class="rank-title">🗓️ Wochenplaner</span></div>
+      <p class="rank-hint">Rezepte für die Woche vorplanen und alle Zutaten auf einen Schlag in die Einkaufsliste übernehmen.</p>
+      <div class="day-select" id="mealPlanDayRow"></div>
+      <div id="mealPlanSlots"></div>
+      <button class="backup-btn" id="mealPlanToShoppingBtn" style="margin-top:10px;">🛒 Ganze Woche zur Einkaufsliste hinzufügen</button>
+    </div>
+
     <div class="rank-card" id="shoppingListCard" style="display:none;">
       <div class="rank-head"><span class="rank-title">🛒 Einkaufsliste</span></div>
       <div id="shoppingListArea"></div>
@@ -1643,7 +1651,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" }, barbellWeight:20, supersets:{} };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" }, barbellWeight:20, supersets:{}, mealPlan:{} };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -1712,6 +1720,7 @@ function normalizeState(){
   if(typeof state.reminderSettings.lastMotivationDate !== "string") state.reminderSettings.lastMotivationDate = "";
   if(typeof state.barbellWeight !== "number" || state.barbellWeight < 0) state.barbellWeight = 20;
   if(!state.supersets) state.supersets = {};
+  if(!state.mealPlan) state.mealPlan = {};
   migrateHistoryToSets();
   migrateCompletedDayColor();
 }
@@ -4581,6 +4590,100 @@ function renderShoppingList(){
 }
 document.getElementById("clearShoppingListBtn").onclick = clearShoppingList;
 
+// --- Wochen-Essensplaner ---
+const MEAL_PLAN_DAYS = [
+  { key: "mon", label: "Mo" }, { key: "tue", label: "Di" }, { key: "wed", label: "Mi" },
+  { key: "thu", label: "Do" }, { key: "fri", label: "Fr" }, { key: "sat", label: "Sa" }, { key: "sun", label: "So" },
+];
+const MEAL_PLAN_SLOTS = ["Frühstück", "Mittagessen", "Abendessen", "Snack"];
+let mealPlanDay = "mon";
+let mealPlanPickerOpen = null; // "day|slot" oder null
+function findRecipeById(id){ return RECIPES.find(function(r){ return r.id === id; }) || null; }
+function assignMealPlan(day, slot, recipeId){
+  if(!state.mealPlan) state.mealPlan = {};
+  if(!state.mealPlan[day]) state.mealPlan[day] = {};
+  state.mealPlan[day][slot] = recipeId;
+  mealPlanPickerOpen = null;
+  saveState();
+  renderMealPlan();
+}
+function clearMealPlanSlot(day, slot){
+  if(state.mealPlan && state.mealPlan[day]) delete state.mealPlan[day][slot];
+  saveState();
+  renderMealPlan();
+}
+function toggleMealPlanPicker(day, slot){
+  const key = day + "|" + slot;
+  mealPlanPickerOpen = mealPlanPickerOpen === key ? null : key;
+  renderMealPlan();
+}
+function addWeekToShoppingList(){
+  if(!state.mealPlan){ showToast("Noch keine Rezepte im Wochenplan"); return; }
+  const recipeIds = {};
+  Object.keys(state.mealPlan).forEach(function(day){
+    const slots = state.mealPlan[day] || {};
+    Object.keys(slots).forEach(function(slot){ if(slots[slot]) recipeIds[slots[slot]] = true; });
+  });
+  const ids = Object.keys(recipeIds);
+  if(!ids.length){ showToast("Noch keine Rezepte im Wochenplan"); return; }
+  let totalAdded = 0;
+  ids.forEach(function(id){
+    const r = findRecipeById(id);
+    if(!r) return;
+    r.ingredients.forEach(function(ing){
+      const exists = state.shoppingList.some(function(item){ return item.text === ing; });
+      if(!exists){ state.shoppingList.push({ text: ing, checked: false }); totalAdded++; }
+    });
+  });
+  saveState();
+  renderShoppingList();
+  showToast(totalAdded > 0 ? (totalAdded + " Zutaten aus " + ids.length + " Rezepten hinzugefügt") : "Alle Zutaten waren schon auf der Liste");
+}
+document.getElementById("mealPlanToShoppingBtn").onclick = addWeekToShoppingList;
+function renderMealPlan(){
+  const dayRow = document.getElementById("mealPlanDayRow");
+  if(!dayRow) return;
+  dayRow.innerHTML = MEAL_PLAN_DAYS.map(function(d){
+    const hasAny = state.mealPlan && state.mealPlan[d.key] && Object.keys(state.mealPlan[d.key]).length;
+    return '<div class="day-btn' + (mealPlanDay === d.key ? " active" : "") + '" data-plan-day="' + d.key + '" style="flex:0 0 auto;min-width:44px;">' + d.label + (hasAny ? ' <span style="opacity:.6;">•</span>' : "") + '</div>';
+  }).join("");
+  dayRow.querySelectorAll("[data-plan-day]").forEach(function(btn){
+    btn.onclick = function(){ mealPlanDay = btn.getAttribute("data-plan-day"); mealPlanPickerOpen = null; renderMealPlan(); };
+  });
+
+  const slotsEl = document.getElementById("mealPlanSlots");
+  const dayPlan = (state.mealPlan && state.mealPlan[mealPlanDay]) || {};
+  slotsEl.innerHTML = MEAL_PLAN_SLOTS.map(function(slot){
+    const recipeId = dayPlan[slot];
+    const recipe = recipeId ? findRecipeById(recipeId) : null;
+    const pickerKey = mealPlanDay + "|" + slot;
+    let html = '<div style="border-top:1px solid var(--line);padding:10px 0;">';
+    html += '<p class="measure-label" style="margin:0 0 6px;">' + slot + '</p>';
+    if(recipe){
+      html += '<div class="home-pr-row"><span>' + escapeHtml(recipe.name) + ' — ' + recipe.kcal + ' kcal</span><span class="set-del" data-clear-slot="' + slot + '">✕</span></div>';
+    } else {
+      html += '<div class="quickfill-btn" data-open-picker="' + slot + '" style="cursor:pointer;">+ Rezept wählen</div>';
+      if(mealPlanPickerOpen === pickerKey){
+        const options = RECIPES.filter(function(r){ return r.mealType.indexOf(slot) !== -1; });
+        html += '<div class="hist-list" style="margin-top:8px;">' + (options.length ?
+          options.map(function(r){ return '<span data-pick-recipe="' + r.id + '" style="cursor:pointer;">' + escapeHtml(r.name) + '</span>'; }).join("") :
+          '<span style="opacity:.7;">Keine Rezepte für "' + escapeHtml(slot) + '" hinterlegt</span>') + '</div>';
+      }
+    }
+    html += '</div>';
+    return html;
+  }).join("");
+  slotsEl.querySelectorAll("[data-clear-slot]").forEach(function(btn){
+    btn.onclick = function(){ clearMealPlanSlot(mealPlanDay, btn.getAttribute("data-clear-slot")); };
+  });
+  slotsEl.querySelectorAll("[data-open-picker]").forEach(function(btn){
+    btn.onclick = function(){ toggleMealPlanPicker(mealPlanDay, btn.getAttribute("data-open-picker")); };
+  });
+  slotsEl.querySelectorAll("[data-pick-recipe]").forEach(function(chip){
+    chip.onclick = function(){ assignMealPlan(mealPlanDay, mealPlanPickerOpen.split("|")[1], chip.getAttribute("data-pick-recipe")); };
+  });
+}
+
 function renderRecipes(){
   renderMealTypeFilter();
   renderGoalTagFilter();
@@ -5485,7 +5588,7 @@ function showGroup(group, subtabIndex){
   document.getElementById("frameTitle").textContent = subtabs.length > 1 ?
     (NAV_GROUPS[group].label + " · " + subtabs[activeSubtabIndex].label) : NAV_GROUPS[group].label;
   closeDayDetail();
-  if(activeFrameId === "frame-recipes") renderRecipes();
+  if(activeFrameId === "frame-recipes"){ renderRecipes(); renderMealPlan(); }
   if(activeFrameId === "frame-supplements") renderSupplements();
   if(activeFrameId === "frame-home") renderHome();
   if(activeFrameId === "frame-progress-overview") renderProgressOverview();
