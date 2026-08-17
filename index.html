@@ -2250,32 +2250,97 @@ function videoSearchUrl(name){
   return "https://www.youtube.com/results?search_query=" + encodeURIComponent(name + " korrekte Ausführung Technik");
 }
 
-// --- Muskelgruppen-Diagramm: eine simple, selbst gezeichnete Körper-Silhouette (kein Foto,
-// keine Lizenzfragen) mit der jeweils trainierten Stelle farbig hervorgehoben. Nutzt die
-// Theme-Variablen, passt sich also automatisch an App-Design und Hell-/Dunkelmodus an.
-function muscleDiagramBodySVG(color){
-  return '<circle cx="50" cy="14" r="12" fill="' + color + '"/>' +
-    '<rect x="33" y="27" width="34" height="42" rx="15" fill="' + color + '"/>' +
-    '<rect x="17" y="29" width="13" height="50" rx="6.5" fill="' + color + '"/>' +
-    '<rect x="70" y="29" width="13" height="50" rx="6.5" fill="' + color + '"/>' +
-    '<rect x="35" y="64" width="13" height="66" rx="6.5" fill="' + color + '"/>' +
-    '<rect x="52" y="64" width="13" height="66" rx="6.5" fill="' + color + '"/>';
-}
-const MUSCLE_DIAGRAM_HIGHLIGHTS = {
-  "Beine": function(c){ return '<rect x="35" y="64" width="13" height="66" rx="6.5" fill="' + c + '"/><rect x="52" y="64" width="13" height="66" rx="6.5" fill="' + c + '"/>'; },
-  "Brust": function(c){ return '<ellipse cx="50" cy="38" rx="15" ry="9" fill="' + c + '"/>'; },
-  "Bauch": function(c){ return '<rect x="41" y="48" width="18" height="18" rx="7" fill="' + c + '"/>'; },
-  "Schultern": function(c){ return '<circle cx="23.5" cy="34" r="8.5" fill="' + c + '"/><circle cx="76.5" cy="34" r="8.5" fill="' + c + '"/>'; },
-  "Bizeps": function(c){ return '<rect x="17" y="29" width="13" height="23" rx="6.5" fill="' + c + '"/><rect x="70" y="29" width="13" height="23" rx="6.5" fill="' + c + '"/>'; },
-  "Trizeps": function(c){ return '<rect x="17" y="52" width="13" height="27" rx="6.5" fill="' + c + '"/><rect x="70" y="52" width="13" height="27" rx="6.5" fill="' + c + '"/>'; },
-  "Rücken": function(c){ return '<rect x="33" y="27" width="34" height="42" rx="15" fill="' + c + '"/>'; },
+// --- Muskelgruppen-Diagramm: selbst gezeichnete anatomische Vorder-/Rückansicht (kein Foto,
+// keine Lizenzfragen, kein 3D-Modell möglich in einer einzelnen HTML-Datei) mit einzeln
+// geformten Muskelpartien (Brust, Trapez, Delta, Bizeps/Trizeps, Bauch/Schräge, Latissimus,
+// unterer Rücken, Gesäß, Quadrizeps/Beinbeuger) statt einer groben Kapsel-Silhouette.
+// Radialer Verlauf sorgt für einen leicht plastischen Look; nutzt Theme-Variablen, passt sich
+// also automatisch an App-Design und Hell-/Dunkelmodus an.
+const MUSCLE_FRONT_SHAPES = {
+  head: '<ellipse cx="50" cy="15" rx="9.5" ry="11"/>',
+  neck: '<path d="M45 22 L55 22 L54 31 L46 31 Z"/>',
+  traps: '<path d="M38 28 C43 25 50 24.5 50 24.5 C50 24.5 57 25 62 28 L58 35 C55 32.5 50 32 50 32 C50 32 45 32.5 42 35 Z"/>',
+  deltL: '<path d="M38 28 C29 28.5 22 35 21 46 C20.3 53 24 57 30 55 C33 45 34 37 41 32 Z"/>',
+  deltR: '<path d="M62 28 C71 28.5 78 35 79 46 C79.7 53 76 57 70 55 C67 45 66 37 59 32 Z"/>',
+  pecL: '<path d="M50 31 C42 30 36 33 34 42 C33 49 37 54 46 55 C49 55.5 50 52 50 47 Z"/>',
+  pecR: '<path d="M50 31 C58 30 64 33 66 42 C67 49 63 54 54 55 C51 55.5 50 52 50 47 Z"/>',
+  bicepL: '<ellipse cx="24" cy="63" rx="6.5" ry="15" transform="rotate(-6 24 63)"/>',
+  bicepR: '<ellipse cx="76" cy="63" rx="6.5" ry="15" transform="rotate(6 76 63)"/>',
+  elbowL: '<circle cx="26" cy="76" r="4.5"/>',
+  elbowR: '<circle cx="74" cy="76" r="4.5"/>',
+  forearmL: '<path d="M20 77 C19 87 20 96 23 104 L29 102 C28 93 28 83 28 76 Z"/>',
+  forearmR: '<path d="M80 77 C81 87 80 96 77 104 L71 102 C72 93 72 83 72 76 Z"/>',
+  absCore: '<path d="M42 56 C42 70 42 84 44 92 L56 92 C58 84 58 70 58 56 C55 60 45 60 42 56 Z"/>',
+  obliqueL: '<path d="M34 44 C33 57 34 72 37 86 L42 84 C40 72 40 58 41 47 Z"/>',
+  obliqueR: '<path d="M66 44 C67 57 66 72 63 86 L58 84 C60 72 60 58 59 47 Z"/>',
+  hips: '<path d="M37 92 C36 98 36 103 39 109 L61 109 C64 103 64 98 63 92 Z"/>',
+  quadL: '<path d="M39 109 C36 123 36 138 38 151 L49 151 C50 138 49 123 48 109 Z"/>',
+  quadR: '<path d="M61 109 C64 123 64 138 62 151 L51 151 C50 138 51 123 52 109 Z"/>',
+  kneeL: '<ellipse cx="43.5" cy="153" rx="6" ry="4"/>',
+  kneeR: '<ellipse cx="56.5" cy="153" rx="6" ry="4"/>',
+  shinL: '<path d="M39.5 156 C38.5 167 38.5 180 40 190 L46 190 C47 180 47 167 46.5 156 Z"/>',
+  shinR: '<path d="M60.5 156 C61.5 167 61.5 180 60 190 L54 190 C53 180 53 167 53.5 156 Z"/>',
 };
+const MUSCLE_BACK_SHAPES = {
+  head: '<ellipse cx="50" cy="15" rx="9.5" ry="11"/>',
+  neck: '<path d="M45 22 L55 22 L54 31 L46 31 Z"/>',
+  traps: '<path d="M50 24 C58 25 65 30 66 38 C60 36 55 34 50 34 C45 34 40 36 34 38 C35 30 42 25 50 24 Z"/>',
+  deltL: '<path d="M38 28 C29 28.5 22 35 21 46 C20.3 53 24 57 30 55 C33 45 34 37 41 32 Z"/>',
+  deltR: '<path d="M62 28 C71 28.5 78 35 79 46 C79.7 53 76 57 70 55 C67 45 66 37 59 32 Z"/>',
+  latL: '<path d="M34 38 C30 46 29 58 33 70 L44 66 C42 56 42 45 43 36 Z"/>',
+  latR: '<path d="M66 38 C70 46 71 58 67 70 L56 66 C58 56 58 45 57 36 Z"/>',
+  lowerBackL: '<path d="M44 66 C43 74 43 82 44 90 L49 90 C49 82 49 74 48 66 Z"/>',
+  lowerBackR: '<path d="M56 66 C57 74 57 82 56 90 L51 90 C51 82 51 74 52 66 Z"/>',
+  tricepL: '<ellipse cx="24" cy="63" rx="6.5" ry="15" transform="rotate(-6 24 63)"/>',
+  tricepR: '<ellipse cx="76" cy="63" rx="6.5" ry="15" transform="rotate(6 76 63)"/>',
+  elbowL: '<circle cx="26" cy="76" r="4.5"/>',
+  elbowR: '<circle cx="74" cy="76" r="4.5"/>',
+  forearmL: '<path d="M20 77 C19 87 20 96 23 104 L29 102 C28 93 28 83 28 76 Z"/>',
+  forearmR: '<path d="M80 77 C81 87 80 96 77 104 L71 102 C72 93 72 83 72 76 Z"/>',
+  hips: '<path d="M37 92 C36 98 36 103 39 109 L61 109 C64 103 64 98 63 92 Z"/>',
+  gluteL: '<path d="M39 100 C37 105 37 111 39 116 L49 116 C50 110 49 104 48 99 Z"/>',
+  gluteR: '<path d="M61 100 C63 105 63 111 61 116 L51 116 C50 110 51 104 52 99 Z"/>',
+  hamL: '<path d="M39 116 C37 128 37 140 39 151 L49 151 C50 140 49 128 48 116 Z"/>',
+  hamR: '<path d="M61 116 C63 128 63 140 61 151 L51 151 C50 140 51 128 52 116 Z"/>',
+  kneeL: '<ellipse cx="43.5" cy="153" rx="6" ry="4"/>',
+  kneeR: '<ellipse cx="56.5" cy="153" rx="6" ry="4"/>',
+  calfL: '<path d="M39.5 156 C38 165 38 176 40 188 C41 191 45 191 46 188 C47 176 47 165 46.5 156 Z"/>',
+  calfR: '<path d="M60.5 156 C62 165 62 176 60 188 C59 191 55 191 54 188 C53 176 53 165 53.5 156 Z"/>',
+};
+// Welche Ansicht (Vorder-/Rückseite) und welche Formen pro Muskelgruppe farbig markiert werden.
+const MUSCLE_GROUP_DIAGRAM = {
+  "Brust": { view: "front", active: ["pecL","pecR"] },
+  "Bauch": { view: "front", active: ["absCore","obliqueL","obliqueR"] },
+  "Schultern": { view: "front", active: ["deltL","deltR"] },
+  "Bizeps": { view: "front", active: ["bicepL","bicepR","elbowL","elbowR"] },
+  "Beine": { view: "front", active: ["quadL","quadR","kneeL","kneeR"] },
+  "Rücken": { view: "back", active: ["traps","latL","latR","lowerBackL","lowerBackR"] },
+  "Trizeps": { view: "back", active: ["tricepL","tricepR","elbowL","elbowR"] },
+};
+let muscleDiagramUidCounter = 0;
 function muscleDiagramSVG(groupName){
-  const hlFn = MUSCLE_DIAGRAM_HIGHLIGHTS[groupName];
-  if(!hlFn) return "";
-  return '<svg viewBox="0 0 100 160" style="width:64px;height:102px;flex-shrink:0;" aria-hidden="true">' +
-    muscleDiagramBodySVG("var(--ink-soft)") + hlFn("var(--olive)") +
-    '</svg>';
+  const cfg = MUSCLE_GROUP_DIAGRAM[groupName];
+  if(!cfg) return "";
+  const shapes = cfg.view === "back" ? MUSCLE_BACK_SHAPES : MUSCLE_FRONT_SHAPES;
+  const uid = "md" + (muscleDiagramUidCounter++);
+  let s = '<svg viewBox="0 0 100 200" style="width:66px;height:132px;flex-shrink:0;" aria-hidden="true">';
+  s += '<defs>' +
+    '<radialGradient id="mdBody' + uid + '" cx="35%" cy="25%" r="85%">' +
+      '<stop offset="0%" stop-color="var(--surface)" stop-opacity="0.5"/>' +
+      '<stop offset="100%" stop-color="var(--ink-soft)" stop-opacity="1"/>' +
+    '</radialGradient>' +
+    '<radialGradient id="mdActive' + uid + '" cx="35%" cy="25%" r="85%">' +
+      '<stop offset="0%" stop-color="var(--surface)" stop-opacity="0.55"/>' +
+      '<stop offset="100%" stop-color="var(--olive)" stop-opacity="1"/>' +
+    '</radialGradient>' +
+  '</defs>';
+  Object.keys(shapes).forEach(function(k){
+    const active = cfg.active.indexOf(k) !== -1;
+    const attrs = 'fill="url(#' + (active ? "mdActive" : "mdBody") + uid + ')" stroke="var(--surface)" stroke-width="1.1" stroke-linejoin="round"';
+    s += shapes[k].replace('<path ', '<path ' + attrs + ' ').replace('<ellipse ', '<ellipse ' + attrs + ' ').replace('<circle ', '<circle ' + attrs + ' ');
+  });
+  s += '</svg>';
+  return s;
 }
 
 function toggleHistory(id){
