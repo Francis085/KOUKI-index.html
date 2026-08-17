@@ -1636,7 +1636,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" }, barbellWeight:20 };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" }, barbellWeight:20, supersets:{} };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -1646,6 +1646,7 @@ let openWarmup = {};
 let openSwap = {};
 let openPlates = {};
 let plateWeightOverride = {};
+let openSuperset = {};
 let builderDraft = null;
 const RING_CIRC = 2 * Math.PI * 42;
 
@@ -1703,6 +1704,7 @@ function normalizeState(){
   if(typeof state.reminderSettings.lastDailyPromptDate !== "string") state.reminderSettings.lastDailyPromptDate = "";
   if(typeof state.reminderSettings.lastMotivationDate !== "string") state.reminderSettings.lastMotivationDate = "";
   if(typeof state.barbellWeight !== "number" || state.barbellWeight < 0) state.barbellWeight = 20;
+  if(!state.supersets) state.supersets = {};
   migrateHistoryToSets();
   migrateCompletedDayColor();
 }
@@ -2458,6 +2460,41 @@ function resetSwap(id){
   showToast("Ursprüngliche Übung wiederhergestellt");
 }
 
+// --- Supersätze: zwei Übungen desselben Tages als Paar verknüpfen (ohne Pause dazwischen) ---
+function toggleSuperset(id){
+  openSuperset[id] = !openSuperset[id];
+  renderContent();
+}
+function supersetPartnerName(exId){
+  if(!state.supersets || !state.supersets[exId]) return null;
+  const partnerId = state.supersets[exId];
+  const entry = flatExerciseList().find(function(item){ return item.ex.id === partnerId; });
+  if(!entry) return null;
+  const override = state.exerciseSwaps[partnerId];
+  return override ? override.name : entry.ex.name;
+}
+function linkSuperset(idA, idB){
+  if(!state.supersets) state.supersets = {};
+  const oldA = state.supersets[idA]; if(oldA) delete state.supersets[oldA];
+  const oldB = state.supersets[idB]; if(oldB) delete state.supersets[oldB];
+  state.supersets[idA] = idB;
+  state.supersets[idB] = idA;
+  openSuperset[idA] = false;
+  saveState();
+  renderContent();
+  showToast("Supersatz verknüpft — ohne Pause direkt hintereinander ausführen");
+}
+function unlinkSuperset(id){
+  if(!state.supersets) return;
+  const partner = state.supersets[id];
+  delete state.supersets[id];
+  if(partner) delete state.supersets[partner];
+  openSuperset[id] = false;
+  saveState();
+  renderContent();
+  showToast("Verknüpfung entfernt");
+}
+
 function epley1RM(weight, reps){
   const w = parseFloat(weight), r = parseFloat(reps);
   if(isNaN(w) || isNaN(r) || r <= 0) return null;
@@ -2881,6 +2918,7 @@ function buildExerciseCard(ex, dayColor, el){
       const exGroupLabel = exerciseGroupName(ex);
       const hist = state.history[ex.id];
       const lastSession = hist && hist.length ? hist[hist.length - 1] : null;
+      const supersetPartner = supersetPartnerName(ex.id);
       const top = document.createElement("div");
       top.className = "ex-top";
 
@@ -2895,6 +2933,7 @@ function buildExerciseCard(ex, dayColor, el){
           (pr ? ('<span class="tag pr">🏆 ' + pr.weight + 'kg</span>') : "") +
           (pr && pr.reps ? ('<span class="tag">~1RM ' + Math.round(epley1RM(pr.weight, pr.reps)) + 'kg</span>') : "") +
           (trend ? ('<span class="tag ' + trend.cls + '">' + trend.symbol + '</span>') : "") +
+          (supersetPartner ? ('<span class="tag">🔗 ' + escapeHtml(supersetPartner) + '</span>') : "") +
         '</div>' +
         (lastSession ? ('<p class="ex-last">Letztes Training: ' + formatSetsForList(lastSession) + '</p>') : '<p class="ex-last ex-last-empty">Noch keine Einheit geloggt — leg direkt los.</p>');
 
@@ -2930,12 +2969,18 @@ function buildExerciseCard(ex, dayColor, el){
       platesBtn.textContent = "🏋";
       platesBtn.title = "Hantelscheiben berechnen";
       platesBtn.onclick = function(){ togglePlates(ex.id); };
+      const supersetBtn = document.createElement("div");
+      supersetBtn.className = "icon-btn";
+      supersetBtn.textContent = "🔗";
+      supersetBtn.title = "Supersatz verknüpfen";
+      supersetBtn.onclick = function(){ toggleSuperset(ex.id); };
       actions.appendChild(restBtn);
       actions.appendChild(histBtn);
       actions.appendChild(infoBtn);
       actions.appendChild(warmupBtn);
       actions.appendChild(swapBtn);
       actions.appendChild(platesBtn);
+      actions.appendChild(supersetBtn);
 
       top.appendChild(info);
       top.appendChild(actions);
@@ -3149,6 +3194,35 @@ function buildExerciseCard(ex, dayColor, el){
         wInput.oninput = onPlateInput;
         bInput.oninput = onPlateInput;
         renderPlateResult(ex.id);
+      }
+
+      if(openSuperset[ex.id]){
+        const panel = document.createElement("div");
+        panel.className = "history-panel open";
+        const partnerId = state.supersets ? state.supersets[ex.id] : null;
+        let inner = '<p class="hist-pr">🔗 Supersatz</p>';
+        if(partnerId){
+          const partnerName = supersetPartner || "unbekannte Übung";
+          inner += '<p class="hist-empty" style="margin-bottom:10px;">Aktuell verknüpft mit "' + escapeHtml(partnerName) + '" — beide Sätze ohne Pause dazwischen ausführen, danach normal pausieren.</p>';
+          inner += '<button class="quickfill-btn" id="supersetUnlinkBtn-' + ex.id + '">↩ Verknüpfung entfernen</button>';
+        } else {
+          const others = flatExerciseList().filter(function(item){ return item.ex.id !== ex.id; });
+          if(others.length){
+            inner += '<p class="hist-empty" style="margin-bottom:8px;">Wähle eine zweite Übung von heute, die direkt im Anschluss ohne Pause folgt:</p>';
+            inner += '<div class="hist-list" id="supersetList-' + ex.id + '">' +
+              others.map(function(item){ return '<span data-superset-id="' + item.ex.id + '" style="cursor:pointer;">' + escapeHtml(item.ex.name) + '</span>'; }).join("") +
+            '</div>';
+          } else {
+            inner += '<p class="hist-empty">An diesem Tag gibt es keine weitere Übung zum Verknüpfen.</p>';
+          }
+        }
+        panel.innerHTML = inner;
+        el.appendChild(panel);
+        const unlinkBtn = panel.querySelector("#supersetUnlinkBtn-" + ex.id);
+        if(unlinkBtn) unlinkBtn.onclick = function(){ unlinkSuperset(ex.id); };
+        panel.querySelectorAll("[data-superset-id]").forEach(function(chip){
+          chip.onclick = function(){ linkSuperset(ex.id, chip.getAttribute("data-superset-id")); };
+        });
       }
 
       if(openSwap[ex.id]){
