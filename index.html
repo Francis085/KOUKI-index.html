@@ -216,9 +216,12 @@
   .step-nav-btns .btn:disabled{opacity:.4;}
 
   @keyframes koukiCardIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
-  .exercise, .rank-card, .recipe-card, .supp-card, .bw-card, .home-stat, .progress-card{
+  .exercise, .rank-card, .recipe-card, .bw-card, .home-stat, .progress-card{
     animation:koukiCardIn .28s ease both;
   }
+  /* .supp-card bewusst ohne Einblend-Animation: die Supplement-Liste wird bei jedem
+     Antippen komplett neu aufgebaut (renderSupplements()), wodurch die Animation sonst
+     bei jedem Tap für alle Karten erneut abspielt und wie ein Bildschirm-Flackern wirkt. */
   .btn, .icon-btn, .nav-btn, .filter-chip, .set-check{ transition:transform .12s ease, background .15s ease, opacity .15s ease; }
   .btn:active, .icon-btn:active, .nav-btn:active, .filter-chip:active{ transform:scale(.96); }
   .exercise{
@@ -1238,7 +1241,7 @@
       <p>⚕️ <strong>Wichtiger Hinweis:</strong> Alle Inhalte dieser App — Trainingspläne, Kalorien- und Makroberechnungen, Rezepte, der Kraft-Rang sowie sämtliche weiteren Angaben — sind unverbindliche, allgemeine Empfehlungen. Sie ersetzen keine ärztliche, ernährungsmedizinische oder physiotherapeutische Beratung. <strong>Bei akuten gesundheitlichen Beschwerden, Schmerzen, Verletzungen oder Unsicherheiten wende dich bitte umgehend an eine Ärztin, einen Arzt oder im Notfall an den Rettungsdienst (112).</strong></p>
     </div>
 
-    <div class="legal-card">
+    <div class="legal-card" id="legalImpressumCard">
       <h2>Impressum</h2>
       <p>Angaben gemäß § 5 TMG:</p>
       <p><strong>Phillip-Francis Koukiotou</strong><br>37085 Göttingen<br>Deutschland</p>
@@ -1275,7 +1278,18 @@
         </div>
         <div class="measure-group">
           <p class="measure-label">Passwort</p>
-          <input type="password" id="accountPasswordInput" placeholder="mind. 6 Zeichen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+          <div style="position:relative;">
+            <input type="password" id="accountPasswordInput" placeholder="mind. 6 Zeichen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+          </div>
+        </div>
+        <div class="measure-group">
+          <p class="measure-label">Passwort bestätigen</p>
+          <div style="position:relative;">
+            <input type="password" id="accountPasswordConfirmInput" placeholder="Passwort wiederholen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+          </div>
+          <p class="rank-hint" style="margin:6px 0 0;">Nur nötig, wenn du oben auf „Konto erstellen“ tippst.</p>
         </div>
         <div class="backup-btn-row">
           <button class="btn btn-primary" id="accountSignupBtn" style="flex:1;">Konto erstellen</button>
@@ -5112,6 +5126,15 @@ let preProfileGroup = "navHome";
 document.getElementById("legalBtn").onclick = function(){
   preProfileGroup = activeGroup;
   showGroup("navProfileGroup", 0);
+  // Der Info-Button springt gezielt zu Impressum & Datenschutz, statt (wie der
+  // "Profil"-Tab in der Menüleiste) oben bei App-Design zu landen — so führen
+  // beide Einstiege zu unterschiedlichen, sinnvollen Stellen derselben Seite.
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      const el = document.getElementById("legalImpressumCard");
+      if(el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
 };
 document.getElementById("legalBackBtn").onclick = function(){
   showGroup(preProfileGroup, 0);
@@ -5283,7 +5306,9 @@ async function signUpWithPassword(){
   if(!client){ hint.textContent = "Cloud-Funktion aktuell nicht erreichbar (Internetverbindung prüfen)."; return; }
   const email = (document.getElementById("accountEmailInput").value || "").trim();
   const password = document.getElementById("accountPasswordInput").value || "";
+  const passwordConfirm = document.getElementById("accountPasswordConfirmInput").value || "";
   if(!email || password.length < 6){ hint.textContent = "Bitte E-Mail eingeben und ein Passwort mit mind. 6 Zeichen wählen."; return; }
+  if(password !== passwordConfirm){ hint.textContent = "Die beiden Passwörter stimmen nicht überein."; return; }
   hint.textContent = "Konto wird erstellt …";
   try{
     const { data, error } = await client.auth.signUp({ email: email, password: password });
@@ -5295,7 +5320,12 @@ async function signUpWithPassword(){
     }
   }catch(e){
     console.error("Registrierung fehlgeschlagen", e);
-    hint.textContent = "Registrierung fehlgeschlagen: " + (e && e.message ? e.message : "unbekannter Fehler");
+    const msg = e && e.message ? e.message : "unbekannter Fehler";
+    if(/invalid format/i.test(msg)){
+      hint.textContent = "Registrierung fehlgeschlagen: der Server lehnt diese E-Mail-Adresse ab (auch bei korrekten Adressen wie Gmail kann das an einer Servereinstellung liegen, nicht an deiner Eingabe). Bitte später erneut versuchen oder den App-Betreiber informieren.";
+    } else {
+      hint.textContent = "Registrierung fehlgeschlagen: " + msg;
+    }
   }
 }
 async function signInWithPassword(){
@@ -5413,6 +5443,17 @@ const accountPasswordLoginBtnEl = document.getElementById("accountPasswordLoginB
 if(accountPasswordLoginBtnEl) accountPasswordLoginBtnEl.onclick = signInWithPassword;
 const accountLogoutBtnEl = document.getElementById("accountLogoutBtn");
 if(accountLogoutBtnEl) accountLogoutBtnEl.onclick = logoutAccount;
+
+// Passwort ein-/ausblenden (Auge-Symbol) — für Passwort- und Passwort-bestätigen-Feld.
+document.querySelectorAll(".pw-eye-btn").forEach(function(btn){
+  btn.onclick = function(){
+    const input = document.getElementById(btn.getAttribute("data-pw-toggle"));
+    if(!input) return;
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    btn.textContent = show ? "🙈" : "👁️";
+  };
+});
 
 // --- Erinnerungen / Push-Benachrichtigungen (rein lokal, kein Server nötig) ---
 const REMINDER_MOTIVATION_MESSAGES = [
@@ -5589,7 +5630,13 @@ async function registerReminderPeriodicSync(){
 async function setReminderEnabled(enabled){
   if(enabled){
     try{
-      if(typeof Notification === "undefined"){ showToast("Benachrichtigungen werden von diesem Browser nicht unterstützt"); return; }
+      if(typeof Notification === "undefined"){
+        showToast(isIOSDevice() && !isStandalonePWA()
+          ? "Bitte KOUKI zuerst über Zum Home-Bildschirm hinzufügen installieren"
+          : "Benachrichtigungen werden von diesem Browser nicht unterstützt");
+        renderReminderSettings();
+        return;
+      }
       let permission = Notification.permission;
       if(permission === "default") permission = await Notification.requestPermission();
       if(permission !== "granted"){
@@ -5617,8 +5664,20 @@ async function setReminderEnabled(enabled){
   }
   renderReminderSettings();
 }
+function isIOSDevice(){
+  try{ return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }catch(e){ return false; }
+}
+function isStandalonePWA(){
+  try{ return window.navigator.standalone === true || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches); }
+  catch(e){ return false; }
+}
 function reminderStatusMessage(){
-  if(typeof Notification === "undefined") return "Benachrichtigungen werden von diesem Browser nicht unterstützt.";
+  if(typeof Notification === "undefined"){
+    if(isIOSDevice() && !isStandalonePWA()){
+      return "Auf dem iPhone unterstützt Safari Benachrichtigungen nur für Apps, die über Zum Home-Bildschirm hinzufügen installiert wurden. Bitte KOUKI so hinzufügen und von dort aus erneut öffnen.";
+    }
+    return "Benachrichtigungen werden von diesem Browser nicht unterstützt.";
+  }
   if(!state.reminderSettings.enabled) return "Erinnerungen sind aus.";
   if(Notification.permission === "denied") return "Benachrichtigungen sind für diese Seite in deinem Browser blockiert — bitte in den Browser-/Handy-Einstellungen erlauben.";
   if(Notification.permission === "granted") return "Erinnerungen sind aktiv ✅";
