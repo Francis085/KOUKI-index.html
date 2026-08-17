@@ -1539,6 +1539,87 @@ const DEFAULT_PLAN = {
   }
 };
 
+const PPL_PLAN = {
+  id: "ppl",
+  label: "Push/Pull/Legs",
+  builtin: true,
+  dayOrder: ["push","pull","legs"],
+  days: {
+    push: {
+      label: "Push", sub: "Brust · Schultern · Trizeps",
+      groups: [
+        { name: "Brust", exercises: [
+          { id: "push_bench", name: "Bankdrücken", sets: "4x6-10", type: "grund", rirTarget: "1–2", restSeconds: 180 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "push_incline", name: "Schrägbankdrücken mit Kurzhanteln", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "push_ohp", name: "Schulterdrücken", sets: "3x6-10", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "push_lateral", name: "Seitheben", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "push_dips", name: "Dips", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Trizeps", exercises: [
+          { id: "push_tricep", name: "Trizepsdrücken am Kabel", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+      ]
+    },
+    pull: {
+      label: "Pull", sub: "Rücken · Bizeps",
+      groups: [
+        { name: "Rücken", exercises: [
+          { id: "pull_deadlift", name: "Kreuzheben", sets: "3x5-8", type: "grund", rirTarget: "2–3", restSeconds: 210 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "pull_pullup", name: "Klimmzüge/Latzug", sets: "4x6-10", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "pull_row", name: "Langhantelrudern", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "pull_facepull", name: "Face Pulls", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Bizeps", exercises: [
+          { id: "pull_curl", name: "Bizepscurls", sets: "3x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Bizeps", exercises: [
+          { id: "pull_hammer", name: "Hammercurls", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+      ]
+    },
+    legs: {
+      label: "Legs", sub: "Beine · Bauch",
+      groups: [
+        { name: "Beine", exercises: [
+          { id: "legs_squat", name: "Kniebeugen", sets: "4x6-10", type: "grund", rirTarget: "2–3", restSeconds: 180 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "legs_rdl", name: "Rumänisches Kreuzheben", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "legs_press", name: "Beinpresse", sets: "3x10-15", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "legs_extension", name: "Beinstrecker", sets: "3x12-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "legs_curl", name: "Beinbeuger", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "legs_calf", name: "Wadenheben stehend", sets: "4x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+        { name: "Bauch", exercises: [
+          { id: "legs_abs", name: "Cable Crunches", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+      ]
+    }
+  }
+};
+
 const TIERS = ["Eisen","Bronze","Silber","Gold","Platin","Diamant","Meister","Großmeister","Challenger"];
 const TIER_COLORS = {
   "Eisen":"#8b8467","Bronze":"#a9713f","Silber":"#8f99a3","Gold":"#c98f2b",
@@ -1785,7 +1866,7 @@ document.getElementById("scienceToggle").onclick = function(){
   chevron.classList.toggle("open", !isOpen);
 };
 
-function getAllPlans(){ return [DEFAULT_PLAN].concat(state.customPlans); }
+function getAllPlans(){ return [DEFAULT_PLAN, PPL_PLAN].concat(state.customPlans); }
 function getPlanById(id){ return getAllPlans().find(function(p){ return p.id === id; }) || DEFAULT_PLAN; }
 function getActivePlan(){ return getPlanById(currentPlanId); }
 function activeDays(){ return getActivePlan().days; }
@@ -2020,12 +2101,12 @@ function renderPlanSwitch(){
   el.appendChild(addChip);
 
   const delBtn = document.getElementById("deletePlanBtn");
-  delBtn.style.display = currentPlanId === "default" ? "none" : "flex";
+  delBtn.style.display = getPlanById(currentPlanId).builtin ? "none" : "flex";
   delBtn.onclick = deleteCurrentPlan;
 }
 
 function deleteCurrentPlan(){
-  if(currentPlanId === "default") return;
+  if(getPlanById(currentPlanId).builtin) return;
   state.customPlans = state.customPlans.filter(function(p){ return p.id !== currentPlanId; });
   saveState();
   currentPlanId = "default";
