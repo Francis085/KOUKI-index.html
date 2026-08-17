@@ -402,18 +402,28 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* Wichtig: die Pausen-Leiste wird nicht nur per transform aus dem Bild geschoben, sondern
+     zusätzlich mit visibility:hidden echt unsichtbar gemacht. Nur-transform-Verstecken hat auf
+     iOS dazu geführt, dass die Leiste beim Start der installierten App kurz (und teils dauerhaft)
+     oben im Bild hängen blieb: ein dauerhaft komponierter position:fixed-Layer wird dort beim
+     Launch gelegentlich einen Frame zu früh an der untransformierten Position gemalt. Deshalb
+     hier auch kein will-change:transform mehr — das erzwingt genau diesen Dauer-Layer. */
   .rest-bar{
     position:fixed;left:14px;right:14px;
     top:calc(14px + env(safe-area-inset-top, 0px));
     background:var(--olive);
     border-radius:22px;padding:12px 10px 12px 18px;display:flex;align-items:center;justify-content:space-between;
-    gap:10px;transform:translateY(-160%);transition:transform .25s;z-index:70;
+    gap:10px;transform:translateY(-160%);z-index:70;
     box-shadow:0 8px 24px rgba(0,0,0,.25);
     -webkit-transform:translateY(-160%) translateZ(0);
-    will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    visibility:hidden;
+    transition:transform .25s, visibility .25s;
     pointer-events:none;
   }
-  .rest-bar.show{transform:translateY(0);-webkit-transform:translateY(0) translateZ(0);pointer-events:auto;}
+  .rest-bar.show{
+    transform:translateY(0);-webkit-transform:translateY(0) translateZ(0);
+    visibility:visible;pointer-events:auto;
+  }
   .rest-time{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;color:var(--yellow);min-width:58px;}
   .rest-actions{display:flex;gap:6px;align-items:center;}
   .rest-actions button{
@@ -569,9 +579,10 @@
 
   .celebrate-overlay{
     position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:10px;pointer-events:none;z-index:95;opacity:0;transition:opacity .2s;
+    gap:10px;pointer-events:none;z-index:95;opacity:0;visibility:hidden;
+    transition:opacity .2s, visibility .2s;
   }
-  .celebrate-overlay.show{opacity:1;}
+  .celebrate-overlay.show{opacity:1;visibility:visible;}
   .celebrate-emoji{font-size:76px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1);}
   .celebrate-msg{
     font-family:'Baloo 2',sans-serif;font-weight:800;font-size:18px;color:var(--olive);
@@ -835,9 +846,10 @@
   .reward-overlay{
     position:fixed;inset:0;background:rgba(20,18,10,.6);z-index:110;
     display:flex;align-items:center;justify-content:center;padding:20px;
-    opacity:0;pointer-events:none;transition:opacity .2s;
+    opacity:0;visibility:hidden;pointer-events:none;
+    transition:opacity .2s, visibility .2s;
   }
-  .reward-overlay.show{opacity:1;pointer-events:auto;}
+  .reward-overlay.show{opacity:1;visibility:visible;pointer-events:auto;}
   .reward-panel{
     background:var(--surface);border-radius:24px;padding:20px;max-width:420px;
     width:100%;max-height:80vh;overflow-y:auto;
@@ -2248,7 +2260,25 @@ function renderPlanSwitch(){
 }
 
 function deleteCurrentPlan(){
-  if(getPlanById(currentPlanId).builtin) return;
+  const plan = getPlanById(currentPlanId);
+  if(plan.builtin) return;
+  // Verweise auf die Übungen dieses Plans mit aufräumen, damit keine verwaisten Einträge
+  // dauerhaft im Speicher liegen bleiben. Trainingsverlauf und Rekorde bleiben bewusst
+  // erhalten — die sind Teil der persönlichen Historie, auch wenn der Plan weg ist.
+  const removedIds = [];
+  Object.keys(plan.days || {}).forEach(function(dayKey){
+    (plan.days[dayKey].groups || []).forEach(function(g){
+      (g.exercises || []).forEach(function(ex){ removedIds.push(ex.id); });
+    });
+  });
+  removedIds.forEach(function(id){
+    delete state.entries[id];
+    delete state.exerciseSwaps[id];
+    delete state.customRestTimes[id];
+    const partner = state.supersets[id];
+    if(partner) delete state.supersets[partner];
+    delete state.supersets[id];
+  });
   state.customPlans = state.customPlans.filter(function(p){ return p.id !== currentPlanId; });
   saveState();
   currentPlanId = "default";
@@ -2614,6 +2644,7 @@ function supersetPartnerName(exId){
   return override ? override.name : entry.ex.name;
 }
 function linkSuperset(idA, idB){
+  if(!idA || !idB || idA === idB) return; // Eine Übung kann nicht mit sich selbst im Supersatz stehen
   if(!state.supersets) state.supersets = {};
   const oldA = state.supersets[idA]; if(oldA) delete state.supersets[oldA];
   const oldB = state.supersets[idB]; if(oldB) delete state.supersets[oldB];
@@ -3692,6 +3723,15 @@ function renderPlateResult(exId){
     return;
   }
   if(!r.plates.length){
+    // Unterscheiden: exakt das Stangengewicht (keine Scheiben nötig) vs. ein Zielgewicht knapp
+    // darüber, das mit der kleinsten Scheibe (1.25kg pro Seite = 2.5kg gesamt) nicht legbar ist.
+    if(r.remainder > 0){
+      const smallestStep = PLATE_SIZES[PLATE_SIZES.length - 1] * 2;
+      const lower = bar + Math.floor((target - bar) / smallestStep) * smallestStep;
+      const upper = lower + smallestStep;
+      resultEl.innerHTML = '<p class="hist-empty">' + target + 'kg ist mit diesem Scheibensatz nicht legbar (kleinster Schritt: ' + smallestStep + 'kg). Nächstmöglich: <strong>' + lower + 'kg</strong> oder <strong>' + upper + 'kg</strong>.</p>';
+      return;
+    }
     resultEl.innerHTML = '<p class="hist-empty">Nur die Stange — keine Scheiben nötig.</p>';
     return;
   }
