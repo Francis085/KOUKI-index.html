@@ -1204,7 +1204,13 @@
   </div>
 
   <div id="frame-progress" style="display:none;">
-    <div class="rank-card" id="rankCard">
+    <div class="rank-card" id="weekRecapCard">
+      <div class="rank-head"><span class="rank-title">📅 Wochenrückblick</span></div>
+      <p class="rank-hint">Diese Kalenderwoche (Mo–So) im Überblick.</p>
+      <div id="weekRecapArea"></div>
+    </div>
+
+    <div class="rank-card" id="rankCard" style="margin-top:14px;">
       <div class="rank-head">
         <span class="rank-title">Kraft-Rang</span>
         <span class="rank-overall" id="rankOverall">–</span>
@@ -1664,7 +1670,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -1731,6 +1737,7 @@ function normalizeState(){
   if(typeof state.reminderSettings.inactivityDays !== "number") state.reminderSettings.inactivityDays = 3;
   if(typeof state.reminderSettings.lastDailyPromptDate !== "string") state.reminderSettings.lastDailyPromptDate = "";
   if(typeof state.reminderSettings.lastMotivationDate !== "string") state.reminderSettings.lastMotivationDate = "";
+  if(typeof state.reminderSettings.lastWeeklyRecapWeek !== "string") state.reminderSettings.lastWeeklyRecapWeek = "";
   if(typeof state.barbellWeight !== "number" || state.barbellWeight < 0) state.barbellWeight = 20;
   if(!state.supersets) state.supersets = {};
   if(!state.mealPlan) state.mealPlan = {};
@@ -2751,6 +2758,53 @@ function weeklyVolumeByGroup(){
   const monday = mondayOf(new Date());
   const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
   return volumeByGroupInRange(ymd(monday), ymd(sunday));
+}
+// --- Wochenrückblick: Einheiten, bewegtes Gewicht und neue PRs dieser Kalenderwoche ---
+function exerciseNameById(id){
+  if(state.exerciseSwaps[id]) return state.exerciseSwaps[id].name;
+  let found = null;
+  getAllPlans().forEach(function(plan){
+    Object.keys(plan.days).forEach(function(dayKey){
+      plan.days[dayKey].groups.forEach(function(g){
+        g.exercises.forEach(function(ex){ if(ex.id === id) found = ex.name; });
+      });
+    });
+  });
+  return found;
+}
+function weekRecapStats(){
+  const monday = mondayOf(new Date());
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  const start = ymd(monday), end = ymd(sunday);
+  const sessions = state.completedDays.filter(function(d){ return d >= start && d <= end; }).length;
+  let totalWeight = 0;
+  Object.keys(state.history).forEach(function(exId){
+    (state.history[exId] || []).forEach(function(h){
+      if(h.date >= start && h.date <= end){
+        (h.sets || []).forEach(function(s){
+          const w = parseFloat(s.weight), r = parseFloat(s.reps);
+          if(!isNaN(w) && !isNaN(r)) totalWeight += w * r;
+        });
+      }
+    });
+  });
+  const newPRs = [];
+  Object.keys(state.prs).forEach(function(exId){
+    const pr = state.prs[exId];
+    if(pr && pr.date >= start && pr.date <= end) newPRs.push(exerciseNameById(exId) || exId);
+  });
+  return { sessions: sessions, totalWeight: Math.round(totalWeight), newPRs: newPRs };
+}
+function renderWeekRecap(){
+  const el = document.getElementById("weekRecapArea");
+  if(!el) return;
+  const stats = weekRecapStats();
+  let html = '<div class="vol-row"><span class="vol-label">Einheiten</span><span class="vol-count">' + stats.sessions + '</span></div>' +
+    '<div class="vol-row"><span class="vol-label">Bewegtes Gewicht</span><span class="vol-count">' + stats.totalWeight.toLocaleString("de-DE") + ' kg</span></div>' +
+    '<div class="vol-row"><span class="vol-label">Neue PRs</span><span class="vol-count">' + stats.newPRs.length + '</span></div>';
+  if(stats.newPRs.length) html += '<p class="rank-hint" style="margin-top:6px;">🏆 ' + stats.newPRs.map(escapeHtml).join(", ") + '</p>';
+  if(stats.sessions === 0) html += '<p class="rank-hint" style="margin-top:8px;">Diese Woche noch nichts geloggt — leg los!</p>';
+  el.innerHTML = html;
 }
 function renderWeeklyVolume(){
   const el = document.getElementById("volumeGrid");
@@ -5566,6 +5620,7 @@ function renderAll(){
   renderBmr();
   renderRankCard();
   renderWeeklyVolume();
+  renderWeekRecap();
   renderWeakPoints();
   renderCalendar();
   renderFavorites();
@@ -6325,6 +6380,22 @@ async function checkReminders(){
     const daysSince = last ? reminderDaysBetween(last, today) : 999;
     const todayHasData = hasDataOnDate(today);
     const eveningHour = state.reminderSettings.eveningHour || 20;
+
+    // Wochenrückblick: sonntagabends einmalig, falls diese Woche schon etwas geloggt wurde.
+    if(now.getDay() === 0 && now.getHours() >= eveningHour){
+      const weekKey = ymd(mondayOf(now));
+      if(state.reminderSettings.lastWeeklyRecapWeek !== weekKey){
+        const stats = weekRecapStats();
+        if(stats.sessions > 0){
+          const body = stats.sessions + " Einheit" + (stats.sessions === 1 ? "" : "en") + " · " + stats.totalWeight.toLocaleString("de-DE") + " kg bewegt" + (stats.newPRs.length ? (" · 🏆 " + stats.newPRs.length + " neue" + (stats.newPRs.length === 1 ? "r" : "") + " PR" + (stats.newPRs.length === 1 ? "" : "s")) : "");
+          const sent = await sendLocalNotification("📅 Dein Wochenrückblick", body, "kouki-weekly-recap");
+          if(sent){ state.reminderSettings.lastWeeklyRecapWeek = weekKey; await saveState(); }
+        } else {
+          state.reminderSettings.lastWeeklyRecapWeek = weekKey;
+          await saveState();
+        }
+      }
+    }
 
     if(!todayHasData && now.getHours() >= eveningHour && state.reminderSettings.lastDailyPromptDate !== today){
       const sent = await sendLocalNotification(
