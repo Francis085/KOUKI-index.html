@@ -1511,9 +1511,11 @@ const EXERCISE_LIBRARY = {
     {name:"Hüftstoßen", type:"grund"},
     {name:"Beinstrecker", type:"isolation"},
     {name:"Beinbeuger", type:"isolation"},
-    {name:"Wadenheben", type:"isolation"},
+    {name:"Wadenheben", type:"isolation", mode:"bodyweight", bwFactor:0.5},
     {name:"Wadenheben stehend", type:"isolation"},
     {name:"Wadenheben sitzend", type:"isolation"},
+    {name:"Pistol Squats", type:"grund", mode:"bodyweight", bwFactor:0.9},
+    {name:"Nordic Curls", type:"grund", mode:"bodyweight", bwFactor:0.7},
   ],
   "Brust": [
     {name:"Bankdrücken", type:"grund"},
@@ -1522,15 +1524,22 @@ const EXERCISE_LIBRARY = {
     {name:"Schrägbank-Kurzhantel-Drücken", type:"grund"},
     {name:"Schrägbankdrücken mit Kurzhanteln", type:"grund"},
     {name:"Brustpresse", type:"grund"},
-    {name:"Dips", type:"grund"},
-    {name:"Dips mit Zusatzgewicht", type:"grund"},
-    {name:"Liegestütze", type:"grund"},
+    {name:"Dips", type:"grund", mode:"bodyweight", bwFactor:1.0},
+    {name:"Dips mit Zusatzgewicht", type:"grund", mode:"bodyweight", bwFactor:1.0},
+    {name:"Liegestütze", type:"grund", mode:"bodyweight", bwFactor:0.64},
+    {name:"1-Arm-Liegestütze (Progression)", type:"grund", mode:"bodyweight", bwFactor:0.8},
+    {name:"Handstand-Liegestütze (an der Wand)", type:"grund", mode:"bodyweight", bwFactor:0.9},
+    {name:"Tuck-Planche (Halten)", type:"isolation", mode:"hold", bwFactor:1.0},
     {name:"Kurzhantel-Fliegende", type:"isolation"},
     {name:"Butterfly", type:"isolation"},
   ],
   "Rücken": [
     {name:"Kreuzheben", type:"grund"},
     {name:"Klimmzüge/Latzug", type:"grund"},
+    {name:"Klimmzüge (Kraft)", type:"grund", mode:"bodyweight", bwFactor:1.0},
+    {name:"Klimmzüge (Kraftausdauer)", type:"grund", mode:"bodyweight", bwFactor:1.0},
+    {name:"Ring Rows / Australische Klimmzüge", type:"grund", mode:"bodyweight", bwFactor:0.45},
+    {name:"Front Lever (Halten)", type:"isolation", mode:"hold", bwFactor:1.0},
     {name:"Langhantelrudern", type:"grund"},
     {name:"Kabelrudern", type:"grund"},
     {name:"Rudern an Maschine oder Kabelzug", type:"grund"},
@@ -1558,11 +1567,12 @@ const EXERCISE_LIBRARY = {
   ],
   "Bauch": [
     {name:"Crunches", type:"isolation"},
-    {name:"Plank", type:"isolation"},
+    {name:"Plank", type:"isolation", mode:"hold", bwFactor:0.5},
+    {name:"L-Sit (Halten)", type:"isolation", mode:"hold", bwFactor:1.0},
     {name:"Beinheben", type:"isolation"},
     {name:"Cable Crunches", type:"isolation"},
     {name:"Kabel-Crunch", type:"isolation"},
-    {name:"Hanging Leg Raises", type:"isolation"},
+    {name:"Hanging Leg Raises", type:"isolation", mode:"bodyweight", bwFactor:0.3},
   ],
 };
 
@@ -1734,6 +1744,83 @@ const PPL_PLAN = {
         ]},
         { name: "Bauch", exercises: [
           { id: "legs_abs", name: "Cable Crunches", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+      ]
+    }
+  }
+};
+
+// Reines Körpergewichtstraining (Calisthenics) — nutzt mode:"bodyweight" (Last = Körper-
+// gewicht*bwFactor + optionales Zusatzgewicht) und mode:"hold" (statischer Halt, das
+// reps-Feld speichert Sekunden). bwFactor-Werte sind grobe, gängige Calisthenics-Richtwerte,
+// keine exakte Biomechanik. Lange Pausen bei den Kraft-Varianten (bis zu 6-7 Min.), passend
+// zu niedrigen Wiederholungszahlen nahe am Maximum.
+const CALISTHENICS_PLAN = {
+  id: "calisthenics",
+  label: "Calisthenics",
+  builtin: true,
+  dayOrder: ["cal_pull","cal_push","cal_legs"],
+  days: {
+    cal_pull: {
+      label: "Zug", sub: "Rücken · Bizeps",
+      groups: [
+        { name: "Rücken", exercises: [
+          { id: "cal_pull_pullup_str", name: "Klimmzüge (Kraft)", sets: "4x3-6", type: "grund", rirTarget: "1–2", restSeconds: 390, mode: "bodyweight", bwFactor: 1.0 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "cal_pull_pullup_end", name: "Klimmzüge (Kraftausdauer)", sets: "3x12-15", type: "grund", rirTarget: "0–1", restSeconds: 240, mode: "bodyweight", bwFactor: 1.0 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "cal_pull_rows", name: "Ring Rows / Australische Klimmzüge", sets: "3x12-15", type: "grund", rirTarget: "1–2", restSeconds: 120, mode: "bodyweight", bwFactor: 0.45 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "cal_pull_lever", name: "Front Lever (Halten)", sets: "3x10-20", type: "isolation", restSeconds: 180, mode: "hold", bwFactor: 1.0 },
+        ]},
+      ]
+    },
+    cal_push: {
+      label: "Druck", sub: "Brust · Schultern · Trizeps",
+      groups: [
+        { name: "Brust", exercises: [
+          { id: "cal_push_dips_str", name: "Dips mit Zusatzgewicht", sets: "4x3-6", type: "grund", rirTarget: "1–2", restSeconds: 360, mode: "bodyweight", bwFactor: 1.0 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "cal_push_dips_end", name: "Dips", sets: "3x15-20", type: "grund", rirTarget: "0–1", restSeconds: 210, mode: "bodyweight", bwFactor: 1.0 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "cal_push_pushup", name: "Liegestütze", sets: "3x15-25", type: "grund", rirTarget: "1–2", restSeconds: 120, mode: "bodyweight", bwFactor: 0.64 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "cal_push_archer", name: "1-Arm-Liegestütze (Progression)", sets: "3x5-10", type: "grund", rirTarget: "1–2", restSeconds: 210, mode: "bodyweight", bwFactor: 0.8 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "cal_push_hspu", name: "Handstand-Liegestütze (an der Wand)", sets: "3x5-10", type: "grund", rirTarget: "1–2", restSeconds: 210, mode: "bodyweight", bwFactor: 0.9 },
+        ]},
+        { name: "Trizeps", exercises: [
+          { id: "cal_push_planche", name: "Tuck-Planche (Halten)", sets: "3x10-20", type: "isolation", restSeconds: 150, mode: "hold", bwFactor: 1.0 },
+        ]},
+      ]
+    },
+    cal_legs: {
+      label: "Beine & Core", sub: "Beine · Bauch",
+      groups: [
+        { name: "Beine", exercises: [
+          { id: "cal_legs_pistol", name: "Pistol Squats", sets: "3x5-8", type: "grund", rirTarget: "1–2", restSeconds: 180, mode: "bodyweight", bwFactor: 0.9 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "cal_legs_nordic", name: "Nordic Curls", sets: "3x5-8", type: "grund", rirTarget: "1–2", restSeconds: 180, mode: "bodyweight", bwFactor: 0.7 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "cal_legs_calf", name: "Wadenheben", sets: "3x15-20", type: "isolation", rirTarget: "1–2", restSeconds: 90, mode: "bodyweight", bwFactor: 0.5 },
+        ]},
+        { name: "Bauch", exercises: [
+          { id: "cal_legs_lsit", name: "L-Sit (Halten)", sets: "3x10-30", type: "isolation", restSeconds: 150, mode: "hold", bwFactor: 1.0 },
+        ]},
+        { name: "Bauch", exercises: [
+          { id: "cal_legs_raise", name: "Hanging Leg Raises", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90, mode: "bodyweight", bwFactor: 0.3 },
+        ]},
+        { name: "Bauch", exercises: [
+          { id: "cal_legs_plank", name: "Plank", sets: "3x30-60", type: "isolation", restSeconds: 90, mode: "hold", bwFactor: 0.5 },
         ]},
       ]
     }
@@ -2062,7 +2149,7 @@ document.getElementById("scienceToggle").onclick = function(){
   chevron.classList.toggle("open", !isOpen);
 };
 
-function getAllPlans(){ return [DEFAULT_PLAN, PPL_PLAN].concat(state.customPlans); }
+function getAllPlans(){ return [DEFAULT_PLAN, PPL_PLAN, CALISTHENICS_PLAN].concat(state.customPlans); }
 function getPlanById(id){ return getAllPlans().find(function(p){ return p.id === id; }) || DEFAULT_PLAN; }
 function getActivePlan(){ return getPlanById(currentPlanId); }
 function activeDays(){ return getActivePlan().days; }
@@ -2107,6 +2194,63 @@ function isEntryDone(ex){
 }
 function resetEntryChecks(ex){
   getEntry(ex).sets.forEach(function(s){ s.done = false; });
+}
+
+// --- Körpergewichts- & Halte-Übungen (Calisthenics) ---
+// ex.mode: "weight" (Standard, unverändert — das weight-Feld ist die volle Last) |
+//          "bodyweight" (Last = Körpergewicht*bwFactor + Zusatzgewicht; das weight-Feld
+//          speichert nur den Zusatz, auch negativ für Bandunterstützung möglich) |
+//          "hold" (statischer Halt; das reps-Feld speichert Sekunden statt Wiederholungen,
+//          das weight-Feld ist optionales Zusatzgewicht für gewichtete Halte).
+// ex.bwFactor: grober Erfahrungswert, welcher Anteil des Körpergewichts bei dieser Übung
+// wirklich bewegt/gehalten wird (Klimmzug ~1.0, Liegestütze ~0.64, Plank ~0.5, ...). Das
+// sind Richtwerte aus gängigen Calisthenics-Tabellen, keine exakte Biomechanik — reichen
+// aber, um Volumen und PRs zwischen Übungen sinnvoll vergleichbar zu machen.
+function exerciseMode(ex){ return (ex && ex.mode) || "weight"; }
+function bodyweightOnDate(dateKey){
+  if(!state.bodyweight || !state.bodyweight.length) return null;
+  const sorted = state.bodyweight.slice().sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+  let match = null;
+  for(let i=0;i<sorted.length;i++){
+    if(sorted[i].date <= dateKey) match = sorted[i]; else break;
+  }
+  return (match || sorted[0]).weight;
+}
+// Effektive Last in kg für Volumen-/PR-Vergleiche. `rawWeight` ist der Rohwert aus dem
+// weight-Feld eines Satzes — bei mode:"weight" die volle Last, sonst nur der Zusatz.
+function effectiveLoad(ex, rawWeight, dateKey){
+  const mode = exerciseMode(ex);
+  const add = parseFloat(rawWeight);
+  const addOk = isNaN(add) ? 0 : add;
+  if(mode === "weight") return isNaN(add) ? NaN : add;
+  const bw = bodyweightOnDate(dateKey || todayKey());
+  if(bw === null) return isNaN(add) ? NaN : add; // keine Körpergewichtsdaten -> nur Zusatzgewicht zählen
+  const factor = (typeof ex.bwFactor === "number") ? ex.bwFactor : 1;
+  return Math.round((bw * factor + addOk) * 10) / 10;
+}
+// Zählt ein Satz als "durchgeführt"? Bei Gewichtsübungen wie bisher nur mit eingetragenem
+// Gewicht; bei Körpergewicht/Halten reichen bereits eingetragene Wiederholungen/Sekunden,
+// da das weight-Feld dort oft leer bleibt (0 Zusatzgewicht).
+function setHasData(ex, s){
+  const mode = exerciseMode(ex);
+  if(mode === "weight") return !!s.weight;
+  return !!s.weight || !!s.reps;
+}
+// Übungsdefinition anhand ihrer Verlaufs-ID über alle Pläne suchen (für Statistiken, die nur
+// die ID aus state.history kennen, nicht das volle Übungsobjekt).
+function findExerciseById(exId){
+  let found = null;
+  getAllPlans().forEach(function(plan){
+    if(found) return;
+    Object.keys(plan.days || {}).forEach(function(dayKey){
+      if(found) return;
+      (plan.days[dayKey].groups || []).forEach(function(g){
+        if(found) return;
+        (g.exercises || []).forEach(function(e){ if(e.id === exId) found = e; });
+      });
+    });
+  });
+  return found;
 }
 function addSet(ex){
   const e = getEntry(ex);
@@ -2185,17 +2329,26 @@ function formatDate(iso){
   if(parts.length !== 3) return iso;
   return parts[2] + "." + parts[1] + ".";
 }
-function dayBestWeight(h){
+// `ex` optional: ohne Übungsobjekt wird wie bisher das rohe weight-Feld verglichen (Standard
+// für mode:"weight"). Mit Übungsobjekt wird modusgerecht ausgewertet — bei Halte-Übungen die
+// gehaltenen Sekunden (im reps-Feld), sonst die effektive Last inkl. Körpergewichtsanteil.
+function dayBestWeight(h, ex){
+  const mode = ex ? exerciseMode(ex) : "weight";
   let best = null;
   (h.sets || []).forEach(function(s){
-    const w = parseFloat(s.weight);
+    const w = mode === "hold" ? parseFloat(s.reps) : (ex ? effectiveLoad(ex, s.weight, h.date) : parseFloat(s.weight));
     if(!isNaN(w) && (best === null || w > best)) best = w;
   });
   return best;
 }
-function formatSetsForList(h){
+function formatSetsForList(h, ex){
+  const mode = ex ? exerciseMode(ex) : "weight";
   return (h.sets || []).map(function(s){
-    return s.weight + "kg" + (s.reps ? ("×" + s.reps) : "") + (s.rir !== undefined && s.rir !== "" ? (" @RIR" + s.rir) : "") + (s.note ? " 📝" : "");
+    if(mode === "hold"){
+      return (s.weight ? ("+" + s.weight + "kg ") : "") + (s.reps || "0") + "Sek." + (s.note ? " 📝" : "");
+    }
+    const weightTxt = mode === "bodyweight" ? ((s.weight ? ("+" + s.weight) : "±0") + "kg") : (s.weight + "kg");
+    return weightTxt + (s.reps ? ("×" + s.reps) : "") + (s.rir !== undefined && s.rir !== "" ? (" @RIR" + s.rir) : "") + (s.note ? " 📝" : "");
   }).join(", ");
 }
 // Notizen einer geloggten Einheit, für die Verlaufs-Anzeige.
@@ -2207,7 +2360,8 @@ function setNotesForHistoryEntry(h){
 function trendFor(id){
   const h = state.history[id];
   if(!h || h.length < 2) return null;
-  const last = dayBestWeight(h[h.length-1]), prev = dayBestWeight(h[h.length-2]);
+  const ex = findExerciseById(id);
+  const last = dayBestWeight(h[h.length-1], ex), prev = dayBestWeight(h[h.length-2], ex);
   if(last === null || prev === null) return null;
   if(last > prev) return { symbol:"▲ steigt", cls:"up" };
   if(last < prev) return { symbol:"▼ sinkt", cls:"down" };
@@ -2221,6 +2375,12 @@ function repRangeFor(ex){
   return { min: parseInt(m[1],10), max: parseInt(m[2],10) };
 }
 function getProgressionSuggestion(ex){
+  const mode = exerciseMode(ex);
+  if(mode === "hold") return getProgressionSuggestionHold(ex);
+  if(mode === "bodyweight") return getProgressionSuggestionBodyweight(ex);
+  return getProgressionSuggestionWeight(ex);
+}
+function getProgressionSuggestionWeight(ex){
   const hist = state.history[ex.id];
   if(!hist || !hist.length) return null;
   const range = repRangeFor(ex);
@@ -2297,6 +2457,97 @@ function getProgressionSuggestion(ex){
 
   return {
     text: "Letztes Training: " + topWeight + "kg × " + repsTxt + rirTxt + " (Ziel " + range.min + "–" + range.max + "). Versuche heute erneut " + topWeight + "kg mit mehr Wiederholungen.",
+    type: "neutral"
+  };
+}
+
+// Körpergewichtsübungen: solange kein Zusatzgewicht im Spiel ist, dreht sich die Progression
+// um Wiederholungen statt um kg — erst wenn am oberen Rand der Zielspanne mehr Reserve übrig
+// ist, empfiehlt sich Zusatzgewicht oder eine schwerere Variante (klassische Calisthenics-
+// Progression: mehr Wdh. → Zusatzgewicht → nächste Variante).
+function getProgressionSuggestionBodyweight(ex){
+  const hist = state.history[ex.id];
+  if(!hist || !hist.length) return null;
+  const range = repRangeFor(ex);
+  if(!range) return null;
+  const last = hist[hist.length - 1];
+  const lastSets = (last.sets || []).filter(function(s){ return s.reps; });
+  if(!lastSets.length) return null;
+
+  const addedWeights = lastSets.map(function(s){ return parseFloat(s.weight); }).filter(function(w){ return !isNaN(w) && w !== 0; });
+  const usesAddedWeight = addedWeights.length > 0;
+  const topReps = Math.max.apply(null, lastSets.map(function(s){ return parseInt(s.reps, 10) || 0; }));
+  const topSets = lastSets.filter(function(s){ return parseInt(s.reps, 10) === topReps; });
+  const topAdded = Math.max.apply(null, topSets.map(function(s){ const w = parseFloat(s.weight); return isNaN(w) ? 0 : w; }));
+  const addedTxt = topAdded ? ("+" + topAdded + "kg × ") : "";
+
+  if(topReps >= range.max){
+    if(usesAddedWeight){
+      const nextAdded = Math.round((topAdded + 2.5) * 2) / 2;
+      return {
+        text: "Letztes Training: " + addedTxt + topReps + " Wdh. — oberes Ende (" + range.max + ") mit Zusatzgewicht erreicht. Versuche heute +" + nextAdded + "kg.",
+        type: "up"
+      };
+    }
+    return {
+      text: "Letztes Training: " + topReps + " Wdh. — oberes Ende (" + range.max + ") ohne Zusatzgewicht erreicht. Zeit für den nächsten Schritt: ein leichtes Zusatzgewicht (z. B. +2,5kg) oder eine schwerere Variante.",
+      type: "up"
+    };
+  }
+  if(topReps < range.min){
+    return {
+      text: "Letztes Training: " + addedTxt + topReps + " Wdh. (Ziel " + range.min + "–" + range.max + ") — noch unter der Zielspanne. Beim nächsten Mal 1–2 Wiederholungen mehr anstreben, notfalls die Pause etwas verlängern.",
+      type: "neutral"
+    };
+  }
+  if(hist.length >= 2){
+    const prev = hist[hist.length - 2];
+    const prevReps = (prev.sets || []).map(function(s){ return parseInt(s.reps, 10); }).filter(function(r){ return !isNaN(r); });
+    const prevTop = prevReps.length ? Math.max.apply(null, prevReps) : null;
+    if(prevTop !== null && topReps < prevTop && !usesAddedWeight){
+      return {
+        text: "Letztes Training: " + topReps + " Wdh. (weniger als davor mit " + prevTop + "). Wiederholungen sind gesunken — evtl. mehr Erholung einplanen oder kurz eine leichtere Variante wählen.",
+        type: "down"
+      };
+    }
+  }
+  return {
+    text: "Letztes Training: " + addedTxt + topReps + " Wdh. (Ziel " + range.min + "–" + range.max + "). Versuche heute erneut, näher ans obere Ende zu kommen.",
+    type: "neutral"
+  };
+}
+
+// Halte-Übungen (Front Lever, L-Sit, Planche, Plank …): Progression läuft über Sekunden statt
+// über kg — das reps-Feld speichert bei mode:"hold" die gehaltene Zeit.
+function getProgressionSuggestionHold(ex){
+  const hist = state.history[ex.id];
+  if(!hist || !hist.length) return null;
+  const range = repRangeFor(ex);
+  if(!range) return null;
+  const last = hist[hist.length - 1];
+  const lastSets = (last.sets || []).filter(function(s){ return s.reps; });
+  if(!lastSets.length) return null;
+  const topSeconds = Math.max.apply(null, lastSets.map(function(s){ return parseInt(s.reps, 10) || 0; }));
+
+  if(topSeconds >= range.max){
+    return {
+      text: "Letztes Training: " + topSeconds + " Sek. gehalten — oberes Ende (" + range.max + " Sek.) erreicht. Versuche heute 5 Sek. länger zu halten oder steig auf die nächste Progression um (z. B. Tuck → Advanced Tuck).",
+      type: "up"
+    };
+  }
+  if(hist.length >= 2){
+    const prev = hist[hist.length - 2];
+    const prevSecs = (prev.sets || []).map(function(s){ return parseInt(s.reps, 10); }).filter(function(v){ return !isNaN(v); });
+    const prevTop = prevSecs.length ? Math.max.apply(null, prevSecs) : null;
+    if(prevTop !== null && topSeconds < prevTop){
+      return {
+        text: "Letztes Training: " + topSeconds + " Sek. (weniger als davor mit " + prevTop + " Sek.). Evtl. mehr Erholung zwischen den Einheiten einplanen.",
+        type: "down"
+      };
+    }
+  }
+  return {
+    text: "Letztes Training: " + topSeconds + " Sek. gehalten (Ziel " + range.min + "–" + range.max + " Sek.). Versuche heute erneut, etwas länger zu halten.",
     type: "neutral"
   };
 }
@@ -2813,8 +3064,10 @@ function toggleSwap(id){
   openSwap[id] = !openSwap[id];
   renderContent();
 }
-function swapExercise(id, name, type){
-  state.exerciseSwaps[id] = { name: name, type: type };
+function swapExercise(id, name, type, mode, bwFactor){
+  // mode/bwFactor mitgeben, sonst würde z.B. eine gegen "Liegestütze" getauschte Übung
+  // weiter als normale Gewichtsübung behandelt (falsches "kg"-Feld statt "+kg"-Zusatz).
+  state.exerciseSwaps[id] = { name: name, type: type, mode: mode || undefined, bwFactor: (typeof bwFactor === "number") ? bwFactor : undefined };
   openSwap[id] = false;
   delete swapSearch[id];
   saveState();
@@ -2846,7 +3099,7 @@ function searchExerciseLibrary(query, excludeName){
       // Doppelte Namen (manche Übungen stehen mehrfach in der Bibliothek) nur einmal zeigen
       if(results.some(function(r){ return r.name === libEx.name; })) return;
       if(!q || normalizeSearchText(libEx.name).indexOf(q) !== -1 || normalizeSearchText(group).indexOf(q) !== -1){
-        results.push({ name: libEx.name, type: libEx.type, group: group });
+        results.push({ name: libEx.name, type: libEx.type, group: group, mode: libEx.mode, bwFactor: libEx.bwFactor });
       }
     });
   });
@@ -2873,12 +3126,16 @@ function renderSwapList(exId, currentName, currentGroup){
   }
   listEl.innerHTML = (hint ? '<p class="hist-empty" style="margin:0 0 6px;">' + escapeHtml(hint) + '</p>' : "") +
     '<div class="hist-list">' + items.map(function(r){
-      return '<span data-swap-name="' + escapeHtml(r.name) + '" data-swap-type="' + r.type + '" style="cursor:pointer;">' +
-        escapeHtml(r.name) + (query.trim() ? ' <span style="opacity:.6;">· ' + escapeHtml(r.group) + '</span>' : "") +
+      return '<span data-swap-name="' + escapeHtml(r.name) + '" data-swap-type="' + r.type + '" data-swap-mode="' + (r.mode || "") + '" data-swap-bwfactor="' + (typeof r.bwFactor === "number" ? r.bwFactor : "") + '" style="cursor:pointer;">' +
+        escapeHtml(r.name) + (r.mode && r.mode !== "weight" ? ' <span style="opacity:.6;">· ' + (r.mode === "hold" ? "Halten" : "Körpergewicht") + '</span>' : "") +
+        (query.trim() ? ' <span style="opacity:.6;">· ' + escapeHtml(r.group) + '</span>' : "") +
       '</span>';
     }).join("") + '</div>';
   listEl.querySelectorAll("[data-swap-name]").forEach(function(chip){
-    chip.onclick = function(){ swapExercise(exId, chip.getAttribute("data-swap-name"), chip.getAttribute("data-swap-type")); };
+    chip.onclick = function(){
+      const bwf = chip.getAttribute("data-swap-bwfactor");
+      swapExercise(exId, chip.getAttribute("data-swap-name"), chip.getAttribute("data-swap-type"), chip.getAttribute("data-swap-mode") || undefined, bwf === "" ? undefined : parseFloat(bwf));
+    };
   });
 }
 
@@ -3098,10 +3355,15 @@ function weekRecapStats(){
   const sessions = state.completedDays.filter(function(d){ return d >= start && d <= end; }).length;
   let totalWeight = 0;
   Object.keys(state.history).forEach(function(exId){
+    const ex = findExerciseById(exId);
+    // Halte-Übungen tragen kein kg-Volumen bei (das reps-Feld sind dort Sekunden, keine
+    // Wiederholungen) — die zählen stattdessen über "Neue PRs" und den Verlauf.
+    if(ex && exerciseMode(ex) === "hold") return;
     (state.history[exId] || []).forEach(function(h){
       if(h.date >= start && h.date <= end){
         (h.sets || []).forEach(function(s){
-          const w = parseFloat(s.weight), r = parseFloat(s.reps);
+          const w = ex ? effectiveLoad(ex, s.weight, h.date) : parseFloat(s.weight);
+          const r = parseFloat(s.reps);
           if(!isNaN(w) && !isNaN(r)) totalWeight += w * r;
         });
       }
@@ -3468,6 +3730,7 @@ function buildExerciseCard(ex, dayColor, el){
       const swapOverride = state.exerciseSwaps[ex.id];
       if(swapOverride) ex = Object.assign({}, ex, swapOverride);
       const entry = getEntry(ex);
+      const exMode = exerciseMode(ex);
       const done = isEntryDone(ex);
       const card = document.createElement("div");
       card.className = "exercise pc-" + dayColor + (done ? " done" : "");
@@ -3488,13 +3751,13 @@ function buildExerciseCard(ex, dayColor, el){
         '<div class="ex-meta">' +
           (exGroupLabel ? ('<span class="tag">' + exGroupLabel + '</span>') : "") +
           '<span class="tag">' + ex.sets + '</span>' +
-          '<span class="tag">' + (ex.rirTarget ? ("RIR " + ex.rirTarget) : (ex.type === "grund" ? "RIR 1–2" : "bis Muskelversagen")) + '</span>' +
-          (pr ? ('<span class="tag pr">🏆 ' + pr.weight + 'kg</span>') : "") +
-          (pr && pr.reps ? ('<span class="tag">~1RM ' + Math.round(epley1RM(pr.weight, pr.reps)) + 'kg</span>') : "") +
+          '<span class="tag">' + (exMode === "hold" ? "sauber halten, nicht zittern" : (ex.rirTarget ? ("RIR " + ex.rirTarget) : (ex.type === "grund" ? "RIR 1–2" : "bis Muskelversagen"))) + '</span>' +
+          (pr ? ('<span class="tag pr">🏆 ' + pr.weight + (pr.unit === "sek" ? ' Sek.' : 'kg') + '</span>') : "") +
+          (pr && pr.reps && pr.unit !== "sek" ? ('<span class="tag">~1RM ' + Math.round(epley1RM(pr.weight, pr.reps)) + 'kg</span>') : "") +
           (trend ? ('<span class="tag ' + trend.cls + '">' + trend.symbol + '</span>') : "") +
           (supersetPartner ? ('<span class="tag">🔗 ' + escapeHtml(supersetPartner) + '</span>') : "") +
         '</div>' +
-        (lastSession ? ('<p class="ex-last">Letztes Training: ' + formatSetsForList(lastSession) + '</p>') : '<p class="ex-last ex-last-empty">Noch keine Einheit geloggt — leg direkt los.</p>');
+        (lastSession ? ('<p class="ex-last">Letztes Training: ' + formatSetsForList(lastSession, ex) + '</p>') : '<p class="ex-last ex-last-empty">Noch keine Einheit geloggt — leg direkt los.</p>');
 
       const actions = document.createElement("div");
       actions.className = "ex-actions";
@@ -3536,9 +3799,13 @@ function buildExerciseCard(ex, dayColor, el){
       actions.appendChild(restBtn);
       actions.appendChild(histBtn);
       actions.appendChild(infoBtn);
-      actions.appendChild(warmupBtn);
+      // Aufwärmsätze (auf Basis eines kg-Arbeitsgewichts) ergeben bei Halte-Übungen keinen
+      // Sinn — bei Körpergewichtsübungen weiterhin sinnvoll (Basis ist dann die effektive Last).
+      if(exerciseMode(ex) !== "hold") actions.appendChild(warmupBtn);
       actions.appendChild(swapBtn);
-      actions.appendChild(platesBtn);
+      // Hantelscheiben-Rechner nur bei echten Gewichtsübungen — bei Körpergewicht/Halten
+      // gibt es keine Langhantel zu beladen.
+      if(exerciseMode(ex) === "weight") actions.appendChild(platesBtn);
       actions.appendChild(supersetBtn);
 
       top.appendChild(info);
@@ -3546,7 +3813,7 @@ function buildExerciseCard(ex, dayColor, el){
       card.appendChild(top);
 
       if(lastSession){
-        const hasEmptySet = entry.sets.some(function(s){ return !s.weight; });
+        const hasEmptySet = entry.sets.some(function(s){ return !setHasData(ex, s); });
         if(hasEmptySet){
           const fillBtn = document.createElement("div");
           fillBtn.className = "quickfill-btn";
@@ -3573,6 +3840,11 @@ function buildExerciseCard(ex, dayColor, el){
 
       const setRows = document.createElement("div");
       setRows.className = "set-rows";
+      // Beschriftungen der Satz-Zeile richten sich nach dem Übungs-Modus (exMode, oben
+      // definiert): weight: Gewicht × Wdh @ RIR (wie bisher) | bodyweight: Zusatzgewicht ×
+      // Wdh @ RIR (das weight-Feld ist hier nur der Zusatz, die Körpergewichts-Last kommt
+      // automatisch aus dem Körpergewichts-Verlauf dazu) | hold: optionales Zusatzgewicht für
+      // X Sekunden.
       entry.sets.forEach(function(s, sIdx){
         const row = document.createElement("div");
         row.className = "set-row" + (s.done ? " checked" : "");
@@ -3591,46 +3863,50 @@ function buildExerciseCard(ex, dayColor, el){
         weightInput.type = "number";
         weightInput.inputMode = "decimal";
         weightInput.className = "set-input";
-        weightInput.placeholder = "–";
+        weightInput.placeholder = exMode === "weight" ? "–" : "+0";
+        weightInput.title = exMode === "weight" ? "" : "Zusatzgewicht (0 = nur Körpergewicht, negativ = Bandunterstützung)";
         weightInput.value = s.weight || "";
         weightInput.oninput = function(){ setSetWeight(ex, sIdx, weightInput.value); };
         row.appendChild(weightInput);
 
         const kgUnit = document.createElement("span");
         kgUnit.className = "set-unit";
-        kgUnit.textContent = "kg";
+        kgUnit.textContent = exMode === "weight" ? "kg" : "+kg";
         row.appendChild(kgUnit);
 
         const xSep = document.createElement("span");
         xSep.className = "set-x";
-        xSep.textContent = "×";
+        xSep.textContent = exMode === "hold" ? "für" : "×";
         row.appendChild(xSep);
 
         const repsInput = document.createElement("input");
         repsInput.type = "number";
         repsInput.inputMode = "numeric";
         repsInput.className = "set-input reps-input";
-        repsInput.placeholder = entry.repsHint || "–";
+        repsInput.placeholder = entry.repsHint || (exMode === "hold" ? "Sek." : "–");
         repsInput.value = s.reps || "";
         repsInput.oninput = function(){ setSetReps(ex, sIdx, repsInput.value); };
         row.appendChild(repsInput);
 
         const repsUnit = document.createElement("span");
         repsUnit.className = "set-x";
-        repsUnit.textContent = "@";
+        repsUnit.textContent = exMode === "hold" ? "Sek." : "@";
         row.appendChild(repsUnit);
 
-        const rirInput = document.createElement("input");
-        rirInput.type = "number";
-        rirInput.inputMode = "numeric";
-        rirInput.min = "0";
-        rirInput.max = "10";
-        rirInput.className = "set-input rir-input";
-        rirInput.placeholder = "RIR";
-        rirInput.title = "RIR = Reps in Reserve (noch mögliche Wiederholungen)";
-        rirInput.value = s.rir || "";
-        rirInput.oninput = function(){ setSetRir(ex, sIdx, rirInput.value); };
-        row.appendChild(rirInput);
+        // RIR (Reps in Reserve) passt konzeptionell nicht zu Halte-Übungen — dort weglassen.
+        if(exMode !== "hold"){
+          const rirInput = document.createElement("input");
+          rirInput.type = "number";
+          rirInput.inputMode = "numeric";
+          rirInput.min = "0";
+          rirInput.max = "10";
+          rirInput.className = "set-input rir-input";
+          rirInput.placeholder = "RIR";
+          rirInput.title = "RIR = Reps in Reserve (noch mögliche Wiederholungen)";
+          rirInput.value = s.rir || "";
+          rirInput.oninput = function(){ setSetRir(ex, sIdx, rirInput.value); };
+          row.appendChild(rirInput);
+        }
 
         const setCheck = document.createElement("div");
         setCheck.className = "set-check" + (s.done ? " checked" : "");
@@ -3692,13 +3968,13 @@ function buildExerciseCard(ex, dayColor, el){
         const panel = document.createElement("div");
         panel.className = "history-panel open";
         let inner = "";
-        inner += pr ? ('<p class="hist-pr">🏆 PR: ' + pr.weight + 'kg am ' + formatDate(pr.date) + '</p>') : '<p class="hist-pr">Noch kein PR — schließe eine Einheit mit Gewicht &amp; Haken ab.</p>';
+        inner += pr ? ('<p class="hist-pr">🏆 PR: ' + pr.weight + (pr.unit === "sek" ? ' Sek.' : 'kg') + ' am ' + formatDate(pr.date) + '</p>') : '<p class="hist-pr">Noch kein PR — schließe eine Einheit mit Wiederholungen/Sekunden &amp; Haken ab.</p>';
         if(hist.length >= 2){
-          const svg = sparklineSVG(hist.map(function(h){ return dayBestWeight(h); }), "#38351f");
+          const svg = sparklineSVG(hist.map(function(h){ return dayBestWeight(h, ex); }), "#38351f");
           if(svg) inner += '<div class="hist-chart">' + svg + '</div>';
         }
         if(hist.length){
-          const chips = hist.slice().reverse().slice(0,10).map(function(h){ return '<span>' + formatDate(h.date) + ': ' + formatSetsForList(h) + '</span>'; }).join("");
+          const chips = hist.slice().reverse().slice(0,10).map(function(h){ return '<span>' + formatDate(h.date) + ': ' + formatSetsForList(h, ex) + '</span>'; }).join("");
           inner += '<div class="hist-list">' + chips + '</div>';
           // Satz-Notizen der letzten Einheiten ausschreiben — genau dafür sind sie da:
           // Muster über Wochen erkennen (z. B. wiederkehrende Beschwerden).
@@ -3744,10 +4020,10 @@ function buildExerciseCard(ex, dayColor, el){
         let inner = "";
         let targetWeight = null;
         entry.sets.forEach(function(s){
-          const w = parseFloat(s.weight);
+          const w = effectiveLoad(ex, s.weight, todayKey());
           if(!isNaN(w) && (targetWeight === null || w > targetWeight)) targetWeight = w;
         });
-        if(targetWeight === null && pr) targetWeight = pr.weight;
+        if(targetWeight === null && pr && pr.unit !== "sek") targetWeight = pr.weight;
         if(targetWeight){
           inner += '<p class="hist-pr">🔥 Aufwärmsätze für ' + targetWeight + 'kg Arbeitsgewicht</p>';
           const steps = [0.4, 0.6, 0.8];
@@ -3771,10 +4047,10 @@ function buildExerciseCard(ex, dayColor, el){
         if(defaultWeight === undefined){
           defaultWeight = null;
           entry.sets.forEach(function(s){
-            const w = parseFloat(s.weight);
+            const w = effectiveLoad(ex, s.weight, todayKey());
             if(!isNaN(w) && (defaultWeight === null || w > defaultWeight)) defaultWeight = w;
           });
-          if(defaultWeight === null && pr) defaultWeight = pr.weight;
+          if(defaultWeight === null && pr && pr.unit !== "sek") defaultWeight = pr.weight;
         }
         let inner = '<p class="hist-pr">🏋 Hantelscheiben-Rechner</p>';
         inner += '<div class="measure-input-row" style="margin-bottom:8px;">' +
@@ -3949,7 +4225,7 @@ function drawPRShareCard(prDetails){
     ctx.fillText(pr.name, 540, y);
     ctx.font = "600 36px 'JetBrains Mono', monospace";
     ctx.fillStyle = yellow;
-    ctx.fillText(pr.weight + " kg" + (pr.reps ? (" × " + pr.reps) : ""), 540, y + 50);
+    ctx.fillText(pr.weight + (pr.unit === "sek" ? " Sek." : " kg") + (pr.reps && pr.unit !== "sek" ? (" × " + pr.reps) : ""), 540, y + 50);
     y += ITEM_HEIGHT;
   });
 
@@ -4002,7 +4278,10 @@ async function finishSession(){
   const doneCount = exs.filter(function(ex){ return isEntryDone(ex); }).length;
   exs.forEach(function(ex){
     const entry = getEntry(ex);
-    const performedSets = entry.sets.filter(function(s){ return s.done && s.weight; });
+    const mode = exerciseMode(ex);
+    // Bei Körpergewicht/Halten zählt ein Satz schon mit eingetragenen Wiederholungen/Sekunden
+    // als durchgeführt — das weight-Feld bleibt dort oft leer (kein Zusatzgewicht).
+    const performedSets = entry.sets.filter(function(s){ return s.done && setHasData(ex, s); });
     if(performedSets.length){
       if(!state.history[ex.id]) state.history[ex.id] = [];
       state.history[ex.id].push({
@@ -4016,16 +4295,28 @@ async function finishSession(){
       entry.sets.forEach(function(s){ s.note = ""; });
 
       let bestWeight = null, bestReps = "";
-      performedSets.forEach(function(s){
-        const w = parseFloat(s.weight);
-        if(!isNaN(w) && (bestWeight === null || w > bestWeight)){ bestWeight = w; bestReps = s.reps || ""; }
-      });
+      if(mode === "hold"){
+        // Bei Halte-Übungen ist der PR die längste gehaltene Zeit — das reps-Feld speichert
+        // hier Sekunden statt Wiederholungen.
+        performedSets.forEach(function(s){
+          const sec = parseFloat(s.reps);
+          if(!isNaN(sec) && (bestWeight === null || sec > bestWeight)) bestWeight = sec;
+        });
+      } else {
+        // Gewicht- und Körpergewichtsübungen: die effektive Last vergleichen (bei
+        // Körpergewicht inkl. Körpergewichtsanteil), nicht nur das eingetragene Zusatzgewicht.
+        performedSets.forEach(function(s){
+          const w = effectiveLoad(ex, s.weight, today);
+          if(!isNaN(w) && (bestWeight === null || w > bestWeight)){ bestWeight = w; bestReps = s.reps || ""; }
+        });
+      }
       if(bestWeight !== null){
         const currentPR = state.prs[ex.id];
+        const unit = mode === "hold" ? "sek" : "kg";
         if(!currentPR || bestWeight > currentPR.weight){
-          state.prs[ex.id] = { weight: bestWeight, date: today, reps: bestReps };
+          state.prs[ex.id] = { weight: bestWeight, date: today, reps: bestReps, unit: unit };
           newPRs.push(ex.name);
-          newPRDetails.push({ name: ex.name, weight: bestWeight, reps: bestReps });
+          newPRDetails.push({ name: ex.name, weight: bestWeight, reps: bestReps, unit: unit });
         }
       }
     }
