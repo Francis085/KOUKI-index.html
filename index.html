@@ -986,6 +986,7 @@
     <div id="backupHintHome"></div>
     <div class="rank-card" id="homeXpCard" style="margin-bottom:14px;"></div>
     <div id="deloadBannerHome"></div>
+    <div id="weeklyPlanReviewHome"></div>
 
     <div class="progress-card" id="homeTodayCard">
       <div class="ring-wrap">
@@ -2223,7 +2224,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{} };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2318,6 +2319,7 @@ function normalizeState(){
   if(typeof state.backupHintDismissedDate !== "string") state.backupHintDismissedDate = "";
   if(typeof state.installHintDismissed !== "boolean") state.installHintDismissed = false;
   if(!state.frameHintsSeen || typeof state.frameHintsSeen !== "object") state.frameHintsSeen = {};
+  if(typeof state.weeklyReviewDismissedDate !== "string") state.weeklyReviewDismissedDate = "";
   if(typeof state.onboardingSeen !== "boolean"){
     // Bestehende Nutzer (schon Daten vorhanden) sollen das Onboarding nicht nachträglich
     // aufgedrängt bekommen — nur wirklich frische Installationen zeigen es.
@@ -4116,6 +4118,94 @@ function renderDeloadBanner(){
     '</div>'
   ) : "";
   targets.forEach(function(el){ if(el) el.innerHTML = html; });
+}
+
+// --- Wochenplan-Update ("Stufe 1"-Trainingsassistent, ohne LLM) ---
+// Bündelt Signale, die einzeln längst berechnet werden (Progressionsvorschlag pro Übung,
+// globales Deload-Signal, markierte Schwachstellen), zu EINER wöchentlichen Kurzübersicht auf
+// der Startseite — statt dass man jede Übung einzeln öffnen muss, um zu sehen, was diese Woche
+// ansteht. Läuft komplett lokal auf den ohnehin schon getrackten Daten, kein Server, keine
+// laufenden Kosten. Nur Übungen des AKTUELL AKTIVEN Plans werden berücksichtigt (relevant für
+// "diese Woche", anders als das Deload-Signal, das bewusst plan-übergreifend schaut).
+function allExercisesOfPlan(plan){
+  const list = [];
+  plan.dayOrder.forEach(function(dKey){
+    plan.days[dKey].groups.forEach(function(g){
+      g.exercises.forEach(function(ex){ list.push(ex); });
+    });
+  });
+  return list;
+}
+function computeWeeklyPlanReview(){
+  const plan = getActivePlan();
+  const exs = allExercisesOfPlan(plan);
+  const items = [];
+  exs.forEach(function(ex){
+    const suggestion = getProgressionSuggestion(ex);
+    if(!suggestion || suggestion.type === "neutral") return;
+    const groupName = exerciseGroupName(ex);
+    items.push({
+      exId: ex.id,
+      name: exerciseNameById(ex.id) || ex.name,
+      type: suggestion.type,
+      text: suggestion.text,
+      isWeakPoint: !!(groupName && state.weakPoints.indexOf(groupName) !== -1),
+    });
+  });
+  // Reihenfolge: was Aufmerksamkeit braucht zuerst (Deload-Kandidaten, dann rückläufig),
+  // Schwachstellen-Übungen innerhalb ihrer Kategorie nach vorne, positive Meldungen zuletzt.
+  const rank = { deload: 0, down: 1, up: 2 };
+  items.sort(function(a, b){
+    if(rank[a.type] !== rank[b.type]) return rank[a.type] - rank[b.type];
+    if(a.isWeakPoint !== b.isWeakPoint) return a.isWeakPoint ? -1 : 1;
+    return 0;
+  });
+  return {
+    deloadSignal: checkGlobalDeloadSignal(),
+    items: items,
+    upCount: items.filter(function(i){ return i.type === "up"; }).length,
+    downCount: items.filter(function(i){ return i.type === "down"; }).length,
+    deloadCount: items.filter(function(i){ return i.type === "deload"; }).length,
+  };
+}
+function dismissWeeklyPlanReview(){
+  state.weeklyReviewDismissedDate = todayKey();
+  saveState();
+  renderWeeklyPlanReview();
+}
+const WEEKLY_REVIEW_TYPE_META = {
+  deload: { icon: "⚠️", label: "Deload erwägen" },
+  down: { icon: "📉", label: "Rückläufig" },
+  up: { icon: "⬆️", label: "Bereit zu steigern" },
+};
+function renderWeeklyPlanReview(){
+  const el = document.getElementById("weeklyPlanReviewHome");
+  if(!el) return;
+  if(state.weeklyReviewDismissedDate === todayKey()){ el.innerHTML = ""; return; }
+  const review = computeWeeklyPlanReview();
+  if(!review.items.length){ el.innerHTML = ""; return; }
+  const MAX_SHOWN = 5;
+  const shown = review.items.slice(0, MAX_SHOWN);
+  const restCount = review.items.length - shown.length;
+  const planLabel = getActivePlan().label || "deinem Plan";
+  let summary = [];
+  if(review.deloadCount) summary.push(review.deloadCount + " Deload-Kandidat" + (review.deloadCount === 1 ? "" : "en"));
+  if(review.downCount) summary.push(review.downCount + " rückläufig");
+  if(review.upCount) summary.push(review.upCount + " bereit zu steigern");
+  el.innerHTML = '<div class="deload-banner">' +
+    '<h4>📋 Dein Wochenplan-Update</h4>' +
+    '<p style="margin-bottom:10px;">' + escapeHtml(summary.join(" · ")) + ' — basierend auf deinem RIR- und Gewichtsverlauf in "' + escapeHtml(planLabel) + '".</p>' +
+    shown.map(function(item){
+      const meta = WEEKLY_REVIEW_TYPE_META[item.type];
+      return '<p style="font-size:12px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px;">' +
+        meta.icon + ' <strong style="color:var(--text-strong);">' + escapeHtml(item.name) + '</strong>' +
+        (item.isWeakPoint ? ' <span style="opacity:.75;">(Schwachstelle)</span>' : '') + ': ' +
+        escapeHtml(item.text) +
+      '</p>';
+    }).join("") +
+    (restCount > 0 ? ('<p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;">+' + restCount + ' weitere Übung' + (restCount === 1 ? "" : "en") + ' mit Empfehlung — offen einsehbar direkt bei der jeweiligen Übung im Trainingsplan.</p>') : "") +
+    '<button onclick="dismissWeeklyPlanReview()">Verstanden, für heute ausblenden</button>' +
+  '</div>';
 }
 
 // Anzahl der unterscheidbaren Tagesfarben (day-c0 … day-c4). Muss zu den CSS-Regeln passen.
@@ -7035,6 +7125,7 @@ function renderAll(){
   renderSteps();
   renderHome();
   renderDeloadBanner();
+  renderWeeklyPlanReview();
   renderNutritionLog();
   renderXP();
   renderShoppingList();
