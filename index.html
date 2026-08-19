@@ -1843,7 +1843,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{} };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -1894,6 +1894,7 @@ function normalizeState(){
   if(!state.stepsLog) state.stepsLog = {};
   if(!state.suppLog) state.suppLog = {};
   if(!state.customRestTimes) state.customRestTimes = {};
+  if(!state.skippedExercises) state.skippedExercises = {};
   if(!state.weakPoints) state.weakPoints = [];
   if(typeof state.deloadDismissedDate !== "string") state.deloadDismissedDate = "";
   if(!state.nutritionLog) state.nutritionLog = {};
@@ -2154,10 +2155,34 @@ function getPlanById(id){ return getAllPlans().find(function(p){ return p.id ===
 function getActivePlan(){ return getPlanById(currentPlanId); }
 function activeDays(){ return getActivePlan().days; }
 function activeDayOrder(){ return getActivePlan().dayOrder; }
+// --- Übungen für den heutigen Tag ausblenden (z. B. an Tagen mit wenig Zeit/Energie) ---
+// Bewusst NICHT im Plan selbst gespeichert, sondern nur als "für jetzt ausgeblendet" markiert —
+// der feste Plan bleibt unverändert, das nächste Mal sind wieder alle Übungen da. Beim
+// Abschließen der Einheit wird die Markierung für die Übungen dieses Tages automatisch
+// zurückgesetzt (siehe finishSession).
+function isSkippedToday(exId){ return !!(state.skippedExercises && state.skippedExercises[exId]); }
+function skipExerciseToday(id){
+  if(!state.skippedExercises) state.skippedExercises = {};
+  state.skippedExercises[id] = true;
+  saveState();
+  renderAll();
+  showToast("Übung für heute übersprungen");
+}
+function unskipExercise(id){
+  if(state.skippedExercises) delete state.skippedExercises[id];
+  saveState();
+  renderAll();
+  showToast("Übung wieder eingeblendet");
+}
 function allExercisesOfActiveDay(){
   const day = activeDays()[currentDay];
   if(!day) return [];
-  return day.groups.flatMap(function(g){ return g.exercises; });
+  return day.groups.flatMap(function(g){ return g.exercises; }).filter(function(ex){ return !isSkippedToday(ex.id); });
+}
+function skippedExercisesOfActiveDay(){
+  const day = activeDays()[currentDay];
+  if(!day) return [];
+  return day.groups.flatMap(function(g){ return g.exercises; }).filter(function(ex){ return isSkippedToday(ex.id); });
 }
 
 function parseSetsCount(str){
@@ -3688,17 +3713,48 @@ function flatExerciseList(){
   const list = [];
   day.groups.forEach(function(group){
     group.exercises.forEach(function(ex){
+      if(isSkippedToday(ex.id)) return;
       list.push({ ex: ex, groupName: group.name });
     });
   });
   return list;
 }
 
+function renderSkippedBanner(el){
+  const skipped = skippedExercisesOfActiveDay();
+  if(!skipped.length) return;
+  const banner = document.createElement("div");
+  banner.className = "rank-hint";
+  banner.style.cssText = "margin:0 0 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;";
+  const label = document.createElement("span");
+  label.style.marginRight = "2px";
+  label.textContent = "Heute übersprungen:";
+  banner.appendChild(label);
+  skipped.forEach(function(ex){
+    const chip = document.createElement("span");
+    chip.className = "tag";
+    chip.style.cursor = "pointer";
+    chip.title = "Wieder einblenden";
+    chip.textContent = ex.name + " ✕";
+    chip.onclick = function(){ unskipExercise(ex.id); };
+    banner.appendChild(chip);
+  });
+  el.appendChild(banner);
+}
 function renderContent(){
   const el = document.getElementById("dayContent");
   el.innerHTML = "";
+  renderSkippedBanner(el);
   const list = flatExerciseList();
-  if(!list.length) return;
+  if(!list.length){
+    if(skippedExercisesOfActiveDay().length){
+      const msg = document.createElement("p");
+      msg.className = "rank-hint";
+      msg.textContent = "Alle Übungen für heute übersprungen. Blende oben mindestens eine wieder ein, oder schließe die Einheit direkt so ab.";
+      el.appendChild(msg);
+    }
+    return;
+  }
   if(currentExerciseIndex < 0) currentExerciseIndex = 0;
   if(currentExerciseIndex > list.length - 1) currentExerciseIndex = list.length - 1;
   const dayColor = dayColorIndex();
@@ -3822,6 +3878,11 @@ function buildExerciseCard(ex, dayColor, el){
       supersetBtn.textContent = "🔗";
       supersetBtn.title = "Supersatz verknüpfen";
       supersetBtn.onclick = function(){ toggleSuperset(ex.id); };
+      const skipBtn = document.createElement("div");
+      skipBtn.className = "icon-btn";
+      skipBtn.textContent = "⏭";
+      skipBtn.title = "Für heute überspringen (Plan bleibt unverändert)";
+      skipBtn.onclick = function(){ skipExerciseToday(ex.id); };
       actions.appendChild(restBtn);
       actions.appendChild(histBtn);
       actions.appendChild(infoBtn);
@@ -3833,6 +3894,7 @@ function buildExerciseCard(ex, dayColor, el){
       // gibt es keine Langhantel zu beladen.
       if(exerciseMode(ex) === "weight") actions.appendChild(platesBtn);
       actions.appendChild(supersetBtn);
+      actions.appendChild(skipBtn);
 
       top.appendChild(info);
       top.appendChild(actions);
@@ -4365,6 +4427,9 @@ async function finishSession(){
     xpGained += addXP(newPRs.length * 50);
     xpGained += addXP(doneCount === exs.length && exs.length > 0 ? 100 : 50);
   }
+  // Übersprungene Übungen dieses Tages waren nur "für heute" ausgeblendet — nach dem
+  // Abschließen der Einheit sind beim nächsten Aufruf dieses Tages wieder alle Übungen da.
+  skippedExercisesOfActiveDay().forEach(function(ex){ delete state.skippedExercises[ex.id]; });
   await saveState();
   currentExerciseIndex = 0;
   renderAll();
