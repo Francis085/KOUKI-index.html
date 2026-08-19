@@ -193,7 +193,17 @@ self.addEventListener("fetch", function(event){
     return;
   }
 
-  // Alles andere (Supabase, Open Food Facts, Barcode-Scanner-Bibliothek, ...) bewusst
+  // Das Supabase-JS-SDK (unpkg.com) ist reiner, versionsfixierter Programmcode — kein
+  // Nutzerdaten-Endpunkt. Ohne dieses Skript funktioniert die Anmeldung überhaupt nicht,
+  // deshalb stale-while-revalidate wie beim App-Schell: sobald es einmal geladen wurde,
+  // steht es auch bei wackliger/blockierter Verbindung zu unpkg.com sofort aus dem Cache
+  // zur Verfügung, statt dass jede Anmeldung von diesem einen externen Request abhängt.
+  if(url.hostname === "unpkg.com" && url.pathname.indexOf("supabase-js") !== -1){
+    event.respondWith(staleWhileRevalidate(req));
+    return;
+  }
+
+  // Alles andere (Supabase-API, Open Food Facts, Barcode-Scanner-Bibliothek, ...) bewusst
   // unverändert durchs Netz — dynamische bzw. authentifizierte Anfragen sollen nicht
   // ungewollt zwischengespeichert werden. Ohne Netz schlagen sie fehl, das fängt der
   // App-Code an den jeweiligen Stellen bereits ab (z. B. Cloud-Sync-Hinweis).

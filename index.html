@@ -6865,15 +6865,57 @@ function getSupabaseClient(){
     return sbClient;
   }catch(e){ console.error("Supabase nicht verfügbar", e); return null; }
 }
+// Das Supabase-JS-SDK wird per <script defer> von unpkg.com geladen. "defer" garantiert
+// nur, dass es VOR DOMContentLoaded ausgeführt wird — tippt jemand den Anmelden-Button aber
+// im allerersten Augenblick nach dem Öffnen an (bevor der externe Request fertig ist), kann
+// "supabase" kurz noch undefined sein. Statt sofort aufzugeben, kurz nachfragen.
+function getSupabaseClientWithRetry(){
+  return new Promise(function(resolve){
+    const first = getSupabaseClient();
+    if(first){ resolve(first); return; }
+    let tries = 0;
+    const iv = setInterval(function(){
+      tries++;
+      const c = getSupabaseClient();
+      if(c || tries >= 15){ clearInterval(iv); resolve(c); }
+    }, 200);
+  });
+}
 
 function setAccountStatus(text){
   const el = document.getElementById("accountStatus");
   if(el) el.textContent = text;
 }
 
+// Rohe Supabase-Fehlermeldungen (meist Englisch, direkt vom Auth-Server) in klare,
+// handlungsleitende deutsche Hinweise übersetzen. Ohne das hier landen Nutzer bei einer
+// falschen Passworteingabe z.B. bei "Invalid login credentials" und wissen nicht, was zu tun ist.
+function mapAuthErrorMessage(e, context){
+  const msg = (e && e.message) ? e.message : "";
+  if(/invalid login credentials/i.test(msg)){
+    return "E-Mail oder Passwort ist falsch. Tipp: Groß-/Kleinschreibung prüfen, oder falls du dich das erste Mal seit der Registrierung anmeldest — stell sicher, dass du genau das Passwort von der Registrierung eingibst.";
+  }
+  if(/email not confirmed/i.test(msg)){
+    return "Diese E-Mail-Adresse ist noch nicht bestätigt. Bitte den Bestätigungslink in deinem Postfach antippen (auch im Spam-Ordner nachsehen).";
+  }
+  if(/user already registered|already been registered/i.test(msg)){
+    return "Für diese E-Mail-Adresse existiert bereits ein Konto — bitte stattdessen unten auf „Anmelden“ tippen.";
+  }
+  if(/rate limit|too many requests|after \d+ seconds/i.test(msg)){
+    return "Zu viele Versuche kurz hintereinander. Bitte eine Minute warten und dann erneut versuchen.";
+  }
+  if(/invalid format/i.test(msg)){
+    return (context === "signup" ? "Registrierung" : "Anmeldung") + " fehlgeschlagen: der Server lehnt diese E-Mail-Adresse ab (auch bei korrekten Adressen wie Gmail kann das an einer Servereinstellung liegen, nicht an deiner Eingabe). Bitte später erneut versuchen oder den App-Betreiber informieren.";
+  }
+  if(/failed to fetch|networkerror|load failed|network request failed/i.test(msg)){
+    return "Der Cloud-Server ist gerade nicht erreichbar. Das kann an deiner Internetverbindung liegen, oder daran, dass dein Netzwerk (z.B. WLAN eines Unternehmens/einer Schule, manche Mobilfunk-Filter) Anfragen an Supabase blockiert. Bitte ggf. mit mobilen Daten statt WLAN erneut versuchen.";
+  }
+  return ((context === "signup" ? "Registrierung" : "Anmeldung") + " fehlgeschlagen: " + (msg || "unbekannter Fehler"));
+}
+
 async function sendLoginLink(){
-  const client = getSupabaseClient();
-  if(!client){ setAccountStatus("Cloud-Funktion aktuell nicht erreichbar (Internetverbindung prüfen)."); return; }
+  const client = await getSupabaseClientWithRetry();
+  if(!client){ setAccountStatus("Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."); return; }
   const input = document.getElementById("accountEmailInput");
   const email = input ? input.value.trim() : "";
   if(!email){ setAccountStatus("Bitte zuerst eine E-Mail-Adresse eingeben."); return; }
@@ -6884,14 +6926,15 @@ async function sendLoginLink(){
     setAccountStatus("Link verschickt! Bitte E-Mail-Postfach öffnen und den Link antippen.");
   }catch(e){
     console.error("Login-Link fehlgeschlagen", e);
-    setAccountStatus("Senden fehlgeschlagen: " + (e && e.message ? e.message : "unbekannter Fehler"));
+    setAccountStatus(mapAuthErrorMessage(e, "link"));
   }
 }
 
 async function signUpWithPassword(){
-  const client = getSupabaseClient();
   const hint = document.getElementById("accountPasswordHint");
-  if(!client){ hint.textContent = "Cloud-Funktion aktuell nicht erreichbar (Internetverbindung prüfen)."; return; }
+  hint.textContent = "Wird vorbereitet …";
+  const client = await getSupabaseClientWithRetry();
+  if(!client){ hint.textContent = "Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."; return; }
   const email = (document.getElementById("accountEmailInput").value || "").trim();
   const password = document.getElementById("accountPasswordInput").value || "";
   const passwordConfirm = document.getElementById("accountPasswordConfirmInput").value || "";
@@ -6908,18 +6951,14 @@ async function signUpWithPassword(){
     }
   }catch(e){
     console.error("Registrierung fehlgeschlagen", e);
-    const msg = e && e.message ? e.message : "unbekannter Fehler";
-    if(/invalid format/i.test(msg)){
-      hint.textContent = "Registrierung fehlgeschlagen: der Server lehnt diese E-Mail-Adresse ab (auch bei korrekten Adressen wie Gmail kann das an einer Servereinstellung liegen, nicht an deiner Eingabe). Bitte später erneut versuchen oder den App-Betreiber informieren.";
-    } else {
-      hint.textContent = "Registrierung fehlgeschlagen: " + msg;
-    }
+    hint.textContent = mapAuthErrorMessage(e, "signup");
   }
 }
 async function signInWithPassword(){
-  const client = getSupabaseClient();
   const hint = document.getElementById("accountPasswordHint");
-  if(!client){ hint.textContent = "Cloud-Funktion aktuell nicht erreichbar (Internetverbindung prüfen)."; return; }
+  hint.textContent = "Wird vorbereitet …";
+  const client = await getSupabaseClientWithRetry();
+  if(!client){ hint.textContent = "Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."; return; }
   const email = (document.getElementById("accountEmailInput").value || "").trim();
   const password = document.getElementById("accountPasswordInput").value || "";
   if(!email || !password){ hint.textContent = "Bitte E-Mail und Passwort eingeben."; return; }
@@ -6930,7 +6969,7 @@ async function signInWithPassword(){
     hint.textContent = "";
   }catch(e){
     console.error("Anmeldung fehlgeschlagen", e);
-    hint.textContent = "Anmeldung fehlgeschlagen: " + (e && e.message ? e.message : "E-Mail/Passwort prüfen");
+    hint.textContent = mapAuthErrorMessage(e, "login");
   }
 }
 
