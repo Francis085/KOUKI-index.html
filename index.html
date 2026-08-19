@@ -974,6 +974,7 @@
 
   <div id="frame-home">
     <div class="home-greeting" id="homeGreeting"></div>
+    <div id="installHintHome"></div>
     <div id="backupHintHome"></div>
     <div class="rank-card" id="homeXpCard" style="margin-bottom:14px;"></div>
     <div id="deloadBannerHome"></div>
@@ -1357,20 +1358,21 @@
       <h3>Urheberrecht</h3>
       <p>Diese App (KOUKI), einschließlich Konzept, Design, Quelltext und aller Inhalte, ist ein privates, sich in Entwicklung befindendes Projekt. Alle Rechte daran liegen ausschließlich bei Phillip-Francis Koukiotou. Eine Vervielfältigung, Weiterverbreitung oder kommerzielle Nutzung ohne ausdrückliche Zustimmung ist nicht gestattet.</p>
       <h3>Status des Projekts</h3>
-      <p>KOUKI ist derzeit ein kostenloses, privates Projekt in aktiver Entwicklung. Perspektivisch ist geplant, kostenpflichtige Premium-Funktionen anzubieten. Für die Nutzung solcher Premium-Funktionen wird voraussichtlich eine Anmeldung mit eigenen Nutzerdaten erforderlich sein — anders als bei der aktuellen Version, die vollständig ohne Konto und ohne Datenübertragung an einen Server auskommt (siehe Datenschutzerklärung unten). Über konkrete Änderungen wird an dieser Stelle rechtzeitig informiert.</p>
+      <p>KOUKI ist derzeit ein kostenloses, privates Projekt in aktiver Entwicklung. Perspektivisch ist geplant, kostenpflichtige Premium-Funktionen anzubieten. Über konkrete Änderungen wird an dieser Stelle rechtzeitig informiert.</p>
     </div>
 
     <div class="legal-card">
       <h2>Datenschutzerklärung</h2>
-      <p>Diese App wurde bewusst ohne eigenen Server und ohne Nutzerkonto entwickelt. Es gilt:</p>
+      <p>Diese App wurde bewusst lokal-first entwickelt: ganz ohne Anmeldung funktioniert sie vollständig ohne eigenen Server. Meldest du dich freiwillig für die optionale Cloud-Synchronisierung an, kommt zusätzlich unser Datenbank-Anbieter Supabase ins Spiel (Details siehe unten). Es gilt:</p>
       <ul>
         <li>Alle Eingaben — Trainingsdaten, Sätze und Gewichte, Körpergewicht, Ernährungs- und Grundumsatz-Angaben, Kalender, Favoriten usw. — werden ausschließlich lokal im <strong>localStorage</strong> deines Browsers auf deinem eigenen Gerät gespeichert.</li>
-        <li>Es findet keine Übertragung deiner Daten an den Entwickler, an Server oder an Dritte statt. Der Entwickler hat keinerlei Zugriff auf deine eingegebenen Daten.</li>
+        <li>Ohne Anmeldung findet keine Übertragung deiner Daten an den Entwickler, an Server oder an Dritte statt. Der Entwickler hat ohne Anmeldung keinerlei Zugriff auf deine eingegebenen Daten.</li>
         <li>Es werden keine Cookies zu Analyse- oder Trackingzwecken gesetzt und keine externen Analyse- oder Werbedienste eingebunden.</li>
         <li>In die Rezepte eingebundene Fotos sind direkt als Bilddaten in die Datei eingebettet und werden nicht von externen Servern nachgeladen.</li>
-        <li>Löschst du die Browserdaten dieser Seite oder deinen Browser-Cache, werden alle gespeicherten Angaben unwiderruflich gelöscht. Ein Zurücksetzen kann der Entwickler nicht rückgängig machen, da er keinen Zugriff auf diese Daten hat.</li>
+        <li>Löschst du die Browserdaten dieser Seite oder deinen Browser-Cache, werden alle nur lokal gespeicherten Angaben unwiderruflich gelöscht. Ein Zurücksetzen kann der Entwickler nicht rückgängig machen, da er ohne Anmeldung keinen Zugriff auf diese Daten hat.</li>
         <li>Da die App als statische Datei gehostet wird, kann der jeweilige Hosting-Anbieter beim Abruf der Seite technisch bedingt Zugriffsdaten erfassen (z. B. IP-Adresse, Zeitpunkt des Zugriffs), wie es bei jedem Webserver üblich ist. Details hierzu entnimmst du bitte der Datenschutzerklärung des jeweiligen Hosters.</li>
         <li><strong>Optionale Cloud-Synchronisierung:</strong> Meldest du dich freiwillig über "Konto & Cloud-Sync" mit deiner E-Mail-Adresse an, werden deine Trainingsdaten zusätzlich verschlüsselt bei unserem Datenbank-Anbieter Supabase Inc. gespeichert, um sie geräteübergreifend verfügbar zu machen. Ohne Anmeldung bleibt es bei der rein lokalen Speicherung wie oben beschrieben — die Cloud-Funktion ist keine Voraussetzung für die Nutzung der App.</li>
+        <li><strong>Löschung bei Cloud-Nutzung:</strong> Über "Konto & Cloud-Sync löschen" im Profil-Bereich kannst du deine dort gespeicherten Trainings- und Ernährungsdaten jederzeit selbst unwiderruflich entfernen. Für die vollständige Löschung des Anmelde-Datensatzes selbst (deine E-Mail-Adresse bei unserem Auth-Anbieter) genügt eine kurze E-Mail an den Entwickler (Kontakt siehe Impressum) — das kann aus Sicherheitsgründen nicht automatisiert direkt aus dem Browser heraus erfolgen, da dafür erhöhte Server-Rechte nötig sind, die niemals im öffentlichen Quelltext dieser Seite liegen dürfen.</li>
       </ul>
     </div>
 
@@ -1382,19 +1384,19 @@
       <div id="accountLoginRow">
         <div class="measure-group">
           <p class="measure-label">E-Mail</p>
-          <input type="email" id="accountEmailInput" placeholder="deine@email.de" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+          <input type="email" id="accountEmailInput" placeholder="deine@email.de" autocomplete="email" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
         </div>
         <div class="measure-group">
           <p class="measure-label">Passwort</p>
           <div style="position:relative;">
-            <input type="password" id="accountPasswordInput" placeholder="mind. 6 Zeichen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <input type="password" id="accountPasswordInput" placeholder="mind. 6 Zeichen" autocomplete="current-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
             <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
         </div>
         <div class="measure-group">
           <p class="measure-label">Passwort bestätigen</p>
           <div style="position:relative;">
-            <input type="password" id="accountPasswordConfirmInput" placeholder="Passwort wiederholen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <input type="password" id="accountPasswordConfirmInput" placeholder="Passwort wiederholen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
             <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
           <p class="rank-hint" style="margin:6px 0 0;">Nur nötig, wenn du oben auf „Konto erstellen“ tippst.</p>
@@ -1415,14 +1417,14 @@
         <div class="measure-group">
           <p class="measure-label">Neues Passwort</p>
           <div style="position:relative;">
-            <input type="password" id="accountNewPasswordInput" placeholder="mind. 6 Zeichen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <input type="password" id="accountNewPasswordInput" placeholder="mind. 6 Zeichen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
             <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
         </div>
         <div class="measure-group">
           <p class="measure-label">Neues Passwort bestätigen</p>
           <div style="position:relative;">
-            <input type="password" id="accountNewPasswordConfirmInput" placeholder="Passwort wiederholen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <input type="password" id="accountNewPasswordConfirmInput" placeholder="Passwort wiederholen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
             <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
         </div>
@@ -1430,6 +1432,8 @@
         <p id="accountResetHint" class="rank-hint" style="margin:8px 0 0;"></p>
       </div>
       <button class="backup-btn" id="accountLogoutBtn" style="display:none;margin-top:8px;">Abmelden</button>
+      <button class="backup-btn" id="accountDeleteBtn" style="display:none;margin-top:8px;background:var(--warn);">Konto & Cloud-Daten löschen</button>
+      <p id="accountDeleteHint" class="rank-hint" style="display:none;margin:8px 0 0;">Entfernt deine Trainings- und Ernährungsdaten unwiderruflich aus der Cloud (auf allen verbundenen Geräten) und meldet dich ab. Für die vollständige Löschung deiner E-Mail-Adresse bei unserem Anmelde-Anbieter schreib uns kurz eine Mail (Kontakt siehe Impressum) — das kann aus Sicherheitsgründen nicht automatisch direkt aus der App heraus passieren.</p>
     </div>
 
     <div class="legal-card">
@@ -1519,19 +1523,19 @@
     <p style="font-size:12.5px;color:var(--ink-soft);text-align:center;margin:10px 0 16px;">Leg ein kostenloses Konto an, damit deine Trainings- und Ernährungsdaten sicher in der Cloud landen und auf jedem Gerät verfügbar sind.</p>
     <div class="measure-group">
       <p class="measure-label">E-Mail</p>
-      <input type="email" id="welcomeEmailInput" placeholder="deine@email.de" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+      <input type="email" id="welcomeEmailInput" placeholder="deine@email.de" autocomplete="email" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
     </div>
     <div class="measure-group">
       <p class="measure-label">Passwort</p>
       <div style="position:relative;">
-        <input type="password" id="welcomePasswordInput" placeholder="mind. 6 Zeichen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+        <input type="password" id="welcomePasswordInput" placeholder="mind. 6 Zeichen" autocomplete="current-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
         <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
       </div>
     </div>
     <div class="measure-group">
       <p class="measure-label">Passwort bestätigen</p>
       <div style="position:relative;">
-        <input type="password" id="welcomePasswordConfirmInput" placeholder="Passwort wiederholen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+        <input type="password" id="welcomePasswordConfirmInput" placeholder="Passwort wiederholen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
         <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
       </div>
       <p class="rank-hint" style="margin:6px 0 0;">Nur nötig, wenn du auf „Konto erstellen“ tippst.</p>
@@ -2182,7 +2186,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{} };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2275,6 +2279,7 @@ function normalizeState(){
   if(typeof state.autoRestTimer !== "boolean") state.autoRestTimer = true;
   if(typeof state.lastBackupDate !== "string") state.lastBackupDate = "";
   if(typeof state.backupHintDismissedDate !== "string") state.backupHintDismissedDate = "";
+  if(typeof state.installHintDismissed !== "boolean") state.installHintDismissed = false;
   if(typeof state.onboardingSeen !== "boolean"){
     // Bestehende Nutzer (schon Daten vorhanden) sollen das Onboarding nicht nachträglich
     // aufgedrängt bekommen — nur wirklich frische Installationen zeigen es.
@@ -2388,6 +2393,42 @@ function renderBackupHint(){
     state.backupHintDismissedDate = todayKey();
     saveState();
     renderBackupHint();
+  };
+}
+
+// --- Installations-Hinweis: macht sichtbar, dass KOUKI als "richtige" App installierbar ist ---
+// Wer die Seite nur im normalen Browser-Tab öffnet, merkt oft gar nicht, dass es eine
+// installierbare Variante gibt — dabei funktionieren Erinnerungen auf dem iPhone laut
+// reminderStatusMessage() z.B. NUR in der installierten (Home-Bildschirm-)Variante. isIOSDevice()
+// und isStandalonePWA() sind weiter unten im Script definiert (function-Deklarationen werden
+// gehoisted, daher hier trotzdem aufrufbar). Einmal weggetippt, bleibt der Hinweis dauerhaft weg
+// (anders als der Backup-Hinweis, der ja wiederkehrend sinnvoll ist).
+function installHintState(){
+  if(state.installHintDismissed) return null;
+  if(isStandalonePWA()) return null;
+  if(isIOSDevice()){
+    return { text: "Tipp: Füge KOUKI über Teilen → „Zum Home-Bildschirm“ zu deinem Home-Bildschirm hinzu — dann startet die App wie eine echte App, und Erinnerungen funktionieren zuverlässig." };
+  }
+  if(/Android/i.test(navigator.userAgent)){
+    return { text: "Tipp: Tippe im Browser-Menü auf „Zum Startbildschirm hinzufügen“ oder „App installieren“ — dann startet KOUKI wie eine echte App." };
+  }
+  return null;
+}
+function renderInstallHint(){
+  const el = document.getElementById("installHintHome");
+  if(!el) return;
+  const hint = installHintState();
+  if(!hint){ el.innerHTML = ""; return; }
+  el.innerHTML = '<div class="progression-tip tip-deload" style="margin-bottom:14px;">' +
+    '<span class="tip-icon">📲</span>' +
+    '<span>' + hint.text + '</span>' +
+    '<span class="set-del" id="installHintDismissBtn" title="Nicht mehr anzeigen">✕</span>' +
+  '</div>';
+  const dismiss = document.getElementById("installHintDismissBtn");
+  if(dismiss) dismiss.onclick = function(){
+    state.installHintDismissed = true;
+    saveState();
+    renderInstallHint();
   };
 }
 function importBackupFile(file){
@@ -6908,6 +6949,7 @@ function renderHome(){
   if(!greetEl) return;
   const hour = new Date().getHours();
   greetEl.textContent = hour < 11 ? "Guten Morgen! ☀️" : hour < 18 ? "Hey, schön dass du da bist 👋" : "Guten Abend! 🌙";
+  renderInstallHint();
   renderBackupHint();
 
   const day = activeDays()[currentDay];
@@ -7447,6 +7489,34 @@ async function logoutAccount(){
   onAccountLoggedOut();
 }
 
+// --- Konto & Cloud-Daten löschen (Recht auf Löschung) ---
+// Wichtig: der anonyme Supabase-Client im Browser darf aus Sicherheitsgründen NIEMALS den
+// service_role-Schlüssel enthalten — der würde jede RLS-Beschränkung aushebeln, für jeden, der
+// sich den Quelltext dieser öffentlichen, statischen Seite ansieht. Ohne diesen Schlüssel kann
+// aber auch der angemeldete Nutzer selbst seinen eigentlichen Anmelde-Datensatz (E-Mail-Adresse
+// in Supabase Auth) nicht direkt aus dem Browser löschen — das geht nur serverseitig mit
+// erhöhten Rechten. Diese Funktion löscht deshalb alles, worauf der Nutzer selbst über RLS
+// Zugriff hat (seine Trainings-/Ernährungsdaten und den Freunde-Vergleich-Eintrag) und meldet
+// ihn ab; für die vollständige Entfernung der Anmeldung selbst verweist der Hinweistext auf eine
+// kurze E-Mail an den Entwickler.
+async function deleteCloudAccount(){
+  if(!currentUserId) return;
+  const sure = confirm("Deine Trainings- und Ernährungsdaten in der Cloud werden dabei unwiderruflich gelöscht — auf allen Geräten, die mit diesem Konto verbunden sind. Die Daten auf DIESEM Gerät bleiben lokal erhalten, du wirst nur abgemeldet. Fortfahren?");
+  if(!sure) return;
+  const client = getSupabaseClient();
+  if(!client){ showToast("Cloud-Funktion nicht verfügbar — bitte Internetverbindung prüfen"); return; }
+  try{
+    await client.from("user_data").delete().eq("user_id", currentUserId);
+    await client.from("leaderboard_stats").delete().eq("user_id", currentUserId);
+    await client.auth.signOut();
+    showToast("Cloud-Daten gelöscht und abgemeldet");
+  }catch(e){
+    console.error("Cloud-Daten konnten nicht vollständig gelöscht werden", e);
+    showToast("Löschen teilweise fehlgeschlagen — bitte erneut versuchen oder den Entwickler kontaktieren");
+  }
+  onAccountLoggedOut();
+}
+
 function onAccountLoggedOut(){
   currentUserId = null;
   cloudSyncEnabled = false;
@@ -7454,9 +7524,13 @@ function onAccountLoggedOut(){
   const row = document.getElementById("accountLoginRow");
   const resetRow = document.getElementById("accountResetRow");
   const logoutBtn = document.getElementById("accountLogoutBtn");
+  const deleteBtn = document.getElementById("accountDeleteBtn");
+  const deleteHint = document.getElementById("accountDeleteHint");
   if(row) row.style.display = "block";
   if(resetRow) resetRow.style.display = "none";
   if(logoutBtn) logoutBtn.style.display = "none";
+  if(deleteBtn) deleteBtn.style.display = "none";
+  if(deleteHint) deleteHint.style.display = "none";
   renderLeaderboardSettings();
 }
 
@@ -7474,9 +7548,13 @@ async function onAccountLoggedIn(user){
   const row = document.getElementById("accountLoginRow");
   const resetRow = document.getElementById("accountResetRow");
   const logoutBtn = document.getElementById("accountLogoutBtn");
+  const deleteBtn = document.getElementById("accountDeleteBtn");
+  const deleteHint = document.getElementById("accountDeleteHint");
   if(row) row.style.display = "none";
   if(resetRow) resetRow.style.display = "none";
   if(logoutBtn) logoutBtn.style.display = "block";
+  if(deleteBtn) deleteBtn.style.display = "block";
+  if(deleteHint) deleteHint.style.display = "block";
   if(!alreadySynced){
     await syncFromCloudOrMigrate();
     cloudSyncEnabled = true;
@@ -7666,6 +7744,8 @@ const accountSaveNewPasswordBtnEl = document.getElementById("accountSaveNewPassw
 if(accountSaveNewPasswordBtnEl) accountSaveNewPasswordBtnEl.onclick = saveNewPassword;
 const accountLogoutBtnEl = document.getElementById("accountLogoutBtn");
 if(accountLogoutBtnEl) accountLogoutBtnEl.onclick = logoutAccount;
+const accountDeleteBtnEl = document.getElementById("accountDeleteBtn");
+if(accountDeleteBtnEl) accountDeleteBtnEl.onclick = deleteCloudAccount;
 
 // Passwort ein-/ausblenden (Auge-Symbol) — für Passwort- und Passwort-bestätigen-Feld.
 document.querySelectorAll(".pw-eye-btn").forEach(function(btn){
