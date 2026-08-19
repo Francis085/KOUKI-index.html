@@ -1376,9 +1376,30 @@
           <button class="btn btn-ghost" id="accountPasswordLoginBtn" style="flex:1;">Anmelden</button>
         </div>
         <p id="accountPasswordHint" class="rank-hint" style="margin:8px 0 0;"></p>
+        <p style="margin:6px 0 0;"><span id="accountForgotPasswordBtn" style="font-size:12.5px;color:var(--olive);text-decoration:underline;cursor:pointer;">Passwort vergessen?</span></p>
 
         <p style="font-size:11.5px;color:var(--ink-soft);margin:16px 0 6px;">— oder ohne Passwort per Link in deiner Mail —</p>
         <button class="btn btn-ghost" id="accountLoginBtn" style="width:100%;">Login-Link an obige E-Mail senden</button>
+      </div>
+
+      <div id="accountResetRow" style="display:none;">
+        <p class="rank-hint" style="margin:0 0 10px;">Du hast auf den Link in deiner E-Mail getippt. Lege jetzt ein neues Passwort fest:</p>
+        <div class="measure-group">
+          <p class="measure-label">Neues Passwort</p>
+          <div style="position:relative;">
+            <input type="password" id="accountNewPasswordInput" placeholder="mind. 6 Zeichen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+          </div>
+        </div>
+        <div class="measure-group">
+          <p class="measure-label">Neues Passwort bestätigen</p>
+          <div style="position:relative;">
+            <input type="password" id="accountNewPasswordConfirmInput" placeholder="Passwort wiederholen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="accountSaveNewPasswordBtn" style="width:100%;">Neues Passwort speichern</button>
+        <p id="accountResetHint" class="rank-hint" style="margin:8px 0 0;"></p>
       </div>
       <button class="backup-btn" id="accountLogoutBtn" style="display:none;margin-top:8px;">Abmelden</button>
     </div>
@@ -6890,10 +6911,17 @@ function setAccountStatus(text){
 // Rohe Supabase-Fehlermeldungen (meist Englisch, direkt vom Auth-Server) in klare,
 // handlungsleitende deutsche Hinweise übersetzen. Ohne das hier landen Nutzer bei einer
 // falschen Passworteingabe z.B. bei "Invalid login credentials" und wissen nicht, was zu tun ist.
+function authContextLabel(context){
+  if(context === "signup") return "Registrierung";
+  if(context === "reset") return "Passwort-Reset";
+  if(context === "link") return "Login-Link senden";
+  return "Anmeldung";
+}
 function mapAuthErrorMessage(e, context){
   const msg = (e && e.message) ? e.message : "";
+  const label = authContextLabel(context);
   if(/invalid login credentials/i.test(msg)){
-    return "E-Mail oder Passwort ist falsch. Tipp: Groß-/Kleinschreibung prüfen, oder falls du dich das erste Mal seit der Registrierung anmeldest — stell sicher, dass du genau das Passwort von der Registrierung eingibst.";
+    return "E-Mail oder Passwort ist falsch. Tipp: Groß-/Kleinschreibung prüfen, oder falls du dich das erste Mal seit der Registrierung anmeldest — stell sicher, dass du genau das Passwort von der Registrierung eingibst. Passwort vergessen? Dafür gibt es unten den Link „Passwort vergessen?“.";
   }
   if(/email not confirmed/i.test(msg)){
     return "Diese E-Mail-Adresse ist noch nicht bestätigt. Bitte den Bestätigungslink in deinem Postfach antippen (auch im Spam-Ordner nachsehen).";
@@ -6905,12 +6933,15 @@ function mapAuthErrorMessage(e, context){
     return "Zu viele Versuche kurz hintereinander. Bitte eine Minute warten und dann erneut versuchen.";
   }
   if(/invalid format/i.test(msg)){
-    return (context === "signup" ? "Registrierung" : "Anmeldung") + " fehlgeschlagen: der Server lehnt diese E-Mail-Adresse ab (auch bei korrekten Adressen wie Gmail kann das an einer Servereinstellung liegen, nicht an deiner Eingabe). Bitte später erneut versuchen oder den App-Betreiber informieren.";
+    return label + " fehlgeschlagen: der Server lehnt diese E-Mail-Adresse ab (auch bei korrekten Adressen wie Gmail kann das an einer Servereinstellung liegen, nicht an deiner Eingabe). Bitte später erneut versuchen oder den App-Betreiber informieren.";
   }
   if(/failed to fetch|networkerror|load failed|network request failed/i.test(msg)){
     return "Der Cloud-Server ist gerade nicht erreichbar. Das kann an deiner Internetverbindung liegen, oder daran, dass dein Netzwerk (z.B. WLAN eines Unternehmens/einer Schule, manche Mobilfunk-Filter) Anfragen an Supabase blockiert. Bitte ggf. mit mobilen Daten statt WLAN erneut versuchen.";
   }
-  return ((context === "signup" ? "Registrierung" : "Anmeldung") + " fehlgeschlagen: " + (msg || "unbekannter Fehler"));
+  if(/session|token/i.test(msg) && context === "reset"){
+    return "Der Link zum Zurücksetzen des Passworts ist abgelaufen oder wurde schon verwendet. Bitte über „Passwort vergessen?“ einen neuen Link anfordern.";
+  }
+  return (label + " fehlgeschlagen: " + (msg || "unbekannter Fehler"));
 }
 
 async function sendLoginLink(){
@@ -6980,6 +7011,64 @@ async function signInWithPassword(){
   }
 }
 
+// --- Passwort vergessen ---
+// Ablauf: Nutzer fordert einen Link an -> Supabase schickt eine Mail -> tippt der Nutzer den
+// Link an, öffnet sich die App erneut, und Supabase löst automatisch eine Sitzung samt dem
+// Event "PASSWORD_RECOVERY" aus (siehe onAuthStateChange in initAccountSession). Wichtig: diese
+// Sitzung darf NICHT wie ein normaler Login behandelt werden (sonst würde jeder mit dem Link
+// automatisch eingeloggt, ohne je ein neues Passwort zu setzen) — stattdessen zeigen wir erst
+// das Formular für ein neues Passwort.
+async function requestPasswordReset(){
+  const hint = document.getElementById("accountPasswordHint");
+  hint.textContent = "Wird vorbereitet …";
+  const client = await getSupabaseClientWithRetry();
+  if(!client){ hint.textContent = "Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."; return; }
+  const email = (document.getElementById("accountEmailInput").value || "").trim();
+  if(!email){ hint.textContent = "Bitte zuerst deine E-Mail-Adresse oben eingeben, dann auf „Passwort vergessen?“ tippen."; return; }
+  hint.textContent = "Link wird gesendet …";
+  try{
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+    if(error) throw error;
+    // Bewusst nicht bestätigend formuliert, ob die Adresse existiert (wie bei Supabase selbst) —
+    // sonst könnte man über diese Meldung erraten, welche E-Mail-Adressen registriert sind.
+    hint.textContent = "Falls für diese E-Mail-Adresse ein Konto existiert, haben wir gerade einen Link zum Zurücksetzen des Passworts verschickt. Bitte E-Mail-Postfach (auch Spam-Ordner) prüfen.";
+  }catch(e){
+    console.error("Passwort-Reset fehlgeschlagen", e);
+    hint.textContent = mapAuthErrorMessage(e, "reset");
+  }
+}
+function showPasswordResetForm(){
+  const loginRow = document.getElementById("accountLoginRow");
+  const resetRow = document.getElementById("accountResetRow");
+  if(loginRow) loginRow.style.display = "none";
+  if(resetRow) resetRow.style.display = "block";
+  setAccountStatus("Neues Passwort festlegen");
+}
+async function saveNewPassword(){
+  const hint = document.getElementById("accountResetHint");
+  hint.textContent = "Wird vorbereitet …";
+  const client = await getSupabaseClientWithRetry();
+  if(!client){ hint.textContent = "Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."; return; }
+  const pw = document.getElementById("accountNewPasswordInput").value || "";
+  const pwConfirm = document.getElementById("accountNewPasswordConfirmInput").value || "";
+  if(pw.length < 6){ hint.textContent = "Bitte ein Passwort mit mind. 6 Zeichen wählen."; return; }
+  if(pw !== pwConfirm){ hint.textContent = "Die beiden Passwörter stimmen nicht überein."; return; }
+  hint.textContent = "Wird gespeichert …";
+  try{
+    const { data, error } = await client.auth.updateUser({ password: pw });
+    if(error) throw error;
+    hint.textContent = "";
+    document.getElementById("accountResetRow").style.display = "none";
+    document.getElementById("accountNewPasswordInput").value = "";
+    document.getElementById("accountNewPasswordConfirmInput").value = "";
+    if(data && data.user) await onAccountLoggedIn(data.user);
+    showToast("Neues Passwort gespeichert — du bist jetzt angemeldet");
+  }catch(e){
+    console.error("Passwort konnte nicht gespeichert werden", e);
+    hint.textContent = mapAuthErrorMessage(e, "reset");
+  }
+}
+
 async function logoutAccount(){
   const client = getSupabaseClient();
   try{ if(client) await client.auth.signOut(); }catch(e){ console.error("Abmelden fehlgeschlagen", e); }
@@ -6991,8 +7080,10 @@ function onAccountLoggedOut(){
   cloudSyncEnabled = false;
   setAccountStatus("Nicht angemeldet — Daten bleiben lokal auf diesem Gerät.");
   const row = document.getElementById("accountLoginRow");
+  const resetRow = document.getElementById("accountResetRow");
   const logoutBtn = document.getElementById("accountLogoutBtn");
   if(row) row.style.display = "block";
+  if(resetRow) resetRow.style.display = "none";
   if(logoutBtn) logoutBtn.style.display = "none";
   renderLeaderboardSettings();
 }
@@ -7001,8 +7092,10 @@ async function onAccountLoggedIn(user){
   currentUserId = user.id;
   setAccountStatus("Angemeldet als " + user.email);
   const row = document.getElementById("accountLoginRow");
+  const resetRow = document.getElementById("accountResetRow");
   const logoutBtn = document.getElementById("accountLogoutBtn");
   if(row) row.style.display = "none";
+  if(resetRow) resetRow.style.display = "none";
   if(logoutBtn) logoutBtn.style.display = "block";
   await syncFromCloudOrMigrate();
   cloudSyncEnabled = true;
@@ -7140,9 +7233,15 @@ let authListenerRegistered = false;
 async function initAccountSession(){
   const client = getSupabaseClient();
   if(!client) return;
+  // Ein Passwort-Reset-Link landet mit "type=recovery" im URL-Fragment zurück in der App.
+  // Das muss VOR jedem automatischen Login geprüft werden — sonst würde ein Tipp auf den Link
+  // im Postfach einfach einloggen, statt erst ein neues Passwort abzufragen.
+  const isRecoveryLink = /type=recovery/.test(window.location.hash || "");
   try{
     const { data } = await client.auth.getSession();
-    if(data && data.session && data.session.user){
+    if(isRecoveryLink && data && data.session && data.session.user){
+      showPasswordResetForm();
+    } else if(data && data.session && data.session.user){
       try{ await onAccountLoggedIn(data.session.user); }
       catch(e){ console.error("Login-Verarbeitung fehlgeschlagen", e); }
     }
@@ -7150,6 +7249,10 @@ async function initAccountSession(){
       authListenerRegistered = true;
       client.auth.onAuthStateChange(function(event, session){
         try{
+          if(event === "PASSWORD_RECOVERY"){
+            showPasswordResetForm();
+            return;
+          }
           if(session && session.user){
             onAccountLoggedIn(session.user).catch(function(e){ console.error("Login-Verarbeitung fehlgeschlagen", e); });
           } else {
@@ -7167,6 +7270,10 @@ const accountSignupBtnEl = document.getElementById("accountSignupBtn");
 if(accountSignupBtnEl) accountSignupBtnEl.onclick = signUpWithPassword;
 const accountPasswordLoginBtnEl = document.getElementById("accountPasswordLoginBtn");
 if(accountPasswordLoginBtnEl) accountPasswordLoginBtnEl.onclick = signInWithPassword;
+const accountForgotPasswordBtnEl = document.getElementById("accountForgotPasswordBtn");
+if(accountForgotPasswordBtnEl) accountForgotPasswordBtnEl.onclick = requestPasswordReset;
+const accountSaveNewPasswordBtnEl = document.getElementById("accountSaveNewPasswordBtn");
+if(accountSaveNewPasswordBtnEl) accountSaveNewPasswordBtnEl.onclick = saveNewPassword;
 const accountLogoutBtnEl = document.getElementById("accountLogoutBtn");
 if(accountLogoutBtnEl) accountLogoutBtnEl.onclick = logoutAccount;
 
