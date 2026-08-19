@@ -1616,6 +1616,11 @@ const EXERCISE_LIBRARY = {
     {name:"Wadenheben sitzend", type:"isolation"},
     {name:"Pistol Squats", type:"grund", mode:"bodyweight", bwFactor:0.9, perSide:true},
     {name:"Nordic Curls", type:"grund", mode:"bodyweight", bwFactor:0.7},
+    {name:"Goblet Squats", type:"grund"},
+    {name:"Sumo-Kreuzheben", type:"grund"},
+    {name:"Reverse Lunges", type:"grund"},
+    {name:"Step-Ups", type:"grund"},
+    {name:"Glute Bridge", type:"grund"},
   ],
   "Brust": [
     {name:"Bankdrücken", type:"grund"},
@@ -1632,6 +1637,10 @@ const EXERCISE_LIBRARY = {
     {name:"Tuck-Planche (Halten)", type:"isolation", mode:"hold", bwFactor:1.0},
     {name:"Kurzhantel-Fliegende", type:"isolation"},
     {name:"Butterfly", type:"isolation"},
+    {name:"Cable Crossover", type:"isolation"},
+    {name:"Pec-Deck (Maschine)", type:"isolation"},
+    {name:"Negativ-Bankdrücken", type:"grund"},
+    {name:"Liegestütze breit", type:"grund", mode:"bodyweight", bwFactor:0.64},
   ],
   "Rücken": [
     {name:"Kreuzheben", type:"grund"},
@@ -1645,12 +1654,21 @@ const EXERCISE_LIBRARY = {
     {name:"Rudern an Maschine oder Kabelzug", type:"grund"},
     {name:"Brustgestütztes Rudern", type:"grund"},
     {name:"Reverse Flys", type:"isolation"},
+    {name:"T-Bar Rudern", type:"grund"},
+    {name:"Einarmiges Kurzhantelrudern", type:"grund"},
+    {name:"Shrugs", type:"isolation"},
+    {name:"Klimmzüge eng/Untergriff", type:"grund", mode:"bodyweight", bwFactor:1.0},
+    {name:"Superman", type:"isolation", mode:"bodyweight", bwFactor:0.25},
   ],
   "Schultern": [
     {name:"Schulterdrücken", type:"grund"},
     {name:"Seitheben", type:"isolation"},
     {name:"Frontheben", type:"isolation"},
     {name:"Face Pulls", type:"isolation"},
+    {name:"Arnold Press", type:"grund"},
+    {name:"Military Press", type:"grund"},
+    {name:"Aufrechtes Rudern", type:"isolation"},
+    {name:"Kabel-Seitheben", type:"isolation"},
   ],
   "Bizeps": [
     {name:"SZ-Curls", type:"isolation"},
@@ -1658,12 +1676,18 @@ const EXERCISE_LIBRARY = {
     {name:"Kurzhantel-Curls", type:"isolation"},
     {name:"Scott-Curls", type:"isolation"},
     {name:"Bizepscurls", type:"isolation"},
+    {name:"Konzentrationscurls", type:"isolation"},
+    {name:"21er-Curls", type:"isolation"},
+    {name:"Kabel-Curls", type:"isolation"},
   ],
   "Trizeps": [
     {name:"Trizepsdrücken", type:"isolation"},
     {name:"Trizepsdrücken am Kabel", type:"isolation"},
     {name:"Überkopf-Trizeps", type:"isolation"},
     {name:"Kickbacks", type:"isolation"},
+    {name:"Enges Bankdrücken", type:"grund"},
+    {name:"French Press", type:"isolation"},
+    {name:"Diamond Push-ups", type:"grund", mode:"bodyweight", bwFactor:0.64},
   ],
   "Bauch": [
     {name:"Crunches", type:"isolation"},
@@ -1673,6 +1697,11 @@ const EXERCISE_LIBRARY = {
     {name:"Cable Crunches", type:"isolation"},
     {name:"Kabel-Crunch", type:"isolation"},
     {name:"Hanging Leg Raises", type:"isolation", mode:"bodyweight", bwFactor:0.3},
+    {name:"Russian Twists", type:"isolation"},
+    {name:"Seitliche Crunches", type:"isolation"},
+    {name:"Bicycle Crunches", type:"isolation"},
+    {name:"Ab Wheel Rollout", type:"isolation"},
+    {name:"Sit-ups", type:"isolation"},
   ],
 };
 
@@ -3330,57 +3359,100 @@ function renderProgressRing(){
 }
 
 const MUSCLE_DB = [
-  { kw:"Rumänisches Kreuzheben", primary:"Gesäß, hintere Oberschenkel", secondary:"unterer Rücken, Rumpf" },
-  { kw:"Kreuzheben", primary:"Rücken, Gesäß, hintere Oberschenkel", secondary:"Rumpf, Unterarme" },
-  { kw:"Schrägbankdrücken", primary:"obere Brust", secondary:"Trizeps, vordere Schulter" },
-  { kw:"Schrägbank", primary:"obere Brust", secondary:"Trizeps, vordere Schulter" },
-  { kw:"Kurzhantel-Bankdrücken", primary:"Brust", secondary:"Trizeps, vordere Schulter" },
-  { kw:"Bankdrücken", primary:"Brust", secondary:"Trizeps, vordere Schulter" },
-  { kw:"Kurzhantel-Fliegende", primary:"Brust", secondary:"vordere Schulter" },
-  { kw:"Butterfly", primary:"Brust", secondary:"vordere Schulter" },
-  { kw:"Liegestütze", primary:"Brust", secondary:"Trizeps, vordere Schulter, Rumpf" },
-  { kw:"Klimmzüge", primary:"breiter Rücken (Lat)", secondary:"Bizeps, hintere Schulter" },
-  { kw:"Latzug", primary:"breiter Rücken (Lat)", secondary:"Bizeps, hintere Schulter" },
-  { kw:"Brustgestütztes Rudern", primary:"mittlerer Rücken", secondary:"Bizeps, hintere Schulter" },
-  { kw:"Kabelrudern", primary:"mittlerer Rücken", secondary:"Bizeps, hintere Schulter" },
-  { kw:"Langhantelrudern", primary:"mittlerer/oberer Rücken", secondary:"Bizeps" },
-  { kw:"Reverse Flys", primary:"hintere Schulter, oberer Rücken", secondary:"–" },
-  { kw:"Face Pulls", primary:"hintere Schulter, oberer Rücken", secondary:"Nacken" },
-  { kw:"Schulterdrücken", primary:"Schultern", secondary:"Trizeps, oberer Rücken" },
-  { kw:"Seitheben", primary:"seitliche Schulter", secondary:"–" },
-  { kw:"Frontheben", primary:"vordere Schulter", secondary:"–" },
-  { kw:"Überkopf-Trizeps", primary:"Trizeps (langer Kopf)", secondary:"–" },
-  { kw:"Trizepsdrücken", primary:"Trizeps", secondary:"–" },
-  { kw:"Kickbacks", primary:"Trizeps", secondary:"–" },
-  { kw:"Trizeps", primary:"Trizeps", secondary:"–" },
-  { kw:"Dips/Brustpresse", primary:"untere Brust, Trizeps", secondary:"vordere Schulter" },
-  { kw:"Brustpresse", primary:"Brust", secondary:"Trizeps, vordere Schulter" },
-  { kw:"Dips", primary:"untere Brust, Trizeps", secondary:"vordere Schulter" },
-  { kw:"SZ-Curls", primary:"Bizeps", secondary:"Unterarme" },
-  { kw:"Scott-Curls", primary:"Bizeps", secondary:"Unterarme" },
-  { kw:"Kurzhantel-Curls", primary:"Bizeps", secondary:"Unterarme" },
-  { kw:"Hammercurls", primary:"Bizeps, Unterarm", secondary:"–" },
-  { kw:"Bulgarian Split Squats", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger, Rumpf (Balance)" },
-  { kw:"Hackenschmidt", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger" },
-  { kw:"Ausfallschritte", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger, Rumpf" },
-  { kw:"Kniebeuge", primary:"Quadrizeps, Gesäß", secondary:"unterer Rücken, Rumpf" },
-  { kw:"Beinpresse", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger" },
-  { kw:"Beinstrecker", primary:"Quadrizeps", secondary:"–" },
-  { kw:"Beinbeuger", primary:"hintere Oberschenkel", secondary:"–" },
-  { kw:"Hüftstoßen", primary:"Gesäß", secondary:"hintere Oberschenkel" },
-  { kw:"Wadenheben stehend", primary:"Waden (Schwerpunkt Gastrocnemius)", secondary:"–" },
-  { kw:"Wadenheben sitzend", primary:"Waden (Schwerpunkt Soleus)", secondary:"–" },
-  { kw:"Wadenheben", primary:"Waden", secondary:"–" },
-  { kw:"Hack Squat", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger" },
-  { kw:"Bizepscurls", primary:"Bizeps", secondary:"Unterarme" },
-  { kw:"Trizepsdrücken am Kabel", primary:"Trizeps", secondary:"–" },
-  { kw:"Rudern", primary:"mittlerer/oberer Rücken", secondary:"Bizeps, hintere Schulter" },
-  { kw:"Kabel-Crunch", primary:"gerader Bauchmuskel", secondary:"–" },
-  { kw:"Hanging Leg Raises", primary:"unterer Bauch, Hüftbeuger", secondary:"Griffkraft" },
-  { kw:"Cable Crunches", primary:"gerader Bauchmuskel", secondary:"–" },
-  { kw:"Crunches", primary:"gerader Bauchmuskel", secondary:"–" },
-  { kw:"Plank", primary:"Rumpf (gesamt)", secondary:"–" },
-  { kw:"Beinheben", primary:"unterer Bauch, Hüftbeuger", secondary:"–" },
+  // --- Neu hinzugefügte Übungen + Genauigkeits-Fixes für bereits vorhandene Übungen ohne
+  // eigenen Eintrag (z.B. Calisthenics-Haltepositionen). Bewusst VOR den ursprünglichen
+  // Einträgen platziert: muscleInfoFor() nimmt den ersten Treffer per name.includes(kw), und
+  // einige neue Namen enthalten ein bestehendes, kürzeres Schlüsselwort als Teilstring (z.B.
+  // "Sumo-Kreuzheben" enthält "Kreuzheben") — stünden sie dahinter, würde fälschlich der
+  // allgemeinere alte Eintrag zuerst greifen.
+  { kw:"Sumo-Kreuzheben", primary:"Gesäß, Adduktoren, hintere Oberschenkel", secondary:"unterer Rücken, Quadrizeps", diagram:{ view:"back", active:["gluteL","gluteR","hamL","hamR","lowerBackL","lowerBackR"] } },
+  { kw:"Goblet Squats", primary:"Quadrizeps, Gesäß", secondary:"Rumpf", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Reverse Lunges", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger, Rumpf (Balance)", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Step-Ups", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger, Rumpf (Balance)", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Pistol Squats", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger, Rumpf (Balance)", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Nordic Curls", primary:"hintere Oberschenkel", secondary:"Gesäß", diagram:{ view:"back", active:["hamL","hamR"] } },
+  { kw:"Glute Bridge", primary:"Gesäß", secondary:"hintere Oberschenkel, Rumpf", diagram:{ view:"back", active:["gluteL","gluteR"] } },
+  { kw:"Negativ-Bankdrücken", primary:"untere Brust", secondary:"Trizeps, vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Enges Bankdrücken", primary:"Trizeps", secondary:"Brust, vordere Schulter", diagram:{ view:"back", active:["tricepL","tricepR","elbowL","elbowR"] } },
+  { kw:"Cable Crossover", primary:"Brust (innere Kontraktion)", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Pec-Deck", primary:"Brust", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Liegestütze breit", primary:"Brust (äußerer Bereich)", secondary:"Trizeps, vordere Schulter, Rumpf", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Diamond Push-ups", primary:"Trizeps", secondary:"Brust (innen), vordere Schulter", diagram:{ view:"back", active:["tricepL","tricepR","elbowL","elbowR"] } },
+  { kw:"Handstand-Liegestütze", primary:"Schultern", secondary:"Trizeps, oberer Rücken", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Klimmzüge eng/Untergriff", primary:"breiter Rücken (Lat), Bizeps", secondary:"hintere Schulter", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Ring Rows", primary:"mittlerer Rücken", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["traps","latL","latR"] } },
+  { kw:"T-Bar Rudern", primary:"mittlerer Rücken", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["traps","latL","latR"] } },
+  { kw:"Einarmiges Kurzhantelrudern", primary:"mittlerer Rücken, Lat", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["traps","latL","latR"] } },
+  { kw:"Aufrechtes Rudern", primary:"seitliche Schulter, Nacken", secondary:"Bizeps", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Shrugs", primary:"Nacken/Trapez", secondary:"–", diagram:{ view:"back", active:["traps"] } },
+  { kw:"Superman", primary:"unterer Rücken", secondary:"Gesäß", diagram:{ view:"back", active:["lowerBackL","lowerBackR"] } },
+  { kw:"Front Lever", primary:"breiter Rücken (Lat), Rumpf", secondary:"Bizeps, Unterarme (Griffkraft)", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Arnold Press", primary:"Schultern (alle Köpfe)", secondary:"Trizeps, oberer Rücken", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Military Press", primary:"Schultern", secondary:"Trizeps, Rumpf", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Kabel-Seitheben", primary:"seitliche Schulter", secondary:"–", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Konzentrationscurls", primary:"Bizeps", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR","elbowL","elbowR"] } },
+  { kw:"21er-Curls", primary:"Bizeps", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR","elbowL","elbowR"] } },
+  { kw:"Kabel-Curls", primary:"Bizeps", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR","elbowL","elbowR"] } },
+  { kw:"French Press", primary:"Trizeps (langer Kopf)", secondary:"–", diagram:{ view:"back", active:["tricepL","tricepR","elbowL","elbowR"] } },
+  { kw:"Tuck-Planche", primary:"Rumpf, vordere Schulter", secondary:"Trizeps, Brust", diagram:{ view:"front", active:["absCore","obliqueL","obliqueR"] } },
+  { kw:"L-Sit", primary:"unterer Bauch, Hüftbeuger", secondary:"Trizeps, Griffkraft", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"Russian Twists", primary:"schräge Bauchmuskeln", secondary:"gerader Bauchmuskel", diagram:{ view:"front", active:["obliqueL","obliqueR"] } },
+  { kw:"Seitliche Crunches", primary:"schräge Bauchmuskeln", secondary:"–", diagram:{ view:"front", active:["obliqueL","obliqueR"] } },
+  { kw:"Bicycle Crunches", primary:"schräge Bauchmuskeln, gerader Bauchmuskel", secondary:"Hüftbeuger", diagram:{ view:"front", active:["absCore","obliqueL","obliqueR"] } },
+  { kw:"Ab Wheel", primary:"gerader Bauchmuskel, Rumpf", secondary:"Lat, Hüftbeuger", diagram:{ view:"front", active:["absCore","obliqueL","obliqueR"] } },
+  { kw:"Sit-ups", primary:"gerader Bauchmuskel", secondary:"Hüftbeuger", diagram:{ view:"front", active:["absCore"] } },
+  // --- Ursprüngliche Einträge (Text unverändert), jetzt jeweils mit passender Diagramm-Angabe ---
+  { kw:"Rumänisches Kreuzheben", primary:"Gesäß, hintere Oberschenkel", secondary:"unterer Rücken, Rumpf", diagram:{ view:"back", active:["gluteL","gluteR","hamL","hamR","lowerBackL","lowerBackR"] } },
+  { kw:"Kreuzheben", primary:"Rücken, Gesäß, hintere Oberschenkel", secondary:"Rumpf, Unterarme", diagram:{ view:"back", active:["latL","latR","lowerBackL","lowerBackR","gluteL","gluteR","hamL","hamR"] } },
+  { kw:"Schrägbankdrücken", primary:"obere Brust", secondary:"Trizeps, vordere Schulter", diagram:{ view:"front", active:["pecL","pecR","deltL","deltR"] } },
+  { kw:"Schrägbank", primary:"obere Brust", secondary:"Trizeps, vordere Schulter", diagram:{ view:"front", active:["pecL","pecR","deltL","deltR"] } },
+  { kw:"Kurzhantel-Bankdrücken", primary:"Brust", secondary:"Trizeps, vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Bankdrücken", primary:"Brust", secondary:"Trizeps, vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Kurzhantel-Fliegende", primary:"Brust", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Butterfly", primary:"Brust", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Liegestütze", primary:"Brust", secondary:"Trizeps, vordere Schulter, Rumpf", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Klimmzüge", primary:"breiter Rücken (Lat)", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Latzug", primary:"breiter Rücken (Lat)", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Brustgestütztes Rudern", primary:"mittlerer Rücken", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["traps","latL","latR"] } },
+  { kw:"Kabelrudern", primary:"mittlerer Rücken", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["traps","latL","latR"] } },
+  { kw:"Langhantelrudern", primary:"mittlerer/oberer Rücken", secondary:"Bizeps", diagram:{ view:"back", active:["traps","latL","latR"] } },
+  { kw:"Reverse Flys", primary:"hintere Schulter, oberer Rücken", secondary:"–", diagram:{ view:"back", active:["deltL","deltR","traps"] } },
+  { kw:"Face Pulls", primary:"hintere Schulter, oberer Rücken", secondary:"Nacken", diagram:{ view:"back", active:["deltL","deltR","traps"] } },
+  { kw:"Schulterdrücken", primary:"Schultern", secondary:"Trizeps, oberer Rücken", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Seitheben", primary:"seitliche Schulter", secondary:"–", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Frontheben", primary:"vordere Schulter", secondary:"–", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Überkopf-Trizeps", primary:"Trizeps (langer Kopf)", secondary:"–", diagram:{ view:"back", active:["tricepL","tricepR","elbowL","elbowR"] } },
+  { kw:"Trizepsdrücken", primary:"Trizeps", secondary:"–", diagram:{ view:"back", active:["tricepL","tricepR","elbowL","elbowR"] } },
+  { kw:"Kickbacks", primary:"Trizeps", secondary:"–", diagram:{ view:"back", active:["tricepL","tricepR","elbowL","elbowR"] } },
+  { kw:"Trizeps", primary:"Trizeps", secondary:"–", diagram:{ view:"back", active:["tricepL","tricepR","elbowL","elbowR"] } },
+  { kw:"Dips/Brustpresse", primary:"untere Brust, Trizeps", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Brustpresse", primary:"Brust", secondary:"Trizeps, vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Dips", primary:"untere Brust, Trizeps", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"SZ-Curls", primary:"Bizeps", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR","elbowL","elbowR"] } },
+  { kw:"Scott-Curls", primary:"Bizeps", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR","elbowL","elbowR"] } },
+  { kw:"Kurzhantel-Curls", primary:"Bizeps", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR","elbowL","elbowR"] } },
+  { kw:"Hammercurls", primary:"Bizeps, Unterarm", secondary:"–", diagram:{ view:"front", active:["bicepL","bicepR","forearmL","forearmR"] } },
+  { kw:"Bulgarian Split Squats", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger, Rumpf (Balance)", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Hackenschmidt", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Ausfallschritte", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger, Rumpf", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Kniebeuge", primary:"Quadrizeps, Gesäß", secondary:"unterer Rücken, Rumpf", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Beinpresse", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Beinstrecker", primary:"Quadrizeps", secondary:"–", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Beinbeuger", primary:"hintere Oberschenkel", secondary:"–", diagram:{ view:"back", active:["hamL","hamR"] } },
+  { kw:"Hüftstoßen", primary:"Gesäß", secondary:"hintere Oberschenkel", diagram:{ view:"back", active:["gluteL","gluteR"] } },
+  { kw:"Wadenheben stehend", primary:"Waden (Schwerpunkt Gastrocnemius)", secondary:"–", diagram:{ view:"back", active:["calfL","calfR"] } },
+  { kw:"Wadenheben sitzend", primary:"Waden (Schwerpunkt Soleus)", secondary:"–", diagram:{ view:"back", active:["calfL","calfR"] } },
+  { kw:"Wadenheben", primary:"Waden", secondary:"–", diagram:{ view:"back", active:["calfL","calfR"] } },
+  { kw:"Hack Squat", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Bizepscurls", primary:"Bizeps", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR","elbowL","elbowR"] } },
+  { kw:"Trizepsdrücken am Kabel", primary:"Trizeps", secondary:"–", diagram:{ view:"back", active:["tricepL","tricepR","elbowL","elbowR"] } },
+  { kw:"Rudern", primary:"mittlerer/oberer Rücken", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["traps","latL","latR"] } },
+  { kw:"Kabel-Crunch", primary:"gerader Bauchmuskel", secondary:"–", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"Hanging Leg Raises", primary:"unterer Bauch, Hüftbeuger", secondary:"Griffkraft", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"Cable Crunches", primary:"gerader Bauchmuskel", secondary:"–", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"Crunches", primary:"gerader Bauchmuskel", secondary:"–", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"Plank", primary:"Rumpf (gesamt)", secondary:"–", diagram:{ view:"front", active:["absCore","obliqueL","obliqueR"] } },
+  { kw:"Beinheben", primary:"unterer Bauch, Hüftbeuger", secondary:"–", diagram:{ view:"front", active:["absCore"] } },
 ];
 function muscleInfoFor(name){
   for(let i=0;i<MUSCLE_DB.length;i++){
@@ -3460,8 +3532,10 @@ const MUSCLE_GROUP_DIAGRAM = {
   "Trizeps": { view: "back", active: ["tricepL","tricepR","elbowL","elbowR"] },
 };
 let muscleDiagramUidCounter = 0;
-function muscleDiagramSVG(groupName){
-  const cfg = MUSCLE_GROUP_DIAGRAM[groupName];
+// `cfg` = {view:"front"|"back", active:[Formen-Schlüssel]}. Aus MUSCLE_GROUP_DIAGRAM (grob, pro
+// Bibliotheks-Kategorie) UND aus dem "diagram"-Feld einzelner MUSCLE_DB-Einträge (genau, pro
+// Übung) — beide nutzen dasselbe Format, damit hier keine Fallunterscheidung nötig ist.
+function muscleDiagramSVGFromConfig(cfg){
   if(!cfg) return "";
   const shapes = cfg.view === "back" ? MUSCLE_BACK_SHAPES : MUSCLE_FRONT_SHAPES;
   const uid = "md" + (muscleDiagramUidCounter++);
@@ -3483,6 +3557,19 @@ function muscleDiagramSVG(groupName){
   });
   s += '</svg>';
   return s;
+}
+// Grobe Diagramm-Auswahl nur nach Bibliotheks-Kategorie (z.B. "Beine") — Rückfall für eigene
+// Übungen ohne eigenen MUSCLE_DB-Eintrag, siehe muscleDiagramForExercise().
+function muscleDiagramSVG(groupName){
+  return muscleDiagramSVGFromConfig(MUSCLE_GROUP_DIAGRAM[groupName]);
+}
+// Bevorzugt die übungsgenaue Grafik aus MUSCLE_DB (z.B. zeigt "Beinbeuger" nur die hintere
+// Oberschenkelmuskulatur statt pauschal die ganze Beine-Kategorie inkl. Quadrizeps) — nur wenn
+// keine passende MUSCLE_DB-Übung gefunden wird (z.B. bei komplett frei eingetippten eigenen
+// Übungen), fällt es auf die grobe Kategorie-Grafik zurück.
+function muscleDiagramForExercise(muscleInfo, groupName){
+  if(muscleInfo && muscleInfo.diagram) return muscleDiagramSVGFromConfig(muscleInfo.diagram);
+  return muscleDiagramSVG(groupName);
 }
 
 function toggleHistory(id){
@@ -4501,7 +4588,7 @@ function buildExerciseCard(ex, dayColor, el){
 
       if(openInfo[ex.id]){
         const mi = muscleInfoFor(ex.name);
-        const diagram = muscleDiagramSVG(exGroup);
+        const diagram = muscleDiagramForExercise(mi, exGroup);
         const panel = document.createElement("div");
         panel.className = "history-panel open";
         let inner = "";
