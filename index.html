@@ -7089,6 +7089,14 @@ function onAccountLoggedOut(){
 }
 
 async function onAccountLoggedIn(user){
+  // Supabase feuert "onAuthStateChange" nicht nur beim echten Anmelden, sondern auch bei
+  // ganz harmlosen Ereignissen wie einer stillen Token-Erneuerung — die passiert u. a. jedes
+  // Mal, wenn man kurz die App verlässt (z. B. zu WhatsApp) und wieder zurückkommt, weil der
+  // Tab dann wieder sichtbar wird. Ohne diese Prüfung würde bei jedem dieser Ereignisse erneut
+  // der komplette Cloud-Abgleich inkl. "Jetzt laden?"-Rückfrage ausgeführt. Der Abgleich soll
+  // aber nur einmal pro echtem Login laufen — danach reicht es, den bereits synchronisierten
+  // Zustand zu behalten.
+  const alreadySynced = cloudSyncEnabled && currentUserId === user.id;
   currentUserId = user.id;
   setAccountStatus("Angemeldet als " + user.email);
   const row = document.getElementById("accountLoginRow");
@@ -7097,8 +7105,10 @@ async function onAccountLoggedIn(user){
   if(row) row.style.display = "none";
   if(resetRow) resetRow.style.display = "none";
   if(logoutBtn) logoutBtn.style.display = "block";
-  await syncFromCloudOrMigrate();
-  cloudSyncEnabled = true;
+  if(!alreadySynced){
+    await syncFromCloudOrMigrate();
+    cloudSyncEnabled = true;
+  }
   renderLeaderboardSettings();
 }
 
