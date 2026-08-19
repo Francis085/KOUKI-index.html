@@ -7233,10 +7233,13 @@ let authListenerRegistered = false;
 async function initAccountSession(){
   const client = getSupabaseClient();
   if(!client) return;
-  // Ein Passwort-Reset-Link landet mit "type=recovery" im URL-Fragment zurück in der App.
-  // Das muss VOR jedem automatischen Login geprüft werden — sonst würde ein Tipp auf den Link
-  // im Postfach einfach einloggen, statt erst ein neues Passwort abzufragen.
-  const isRecoveryLink = /type=recovery/.test(window.location.hash || "");
+  // Ein Passwort-Reset-Link landet mit der Kennung "type=recovery" zurück in der App — je nach
+  // Supabase-Projekteinstellung entweder im URL-Fragment (#...&type=recovery, älterer "implicit"
+  // Ablauf) ODER in der Query-String (?code=...&type=recovery, neuerer "PKCE"-Ablauf, mittlerweile
+  // bei neu angelegten Projekten der Standard). Deshalb hier beide Stellen prüfen, nicht nur die
+  // Raute — sonst würde bei PKCE-Projekten ein Tipp auf den Link im Postfach einfach einloggen,
+  // statt erst ein neues Passwort abzufragen.
+  const isRecoveryLink = /type=recovery/.test((window.location.hash || "") + (window.location.search || ""));
   try{
     const { data } = await client.auth.getSession();
     if(isRecoveryLink && data && data.session && data.session.user){
