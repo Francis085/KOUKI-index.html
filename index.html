@@ -7611,7 +7611,13 @@ async function signUpWithPassword(ids){
   if(password !== passwordConfirm){ hint.textContent = "Die beiden Passwörter stimmen nicht überein."; return; }
   hint.textContent = "Konto wird erstellt …";
   try{
-    const { data, error } = await client.auth.signUp({ email: email, password: password });
+    // emailRedirectTo mitgeben — genau wie schon bei sendLoginLink() und requestPasswordReset() —
+    // sonst verwendet Supabase für den Bestätigungslink stur die feste "Site URL" aus dem
+    // Dashboard, egal von wo aus sich der Nutzer tatsächlich registriert hat. War hier bisher
+    // vergessen: ein neuer Nutzer landete beim Antippen des Bestätigungslinks auf einer
+    // GitHub-Pages-404-Seite, weil die im Dashboard hinterlegte Site URL nicht (mehr) mit der
+    // echten App-Adresse übereinstimmte.
+    const { data, error } = await client.auth.signUp({ email: email, password: password, options: { emailRedirectTo: window.location.href } });
     if(error) throw error;
     // Wichtiger Sonderfall: Existiert die E-Mail bereits, antwortet Supabase aus Sicherheits-
     // gründen (kein "User enumeration") NICHT mit einem Fehler, sondern mit einem User-Objekt
