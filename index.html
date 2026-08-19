@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#292820">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -153,7 +153,12 @@
   body.dark[data-theme="sunset"]{ --olive:#ff9478; --olive-2:#e2664a; }
   *{box-sizing:border-box;}
   input, select, textarea{ font-size:16px; }
-  html{background:var(--bg);}
+  /* touch-action:pan-x pan-y (statt "auto") erlaubt weiterhin normales Scrollen in beide
+     Richtungen (u.a. für die horizontal scrollbaren Chip-Reihen wie Plan-Auswahl, Theme-Auswahl),
+     unterbindet aber gezielt nur die Kneif-Zoom-Geste — zusätzlich zum maximum-scale/user-
+     scalable im viewport-Meta-Tag oben, das nicht jeder Browser (v.a. iOS Safari) zuverlässig
+     respektiert. So bleibt die App "app-artig" fixiert, ohne echtes Scrollen zu beeinträchtigen. */
+  html{background:var(--bg);touch-action:pan-x pan-y;}
   body{
     margin:0;
     min-height:100vh;
@@ -163,6 +168,7 @@
     -webkit-font-smoothing:antialiased;
     padding-bottom:96px;
     transition:background-color .35s ease, color .35s ease;
+    touch-action:pan-x pan-y;
   }
   .rank-card, .exercise, .bw-card, .progress-card, .recipe-card, .supp-card, .science-card, .legal-card, .notes, .day-modal, .product-card, .not-found-card{
     transition:background-color .35s ease, border-color .35s ease, color .35s ease;
@@ -351,6 +357,7 @@
     font-family:'Baloo 2',sans-serif;font-weight:700;font-size:12px;cursor:pointer;
   }
   .progression-tip.tip-weak{background:rgba(230,163,172,.35);}
+  .progression-tip.tip-info{background:rgba(210,196,238,.4);}
   .set-rows{display:flex;flex-direction:column;gap:6px;}
   .set-row{
     display:grid;
@@ -971,6 +978,7 @@
   </header>
 
   <div class="filter-row" id="subtabRow" style="display:none;"></div>
+  <div id="frameHintBanner"></div>
 
   <div id="frame-home">
     <div class="home-greeting" id="homeGreeting"></div>
@@ -2215,7 +2223,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{} };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2309,6 +2317,7 @@ function normalizeState(){
   if(typeof state.lastBackupDate !== "string") state.lastBackupDate = "";
   if(typeof state.backupHintDismissedDate !== "string") state.backupHintDismissedDate = "";
   if(typeof state.installHintDismissed !== "boolean") state.installHintDismissed = false;
+  if(!state.frameHintsSeen || typeof state.frameHintsSeen !== "object") state.frameHintsSeen = {};
   if(typeof state.onboardingSeen !== "boolean"){
     // Bestehende Nutzer (schon Daten vorhanden) sollen das Onboarding nicht nachträglich
     // aufgedrängt bekommen — nur wirklich frische Installationen zeigen es.
@@ -7113,6 +7122,43 @@ const NAV_GROUPS = {
   ]},
   navProfileGroup: { label: "Profil", subtabs: [ { label: "Profil", frameId: "frame-legal" } ] },
 };
+
+// --- Kontextbezogene Kurz-Hinweise pro Bereich ("Frame") ---
+// Ergänzt die einmalige, globale Kurzerklärung beim allerersten App-Start (onboardingOverlay):
+// die zeigt alle vier Hauptbereiche auf einmal knapp an, aber wer sie überflogen hat, entdeckt
+// tiefere Funktionen (Rezepte, Scanner, Supplemente, Kalender, Rang …) oft trotzdem nicht von
+// selbst. Hier bekommt stattdessen JEDER einzelne Bereich beim allerersten Besuch einen eigenen,
+// dezenten Hinweis direkt dort, wo er gerade relevant ist — einmal weggetippt, bleibt er für
+// diesen Bereich dauerhaft weg (kein nerviges Wiederauftauchen).
+const FRAME_HINTS = {
+  "frame-home": "Dein Tagesüberblick: Fortschritts-Ring, Wochen-Statistiken und deine letzten Rekorde auf einen Blick.",
+  "frame-plan": "Wähle oben deinen Trainingsplan, hake Sätze ab und tippe auf eine Übung für Verlauf, Muskel-Info und Video-Anleitung. Übungen tauschen oder für heute überspringen geht über die kleinen Symbole an jeder Übung.",
+  "frame-progress-overview": "Dein Volumen-Verlauf über Zeit sowie Fortschritt bei den großen Grundübungen im Blick behalten.",
+  "frame-calendar": "Dein Trainingskalender — tippe auf einen Tag für Details, Notizen und was du an dem Tag trainiert hast.",
+  "frame-progress": "Dein Kraft-Rang je Grundübung im Vergleich zu deinem Körpergewicht, plus Körpermaße-Verlauf.",
+  "frame-nutrition": "Kalorien & Makros für heute loggen, deinen Grundumsatz berechnen und dein Ziel festlegen.",
+  "frame-scanner": "Barcode scannen oder ein Lebensmittel suchen, um es direkt in dein Tageslog einzutragen.",
+  "frame-recipes": "Rezepte mit Einkaufsliste und ausführlicher Kochanleitung — plane deine Woche direkt im Essensplaner.",
+  "frame-supplements": "Infos zu gängigen Supplementen: Einnahmezeitpunkt, Dosierung und wofür sie gut sind.",
+  "frame-legal": "Hier findest du Konto & Cloud-Sync, Erinnerungen, App-Design, Backup, Freunde-Vergleich und die rechtlichen Infos.",
+};
+function renderFrameHint(frameId){
+  const el = document.getElementById("frameHintBanner");
+  if(!el) return;
+  const text = FRAME_HINTS[frameId];
+  if(!text || (state.frameHintsSeen && state.frameHintsSeen[frameId])){ el.innerHTML = ""; return; }
+  el.innerHTML = '<div class="progression-tip tip-info">' +
+    '<span class="tip-icon">💡</span>' +
+    '<span>' + escapeHtml(text) + '</span>' +
+    '<span class="set-del" id="frameHintDismissBtn" title="Nicht mehr anzeigen">✕</span>' +
+  '</div>';
+  const dismiss = document.getElementById("frameHintDismissBtn");
+  if(dismiss) dismiss.onclick = function(){
+    state.frameHintsSeen[frameId] = true;
+    saveState();
+    renderFrameHint(frameId);
+  };
+}
 function allFrameIds(){
   const ids = [];
   Object.keys(NAV_GROUPS).forEach(function(g){ NAV_GROUPS[g].subtabs.forEach(function(s){ ids.push(s.frameId); }); });
@@ -7151,6 +7197,7 @@ function showGroup(group, subtabIndex){
   });
   setActiveNavGroup(group);
   renderSubtabRow(group);
+  renderFrameHint(activeFrameId);
   document.getElementById("frameTitle").textContent = subtabs.length > 1 ?
     (NAV_GROUPS[group].label + " · " + subtabs[activeSubtabIndex].label) : NAV_GROUPS[group].label;
   closeDayDetail();
@@ -8166,6 +8213,10 @@ function init(){
       try{ mirrorReminderState(); }catch(e){}
       checkReminders();
       try{ renderLeaderboardSettings(); }catch(e){ console.error("Freunde-Vergleich-Einstellungen konnten nicht angezeigt werden", e); }
+      // showGroup() (das renderFrameHint() sonst mit auslöst) läuft beim Start nie — die
+      // Home-Ansicht ist ja schon von Anfang an sichtbar, ohne dass navigiert wird. Deshalb hier
+      // einmalig nachholen, sonst bliebe der Home-Hinweis bei einer Neuinstallation stumm.
+      try{ renderFrameHint("frame-home"); }catch(e){ console.error("Bereichs-Hinweis konnte nicht angezeigt werden", e); }
     })
     .then(hideSplash)
     .then(function(){
