@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#292820">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -153,7 +153,12 @@
   body.dark[data-theme="sunset"]{ --olive:#ff9478; --olive-2:#e2664a; }
   *{box-sizing:border-box;}
   input, select, textarea{ font-size:16px; }
-  html{background:var(--bg);}
+  /* touch-action:pan-x pan-y (statt "auto") erlaubt weiterhin normales Scrollen in beide
+     Richtungen (u.a. für die horizontal scrollbaren Chip-Reihen wie Plan-Auswahl, Theme-Auswahl),
+     unterbindet aber gezielt nur die Kneif-Zoom-Geste — zusätzlich zum maximum-scale/user-
+     scalable im viewport-Meta-Tag oben, das nicht jeder Browser (v.a. iOS Safari) zuverlässig
+     respektiert. So bleibt die App "app-artig" fixiert, ohne echtes Scrollen zu beeinträchtigen. */
+  html{background:var(--bg);touch-action:pan-x pan-y;}
   body{
     margin:0;
     min-height:100vh;
@@ -163,6 +168,7 @@
     -webkit-font-smoothing:antialiased;
     padding-bottom:96px;
     transition:background-color .35s ease, color .35s ease;
+    touch-action:pan-x pan-y;
   }
   .rank-card, .exercise, .bw-card, .progress-card, .recipe-card, .supp-card, .science-card, .legal-card, .notes, .day-modal, .product-card, .not-found-card{
     transition:background-color .35s ease, border-color .35s ease, color .35s ease;
