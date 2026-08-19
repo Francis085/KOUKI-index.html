@@ -178,7 +178,7 @@
     font-family:'Baloo 2',sans-serif;font-weight:800;font-size:34px;
     margin:0;line-height:1.05;color:var(--text-strong);
   }
-  h1 .brand-kouki{color:var(--pink-deep);}
+  h1 .brand-kouki, .reward-panel h3 .brand-kouki{color:var(--pink-deep);}
 
   .header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
   .theme-toggle{
@@ -1500,6 +1500,53 @@
   <div class="confetti-field" id="confettiField"></div>
   <button class="btn btn-primary" id="celebrateShareBtn" style="display:none;margin-top:16px;pointer-events:auto;">📤 Als Bild teilen</button>
   <button class="btn btn-ghost" id="celebrateCloseBtn" style="display:none;margin-top:8px;pointer-events:auto;">Schließen</button>
+</div>
+
+<!-- Start-Bildschirm für frische Installationen: zeigt Logo + Markenname, bietet Registrierung
+     mit E-Mail/Passwort als empfohlenen Weg an (damit Trainingsdaten nicht ausschließlich im
+     lokalen Browser-Speicher landen, wo ein gelöschter Cache sie unwiederbringlich vernichtet),
+     lässt aber gleichwertig sichtbar "ohne Konto" zu — mit einem ehrlichen Satz statt
+     Kleingedrucktem, damit die Entscheidung informiert getroffen wird. Erscheint NUR, wenn
+     state.onboardingSeen noch nicht gesetzt ist (siehe normalizeState: bereits vorhandene lokale
+     Daten setzen das Flag automatisch, bestehende Nutzer bekommen diesen Bildschirm also nie). -->
+<div class="reward-overlay" id="welcomeGateOverlay">
+  <div class="reward-panel">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:6px;">
+      <img id="welcomeGateLogo" alt="KOUKI Logo" style="width:64px;height:64px;border-radius:16px;margin-bottom:10px;">
+      <h3 style="margin-bottom:2px;">Willkommen bei <span class="brand-kouki">KOUKI</span></h3>
+      <p class="reward-sub" style="margin:0;">Dein Gesundheitsbegleiter</p>
+    </div>
+    <p style="font-size:12.5px;color:var(--ink-soft);text-align:center;margin:10px 0 16px;">Leg ein kostenloses Konto an, damit deine Trainings- und Ernährungsdaten sicher in der Cloud landen und auf jedem Gerät verfügbar sind.</p>
+    <div class="measure-group">
+      <p class="measure-label">E-Mail</p>
+      <input type="email" id="welcomeEmailInput" placeholder="deine@email.de" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+    </div>
+    <div class="measure-group">
+      <p class="measure-label">Passwort</p>
+      <div style="position:relative;">
+        <input type="password" id="welcomePasswordInput" placeholder="mind. 6 Zeichen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+        <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+      </div>
+    </div>
+    <div class="measure-group">
+      <p class="measure-label">Passwort bestätigen</p>
+      <div style="position:relative;">
+        <input type="password" id="welcomePasswordConfirmInput" placeholder="Passwort wiederholen" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+        <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+      </div>
+      <p class="rank-hint" style="margin:6px 0 0;">Nur nötig, wenn du auf „Konto erstellen“ tippst.</p>
+    </div>
+    <div class="backup-btn-row">
+      <button class="btn btn-primary" id="welcomeGateSignupBtn" style="flex:1;">Konto erstellen</button>
+      <button class="btn btn-ghost" id="welcomeGateLoginBtn" style="flex:1;">Anmelden</button>
+    </div>
+    <p id="welcomeGateHint" class="rank-hint" style="margin:8px 0 0;"></p>
+    <button class="btn btn-ghost" id="welcomeGateContinueBtn" style="width:100%;margin-top:12px;display:none;">Weiter zur App →</button>
+    <p style="margin:16px 0 0;text-align:center;">
+      <span id="welcomeGateSkipBtn" style="font-size:12.5px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;">Ohne Konto fortfahren</span>
+    </p>
+    <p style="font-size:11px;color:var(--ink-soft);text-align:center;margin:6px 0 0;line-height:1.5;">Deine Daten bleiben dann nur auf diesem Gerät gespeichert und gehen verloren, wenn du den Browser-Speicher löschst oder das Gerät wechselst.</p>
+  </div>
 </div>
 
 <div class="reward-overlay" id="onboardingOverlay">
@@ -7281,14 +7328,18 @@ async function sendLoginLink(){
   }
 }
 
-async function signUpWithPassword(){
-  const hint = document.getElementById("accountPasswordHint");
+// `ids` ist optional und erlaubt es, dieselbe Anmeldelogik von mehreren Formularen aus
+// aufzurufen (Profil-Tab UND Start-Bildschirm für Neuinstallationen) — ohne Standardwerte
+// verhält sich der Aufruf wie bisher (Profil-Tab-Felder).
+async function signUpWithPassword(ids){
+  ids = ids || {};
+  const hint = document.getElementById(ids.hint || "accountPasswordHint");
   hint.textContent = "Wird vorbereitet …";
   const client = await getSupabaseClientWithRetry();
   if(!client){ hint.textContent = "Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."; return; }
-  const email = (document.getElementById("accountEmailInput").value || "").trim();
-  const password = document.getElementById("accountPasswordInput").value || "";
-  const passwordConfirm = document.getElementById("accountPasswordConfirmInput").value || "";
+  const email = (document.getElementById(ids.email || "accountEmailInput").value || "").trim();
+  const password = document.getElementById(ids.password || "accountPasswordInput").value || "";
+  const passwordConfirm = document.getElementById(ids.passwordConfirm || "accountPasswordConfirmInput").value || "";
   if(!email || password.length < 6){ hint.textContent = "Bitte E-Mail eingeben und ein Passwort mit mind. 6 Zeichen wählen."; return; }
   if(password !== passwordConfirm){ hint.textContent = "Die beiden Passwörter stimmen nicht überein."; return; }
   hint.textContent = "Konto wird erstellt …";
@@ -7301,7 +7352,7 @@ async function signUpWithPassword(){
     // aus, obwohl in Wahrheit gar keine neue Mail verschickt wird. Genau daran erkennbar:
     // data.user.identities ist dann ein leeres Array (bei einem echten Neu-Konto nicht leer).
     if(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
-      hint.textContent = "Für diese E-Mail-Adresse existiert bereits ein Konto — es wurde keine neue Mail verschickt. Bitte stattdessen unten auf „Anmelden“ tippen. Passwort vergessen? Sag mir Bescheid, dann bauen wir eine „Passwort vergessen“-Funktion ein.";
+      hint.textContent = "Für diese E-Mail-Adresse existiert bereits ein Konto — es wurde keine neue Mail verschickt. Bitte stattdessen unten auf „Anmelden“ tippen, oder „Passwort vergessen?“ im Profil-Bereich nutzen.";
     } else if(data && data.user && !data.session){
       hint.textContent = "Fast fertig! Bitte bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben, und melde dich danach an.";
     } else {
@@ -7312,13 +7363,14 @@ async function signUpWithPassword(){
     hint.textContent = mapAuthErrorMessage(e, "signup");
   }
 }
-async function signInWithPassword(){
-  const hint = document.getElementById("accountPasswordHint");
+async function signInWithPassword(ids){
+  ids = ids || {};
+  const hint = document.getElementById(ids.hint || "accountPasswordHint");
   hint.textContent = "Wird vorbereitet …";
   const client = await getSupabaseClientWithRetry();
   if(!client){ hint.textContent = "Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."; return; }
-  const email = (document.getElementById("accountEmailInput").value || "").trim();
-  const password = document.getElementById("accountPasswordInput").value || "";
+  const email = (document.getElementById(ids.email || "accountEmailInput").value || "").trim();
+  const password = document.getElementById(ids.password || "accountPasswordInput").value || "";
   if(!email || !password){ hint.textContent = "Bitte E-Mail und Passwort eingeben."; return; }
   hint.textContent = "Anmeldung läuft …";
   try{
@@ -7430,6 +7482,11 @@ async function onAccountLoggedIn(user){
     cloudSyncEnabled = true;
   }
   renderLeaderboardSettings();
+  // Falls der Start-Bildschirm (Neuinstallation) gerade offen ist — z.B. weil sich hier
+  // bereits eine gültige Sitzung aus einer früheren Anmeldung wiederhergestellt hat, oder weil
+  // die Anmeldung über den Start-Bildschirm selbst sofort erfolgreich war — automatisch
+  // weiterleiten, statt den schon angemeldeten Nutzer erneut zur Eingabe zu zwingen.
+  try{ if(typeof dismissWelcomeGateToApp === "function") dismissWelcomeGateToApp(); }catch(e){}
 }
 
 async function syncFromCloudOrMigrate(){
@@ -7945,7 +8002,11 @@ function init(){
     })
     .then(hideSplash)
     .then(function(){
-      setTimeout(function(){ try{ showOnboardingIfNeeded(); }catch(e){ console.error("Onboarding konnte nicht angezeigt werden", e); } }, 700);
+      // Bei Neuinstallationen kommt zuerst der Start-Bildschirm (Registrierung/"ohne Konto"),
+      // erst danach die Kurzerklärung — showWelcomeGateIfNeeded() stößt Letztere selbst an,
+      // sobald der Start-Bildschirm verlassen wird (siehe dismissWelcomeGateToApp). Bestehende
+      // Nutzer (state.onboardingSeen bereits gesetzt) überspringen beides wie bisher.
+      setTimeout(function(){ try{ showWelcomeGateIfNeeded(); }catch(e){ console.error("Start-Bildschirm konnte nicht angezeigt werden", e); } }, 700);
     });
   setTimeout(function(){
     initAccountSession().catch(function(e){ console.error("Konto-Initialisierung übersprungen", e); });
@@ -7981,6 +8042,56 @@ if(onboardingCloseBtnEl){
     if(overlay) overlay.classList.remove("show");
   };
 }
+
+// --- Start-Bildschirm für Neuinstallationen (Logo, Registrierung, "ohne Konto") ---
+// Läuft VOR der bestehenden Kurzerklärung (onboardingOverlay) ab, teilt sich aber dasselbe
+// state.onboardingSeen-Flag: bestehende Nutzer mit bereits vorhandenen lokalen Daten haben das
+// Flag schon gesetzt (siehe normalizeState) und bekommen daher weder diesen Start-Bildschirm
+// noch die Kurzerklärung erneut zu sehen. Erst wenn dieser Bildschirm verlassen wird — per
+// Registrierung/Anmeldung ODER bewusst "ohne Konto" — kommt die Kurzerklärung dran; das Flag
+// selbst wird weiterhin erst durch deren eigenen "Los geht's"-Button gesetzt.
+function showWelcomeGateIfNeeded(){
+  if(state.onboardingSeen) return;
+  const overlay = document.getElementById("welcomeGateOverlay");
+  if(!overlay) return;
+  const logoImg = document.getElementById("welcomeGateLogo");
+  const headerLogo = document.querySelector(".header-logo");
+  if(logoImg && headerLogo) logoImg.src = headerLogo.src;
+  overlay.classList.add("show");
+}
+function dismissWelcomeGateToApp(){
+  const overlay = document.getElementById("welcomeGateOverlay");
+  if(!overlay || !overlay.classList.contains("show")) return;
+  overlay.classList.remove("show");
+  setTimeout(function(){
+    try{ showOnboardingIfNeeded(); }catch(e){ console.error("Onboarding konnte nicht angezeigt werden", e); }
+  }, 350);
+}
+// Nach einem Registrierungs-/Anmeldeversuch (egal ob erfolgreich, mit Bestätigungsmail
+// ausstehend, oder fehlgeschlagen) den Weg in die App freigeben, statt den Nutzer im
+// Start-Bildschirm gefangen zu halten, während er auf eine Bestätigungsmail wartet.
+function revealWelcomeGateContinue(){
+  const btn = document.getElementById("welcomeGateContinueBtn");
+  if(btn) btn.style.display = "block";
+}
+const welcomeGateSignupBtnEl = document.getElementById("welcomeGateSignupBtn");
+if(welcomeGateSignupBtnEl){
+  welcomeGateSignupBtnEl.onclick = function(){
+    signUpWithPassword({ email: "welcomeEmailInput", password: "welcomePasswordInput", passwordConfirm: "welcomePasswordConfirmInput", hint: "welcomeGateHint" })
+      .then(revealWelcomeGateContinue);
+  };
+}
+const welcomeGateLoginBtnEl = document.getElementById("welcomeGateLoginBtn");
+if(welcomeGateLoginBtnEl){
+  welcomeGateLoginBtnEl.onclick = function(){
+    signInWithPassword({ email: "welcomeEmailInput", password: "welcomePasswordInput", hint: "welcomeGateHint" })
+      .then(revealWelcomeGateContinue);
+  };
+}
+const welcomeGateSkipBtnEl = document.getElementById("welcomeGateSkipBtn");
+if(welcomeGateSkipBtnEl) welcomeGateSkipBtnEl.onclick = dismissWelcomeGateToApp;
+const welcomeGateContinueBtnEl = document.getElementById("welcomeGateContinueBtn");
+if(welcomeGateContinueBtnEl) welcomeGateContinueBtnEl.onclick = dismissWelcomeGateToApp;
 function hideSplash(){
   const splash = document.getElementById("splashScreen");
   if(!splash) return;
