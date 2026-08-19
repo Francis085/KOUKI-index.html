@@ -106,6 +106,11 @@
     --pastel-text-soft:#524c30;
     --pastel-overlay:rgba(255,255,255,.6);
     --pastel-border:rgba(51,47,30,.35);
+    /* Tagesfarben 4 und 5 (für 4- und 5-Tage-Pläne) werden aus den drei Grundtönen des jeweils
+       aktiven Themes gemischt. Dadurch braucht kein Theme zwei zusätzliche Farbwerte zu pflegen:
+       die Mischung greift automatisch auf die themespezifischen Werte zu. */
+    --day-c3:color-mix(in srgb, var(--yellow-deep) 55%, var(--lilac-deep));
+    --day-c4:color-mix(in srgb, var(--pink-deep) 55%, var(--lilac-deep));
   }
   /* --- KOUKI Themes: Hintergrund, Fläche, Text, Akzent UND die pastellfarbenen
      Übungs-/Kalender-/Rezept-Kacheln passen sich pro Theme an. Innerhalb eines Themes bleiben
@@ -210,6 +215,10 @@
   .day-btn.day-c0{box-shadow:inset 0 3px 0 var(--yellow-deep);}
   .day-btn.day-c1{box-shadow:inset 0 3px 0 var(--lilac-deep);}
   .day-btn.day-c2{box-shadow:inset 0 3px 0 var(--pink-deep);}
+  /* Grundwerte für Tag 4/5 ohne color-mix-Unterstützung: dann wiederholen sich die Farben
+     wie bisher, statt dass gar keine Farbe erscheint. */
+  .day-btn.day-c3{box-shadow:inset 0 3px 0 var(--yellow-deep);}
+  .day-btn.day-c4{box-shadow:inset 0 3px 0 var(--pink-deep);}
   .day-btn .sub{display:block;font-family:'Inter',sans-serif;font-weight:400;font-size:10.5px;color:inherit;opacity:.7;margin-top:2px;}
 
   .progress-card{
@@ -728,6 +737,8 @@
   .cal-day.trained.day-c0{background:var(--yellow-deep);border-color:var(--yellow-deep);color:var(--pastel-text);}
   .cal-day.trained.day-c1{background:var(--lilac-deep);border-color:var(--lilac-deep);color:var(--pastel-text);}
   .cal-day.trained.day-c2{background:var(--pink-deep);border-color:var(--pink-deep);color:var(--pastel-text);}
+  .cal-day.trained.day-c3{background:var(--yellow-deep);border-color:var(--yellow-deep);color:var(--pastel-text);}
+  .cal-day.trained.day-c4{background:var(--pink-deep);border-color:var(--pink-deep);color:var(--pastel-text);}
   .cal-day.today{box-shadow:0 0 0 2px var(--text-strong) inset;}
   .cal-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 14px;}
   .cal-legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-soft);font-weight:600;}
@@ -735,6 +746,8 @@
   .cal-legend-dot.day-c0{background:var(--yellow-deep);}
   .cal-legend-dot.day-c1{background:var(--lilac-deep);}
   .cal-legend-dot.day-c2{background:var(--pink-deep);}
+  .cal-legend-dot.day-c3{background:var(--yellow-deep);}
+  .cal-legend-dot.day-c4{background:var(--pink-deep);}
 
   .session-note{
     width:100%;border:1px solid var(--line);border-radius:16px;padding:11px 13px;
@@ -783,6 +796,21 @@
   .session-list-dot.day-c0{background:var(--yellow-deep);}
   .session-list-dot.day-c1{background:var(--lilac-deep);}
   .session-list-dot.day-c2{background:var(--pink-deep);}
+  .session-list-dot.day-c3{background:var(--yellow-deep);}
+  .session-list-dot.day-c4{background:var(--pink-deep);}
+
+  /* Wenn der Browser Farben mischen kann (Safari 16.2+, alle aktuellen Browser), bekommen
+     Tag 4 und 5 eigene Zwischentöne — sonst bleiben die wiederholten Grundfarben von oben. */
+  @supports (color: color-mix(in srgb, red, blue)){
+    .day-btn.day-c3{box-shadow:inset 0 3px 0 var(--day-c3);}
+    .day-btn.day-c4{box-shadow:inset 0 3px 0 var(--day-c4);}
+    .cal-day.trained.day-c3{background:var(--day-c3);border-color:var(--day-c3);}
+    .cal-day.trained.day-c4{background:var(--day-c4);border-color:var(--day-c4);}
+    .cal-legend-dot.day-c3{background:var(--day-c3);}
+    .cal-legend-dot.day-c4{background:var(--day-c4);}
+    .session-list-dot.day-c3{background:var(--day-c3);}
+    .session-list-dot.day-c4{background:var(--day-c4);}
+  }
   .session-list-info{flex:1;}
   .session-list-date{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13px;color:var(--text-strong);margin:0;}
   .session-list-sub{font-size:11px;color:var(--ink-soft);margin:2px 0 0;}
@@ -1848,6 +1876,249 @@ const CALISTHENICS_PLAN = {
   }
 };
 
+// 4 Tage pro Woche: Oberkörper/Unterkörper im Wechsel (Upper/Lower). Jede Muskelgruppe wird
+// zweimal pro Woche trainiert — bei vier Einheiten die bewährteste Aufteilung, weil jede Gruppe
+// häufiger dran kommt als bei einem klassischen Split mit nur einem Tag pro Gruppe. Tag A ist
+// jeweils der schwere Tag (weniger Wiederholungen, längere Pausen), Tag B der Volumen-Tag.
+const UPPER_LOWER_PLAN = {
+  id: "upperlower4",
+  label: "4-Tage Oberkörper/Unterkörper",
+  builtin: true,
+  dayOrder: ["ul_upper_a","ul_lower_a","ul_upper_b","ul_lower_b"],
+  days: {
+    ul_upper_a: {
+      label: "Oberkörper A", sub: "schwer · Druck-Fokus",
+      groups: [
+        { name: "Brust", exercises: [
+          { id: "ul_ua_bench", name: "Bankdrücken", sets: "4x6-10", type: "grund", rirTarget: "1–2", restSeconds: 180 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "ul_ua_pullup", name: "Klimmzüge/Latzug", sets: "4x6-10", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "ul_ua_ohp", name: "Schulterdrücken", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "ul_ua_row", name: "Langhantelrudern", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "ul_ua_lateral", name: "Seitheben", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Trizeps", exercises: [
+          { id: "ul_ua_tricep", name: "Trizepsdrücken am Kabel", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Bizeps", exercises: [
+          { id: "ul_ua_curl", name: "Bizepscurls", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+      ]
+    },
+    ul_lower_a: {
+      label: "Unterkörper A", sub: "schwer · Kniebeuge-Fokus",
+      groups: [
+        { name: "Beine", exercises: [
+          { id: "ul_la_squat", name: "Kniebeugen", sets: "4x6-10", type: "grund", rirTarget: "2–3", restSeconds: 180 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "ul_la_rdl", name: "Rumänisches Kreuzheben", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "ul_la_press", name: "Beinpresse", sets: "3x10-15", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "ul_la_curl", name: "Beinbeuger", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "ul_la_calf", name: "Wadenheben stehend", sets: "4x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+        { name: "Bauch", exercises: [
+          { id: "ul_la_plank", name: "Plank", sets: "3x30-60", type: "isolation", restSeconds: 90, mode: "hold", bwFactor: 0.5 },
+        ]},
+      ]
+    },
+    ul_upper_b: {
+      label: "Oberkörper B", sub: "Volumen · Zug-Fokus",
+      groups: [
+        { name: "Brust", exercises: [
+          { id: "ul_ub_incline", name: "Schrägbankdrücken mit Kurzhanteln", sets: "4x8-12", type: "grund", rirTarget: "1–2", restSeconds: 165 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "ul_ub_cablerow", name: "Kabelrudern", sets: "4x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "ul_ub_pulldown", name: "Klimmzüge/Latzug", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "ul_ub_chestpress", name: "Brustpresse", sets: "3x10-15", type: "grund", rirTarget: "1–2", restSeconds: 120 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "ul_ub_facepull", name: "Face Pulls", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Bizeps", exercises: [
+          { id: "ul_ub_hammer", name: "Hammercurls", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Trizeps", exercises: [
+          { id: "ul_ub_overhead", name: "Überkopf-Trizeps", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+      ]
+    },
+    ul_lower_b: {
+      label: "Unterkörper B", sub: "Volumen · Kreuzheben-Fokus",
+      groups: [
+        { name: "Rücken", exercises: [
+          { id: "ul_lb_deadlift", name: "Kreuzheben", sets: "3x5-8", type: "grund", rirTarget: "2–3", restSeconds: 210 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "ul_lb_hack", name: "Hack Squat", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 180 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "ul_lb_split", name: "Bulgarian Split Squats", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "ul_lb_ext", name: "Beinstrecker", sets: "3x12-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "ul_lb_calf", name: "Wadenheben sitzend", sets: "4x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+        { name: "Bauch", exercises: [
+          { id: "ul_lb_raise", name: "Hanging Leg Raises", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90, mode: "bodyweight", bwFactor: 0.3 },
+        ]},
+      ]
+    }
+  }
+};
+
+// 5 Tage pro Woche: Push/Pull/Legs plus zwei zusätzliche Oberkörper-/Unterkörper-Einheiten.
+// Dadurch wird jede Muskelgruppe knapp zweimal pro Woche trainiert — deutlich wirksamer als ein
+// klassischer 5-Tage-Split mit nur einer Einheit pro Muskelgruppe. Die beiden Zusatztage sind
+// bewusst etwas leichter gehalten (mehr Wiederholungen, kürzere Pausen), damit die Erholung
+// bei fünf Einheiten pro Woche nicht auf der Strecke bleibt.
+const PPL_UL_PLAN = {
+  id: "ppl_ul5",
+  label: "5-Tage Push/Pull/Legs + OK/UK",
+  builtin: true,
+  dayOrder: ["p5_push","p5_pull","p5_legs","p5_upper","p5_lower"],
+  days: {
+    p5_push: {
+      label: "Push", sub: "Brust · Schultern · Trizeps",
+      groups: [
+        { name: "Brust", exercises: [
+          { id: "p5_push_bench", name: "Bankdrücken", sets: "4x6-10", type: "grund", rirTarget: "1–2", restSeconds: 180 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "p5_push_ohp", name: "Schulterdrücken", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "p5_push_incline", name: "Schrägbankdrücken mit Kurzhanteln", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "p5_push_lateral", name: "Seitheben", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "p5_push_dips", name: "Dips", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150, mode: "bodyweight", bwFactor: 1.0 },
+        ]},
+        { name: "Trizeps", exercises: [
+          { id: "p5_push_tricep", name: "Trizepsdrücken am Kabel", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+      ]
+    },
+    p5_pull: {
+      label: "Pull", sub: "Rücken · Bizeps",
+      groups: [
+        { name: "Rücken", exercises: [
+          { id: "p5_pull_pullup", name: "Klimmzüge/Latzug", sets: "4x6-10", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "p5_pull_row", name: "Langhantelrudern", sets: "4x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "p5_pull_cablerow", name: "Kabelrudern", sets: "3x10-15", type: "grund", rirTarget: "1–2", restSeconds: 120 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "p5_pull_facepull", name: "Face Pulls", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Bizeps", exercises: [
+          { id: "p5_pull_szcurl", name: "SZ-Curls", sets: "3x8-12", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Bizeps", exercises: [
+          { id: "p5_pull_hammer", name: "Hammercurls", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+      ]
+    },
+    p5_legs: {
+      label: "Legs", sub: "Beine · Bauch",
+      groups: [
+        { name: "Beine", exercises: [
+          { id: "p5_legs_squat", name: "Kniebeugen", sets: "4x6-10", type: "grund", rirTarget: "2–3", restSeconds: 180 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "p5_legs_rdl", name: "Rumänisches Kreuzheben", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "p5_legs_press", name: "Beinpresse", sets: "3x10-15", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "p5_legs_curl", name: "Beinbeuger", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "p5_legs_calf", name: "Wadenheben stehend", sets: "4x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+        { name: "Bauch", exercises: [
+          { id: "p5_legs_abs", name: "Kabel-Crunch", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+      ]
+    },
+    p5_upper: {
+      label: "Oberkörper", sub: "Zusatz · mehr Wiederholungen",
+      groups: [
+        { name: "Brust", exercises: [
+          { id: "p5_up_incline", name: "Schrägbankdrücken", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 165 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "p5_up_chestrow", name: "Brustgestütztes Rudern", sets: "3x10-15", type: "grund", rirTarget: "1–2", restSeconds: 120 },
+        ]},
+        { name: "Brust", exercises: [
+          { id: "p5_up_dbbench", name: "Kurzhantel-Bankdrücken", sets: "3x10-15", type: "grund", rirTarget: "1–2", restSeconds: 120 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "p5_up_reverse", name: "Reverse Flys", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "p5_up_front", name: "Frontheben", sets: "2x12-15", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+        { name: "Bizeps", exercises: [
+          { id: "p5_up_dbcurl", name: "Kurzhantel-Curls", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Trizeps", exercises: [
+          { id: "p5_up_kickback", name: "Kickbacks", sets: "2x12-15", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+      ]
+    },
+    p5_lower: {
+      label: "Unterkörper", sub: "Zusatz · Hüfte & Gesäß",
+      groups: [
+        { name: "Rücken", exercises: [
+          { id: "p5_low_deadlift", name: "Kreuzheben", sets: "3x5-8", type: "grund", rirTarget: "2–3", restSeconds: 210 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "p5_low_thrust", name: "Hüftstoßen", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "p5_low_split", name: "Bulgarian Split Squats", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "p5_low_ext", name: "Beinstrecker", sets: "3x12-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Beine", exercises: [
+          { id: "p5_low_calf", name: "Wadenheben sitzend", sets: "4x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 75 },
+        ]},
+        { name: "Bauch", exercises: [
+          { id: "p5_low_plank", name: "Plank", sets: "3x30-60", type: "isolation", restSeconds: 90, mode: "hold", bwFactor: 0.5 },
+        ]},
+      ]
+    }
+  }
+};
+
 const TIERS = ["Eisen","Bronze","Silber","Gold","Platin","Diamant","Meister","Großmeister","Challenger"];
 const TIER_COLORS = {
   "Eisen":"#8b8467","Bronze":"#a9713f","Silber":"#8f99a3","Gold":"#c98f2b",
@@ -1885,17 +2156,31 @@ const checkIcon = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12l6 6L20 6"
 function storageAvailable(){
   try{ return typeof window !== "undefined" && !!window.localStorage; }catch(e){ return false; }
 }
+// Prüft, ob ein geladener Stand überhaupt ein benutzbares Objekt ist. JSON.parse liefert für
+// die Texte "null", "0" oder "[]" gültige, aber unbrauchbare Werte zurück — daraus würde beim
+// weiteren Zugriff sofort ein Absturz beim App-Start ("Cannot read properties of null").
+function isUsableState(candidate){
+  return !!candidate && typeof candidate === "object" && !Array.isArray(candidate);
+}
 async function loadState(){
   try{
     if(storageAvailable()){
       const raw = localStorage.getItem(STORAGE_KEY);
-      if(raw) state = JSON.parse(raw);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(isUsableState(parsed)) state = parsed;
+        else console.warn("Gespeicherter Stand war unbrauchbar, starte mit leerem Stand.");
+      }
     }
   }catch(e){ console.log("Kein gespeicherter Stand gefunden, starte neu.", e); }
   normalizeState();
 }
 
 function normalizeState(){
+  // Letzte Absicherung: normalizeState() wird auch nach dem Laden aus der Cloud aufgerufen,
+  // wo der Stand ebenso beschädigt sein könnte. Lieber mit leerem Stand weiterarbeiten als
+  // die ganze App beim Start abstürzen lassen.
+  if(!isUsableState(state)) state = {};
   if(!state.entries) state.entries = {};
   if(!state.history) state.history = {};
   if(!state.prs) state.prs = {};
@@ -2171,7 +2456,7 @@ document.getElementById("scienceToggle").onclick = function(){
   chevron.classList.toggle("open", !isOpen);
 };
 
-function getAllPlans(){ return [DEFAULT_PLAN, PPL_PLAN, CALISTHENICS_PLAN].concat(state.customPlans); }
+function getAllPlans(){ return [DEFAULT_PLAN, PPL_PLAN, UPPER_LOWER_PLAN, PPL_UL_PLAN, CALISTHENICS_PLAN].concat(state.customPlans); }
 function getPlanById(id){ return getAllPlans().find(function(p){ return p.id === id; }) || DEFAULT_PLAN; }
 function getActivePlan(){ return getPlanById(currentPlanId); }
 function activeDays(){ return getActivePlan().days; }
@@ -2841,18 +3126,22 @@ function draftRemoveDay(dayIdx){
 function renderBuilder(){
   const area = document.getElementById("builderArea");
   if(!builderDraft){ area.innerHTML = ""; return; }
+  // Alle selbst eingetippten Texte müssen escapeHtml() durchlaufen, bevor sie in ein
+  // HTML-Attribut oder in den Seiteninhalt geschrieben werden. Sonst beendet z. B. ein
+  // Anführungszeichen im Plan-Namen das value="…"-Attribut vorzeitig und der Name wird beim
+  // nächsten Neuzeichnen stillschweigend abgeschnitten (aus 'Mein "harter" Plan' wurde 'Mein ').
   let html = '<div class="builder"><h3>Neuen Plan erstellen</h3>' +
     '<label>Plan-Name</label>' +
-    '<input type="text" value="' + builderDraft.label + '" placeholder="z.B. 4-Tage Push/Pull/Legs" oninput="draftSetPlanLabel(this.value)">';
+    '<input type="text" value="' + escapeHtml(builderDraft.label) + '" placeholder="z.B. 4-Tage Push/Pull/Legs" oninput="draftSetPlanLabel(this.value)">';
 
   builderDraft.days.forEach(function(day, dayIdx){
     html += '<div class="builder-day">' +
       '<div class="builder-day-head">' +
         '<div>' +
           '<label>Tag ' + (dayIdx+1) + ' — Name</label>' +
-          '<input type="text" value="' + day.label + '" placeholder="z.B. Push" oninput="draftSetDayLabel(' + dayIdx + ', this.value)">' +
+          '<input type="text" value="' + escapeHtml(day.label) + '" placeholder="z.B. Push" oninput="draftSetDayLabel(' + dayIdx + ', this.value)">' +
           '<label>Untertitel (optional)</label>' +
-          '<input type="text" value="' + day.sub + '" placeholder="z.B. Brust & Trizeps" oninput="draftSetDaySub(' + dayIdx + ', this.value)">' +
+          '<input type="text" value="' + escapeHtml(day.sub) + '" placeholder="z.B. Brust & Trizeps" oninput="draftSetDaySub(' + dayIdx + ', this.value)">' +
         '</div>' +
         '<button class="builder-day-remove" onclick="draftRemoveDay(' + dayIdx + ')" title="Tag entfernen">✕</button>' +
       '</div>';
@@ -2860,8 +3149,8 @@ function renderBuilder(){
     day.exercises.forEach(function(ex, exIdx){
       html += '<div class="builder-ex-row">' +
         '<select class="ex-select" onchange="draftExerciseSelect(' + dayIdx + ', ' + exIdx + ', this.value)">' + buildExerciseOptions(ex) + '</select>' +
-        (ex.source === "custom" ? ('<input type="text" class="custom-name" placeholder="Name der Übung" value="' + ex.customName + '" oninput="draftSetCustomName(' + dayIdx + ', ' + exIdx + ', this.value)">') : "") +
-        '<input type="text" class="sets-input" value="' + ex.sets + '" placeholder="3x8-12" oninput="draftSetSets(' + dayIdx + ', ' + exIdx + ', this.value)">' +
+        (ex.source === "custom" ? ('<input type="text" class="custom-name" placeholder="Name der Übung" value="' + escapeHtml(ex.customName) + '" oninput="draftSetCustomName(' + dayIdx + ', ' + exIdx + ', this.value)">') : "") +
+        '<input type="text" class="sets-input" value="' + escapeHtml(ex.sets) + '" placeholder="3x8-12" oninput="draftSetSets(' + dayIdx + ', ' + exIdx + ', this.value)">' +
         '<select class="type-select" onchange="draftSetType(' + dayIdx + ', ' + exIdx + ', this.value)">' +
           '<option value="grund"' + (ex.type==="grund"?" selected":"") + '>Grundübung</option>' +
           '<option value="isolation"' + (ex.type==="isolation"?" selected":"") + '>Isolation</option>' +
@@ -2926,7 +3215,9 @@ function renderDaySelect(){
     const d = days[key];
     const btn = document.createElement("div");
     btn.className = "day-btn day-c" + dayColorIndex(plan, key) + (key === currentDay ? " active" : "");
-    btn.innerHTML = d.label + (d.sub ? ('<span class="sub">' + d.sub + '</span>') : "");
+    // Bei eigenen Plänen stammen label/sub aus Nutzereingaben — escapen, sonst würde
+    // getipptes HTML tatsächlich als HTML gerendert statt als Text angezeigt.
+    btn.innerHTML = escapeHtml(d.label) + (d.sub ? ('<span class="sub">' + escapeHtml(d.sub) + '</span>') : "");
     btn.onclick = function(){ currentDay = key; currentExerciseIndex = 0; renderAll(); };
     el.appendChild(btn);
   });
@@ -3250,10 +3541,19 @@ function weekTrainedCount(monday){
   }
   return count;
 }
+const WEEK_STREAK_MIN_SESSIONS = 3;
 function computeWeekStreak(){
-  let streak = 0;
+  // Die laufende Woche darf den Streak nicht kaputt machen: Anfang der Woche hat man
+  // naturgemäß noch nicht die nötigen Einheiten zusammen. Vorher fiel die Anzeige deshalb
+  // jeden Montag auf 0 zurück und sprang später in der Woche wieder auf den alten Wert —
+  // obwohl gar keine Woche verpasst wurde. Die aktuelle Woche zählt daher nur mit, wenn sie
+  // das Ziel schon erreicht hat; erreicht sie es noch nicht, wird sie einfach übersprungen
+  // und ab der letzten abgeschlossenen Woche weitergezählt.
   let monday = mondayOf(new Date());
-  while(weekTrainedCount(monday) >= 3){
+  let streak = 0;
+  if(weekTrainedCount(monday) >= WEEK_STREAK_MIN_SESSIONS) streak++;
+  monday = new Date(monday); monday.setDate(monday.getDate() - 7);
+  while(weekTrainedCount(monday) >= WEEK_STREAK_MIN_SESSIONS){
     streak++;
     monday = new Date(monday); monday.setDate(monday.getDate() - 7);
   }
@@ -3634,11 +3934,21 @@ function renderDeloadBanner(){
   targets.forEach(function(el){ if(el) el.innerHTML = html; });
 }
 
+// Anzahl der unterscheidbaren Tagesfarben (day-c0 … day-c4). Muss zu den CSS-Regeln passen.
+// Fünf Farben, damit auch 4- und 5-Tage-Pläne im Kalender und in der Legende durchgehend
+// unterscheidbar bleiben — mit nur drei Farben hätten Tag 4 und Tag 1 dieselbe Farbe und die
+// Kalenderfarbe würde nicht mehr verraten, welche Einheit man an dem Tag gemacht hat.
+const DAY_COLOR_COUNT = 5;
+// Alte Einträge im Kalender können noch einen Farbindex ohne passende CSS-Regel enthalten
+// (oder gar keinen) — dann wird bewusst keine Farbklasse gesetzt.
+function isValidDayColorIndex(idx){
+  return typeof idx === "number" && idx >= 0 && idx < DAY_COLOR_COUNT;
+}
 function dayColorIndex(planOpt, dayKeyOpt){
   const plan = planOpt || getActivePlan();
   const dayKey = dayKeyOpt || currentDay;
   const idx = plan.dayOrder.indexOf(dayKey);
-  return idx === -1 ? 0 : idx % 3;
+  return idx === -1 ? 0 : idx % DAY_COLOR_COUNT;
 }
 function noteKey(){ return currentPlanId + "::" + currentDay; }
 function loadNoteDraft(){
@@ -3849,10 +4159,10 @@ function buildExerciseCard(ex, dayColor, el){
       const info = document.createElement("div");
       info.className = "ex-info";
       info.innerHTML =
-        '<p class="ex-name">' + ex.name + '</p>' +
+        '<p class="ex-name">' + escapeHtml(ex.name) + '</p>' +
         '<div class="ex-meta">' +
-          (exGroupLabel ? ('<span class="tag">' + exGroupLabel + '</span>') : "") +
-          '<span class="tag">' + ex.sets + '</span>' +
+          (exGroupLabel ? ('<span class="tag">' + escapeHtml(exGroupLabel) + '</span>') : "") +
+          '<span class="tag">' + escapeHtml(ex.sets) + '</span>' +
           (ex.perSide ? '<span class="tag">pro Seite</span>' : "") +
           '<span class="tag">' + (exMode === "hold" ? "sauber halten, nicht zittern" : (ex.rirTarget ? ("RIR " + ex.rirTarget) : (ex.type === "grund" ? "RIR 1–2" : "bis Muskelversagen"))) + '</span>' +
           (pr ? ('<span class="tag pr">🏆 ' + pr.weight + (pr.unit === "sek" ? ' Sek.' : 'kg') + '</span>') : "") +
@@ -6424,7 +6734,7 @@ function renderCalendar(){
       const d = plan.days[key];
       const item = document.createElement("div");
       item.className = "cal-legend-item";
-      item.innerHTML = '<span class="cal-legend-dot day-c' + (i % 3) + '"></span>' + d.label;
+      item.innerHTML = '<span class="cal-legend-dot day-c' + dayColorIndex(plan, key) + '"></span>' + escapeHtml(d.label);
       legend.appendChild(item);
     });
   }
@@ -6469,7 +6779,7 @@ function renderCalendar(){
         cls += " trained";
         const info = state.completedDayColor[dateStr];
         const colorIdx = info ? info.idx : undefined;
-        if(colorIdx === 0 || colorIdx === 1 || colorIdx === 2) cls += " day-c" + colorIdx;
+        if(isValidDayColorIndex(colorIdx)) cls += " day-c" + colorIdx;
       }
       if(dateStr === todayStr) cls += " today";
       cell.className = cls;
@@ -6506,7 +6816,7 @@ function renderSessionList(){
     const durationTxt = info && info.duration ? (" · " + formatDuration(info.duration)) : "";
     const noteTxt = info && info.note ? ('<p class="session-list-sub" style="font-style:italic;">"' + escapeHtml(info.note) + '"</p>') : "";
     return '<div class="session-list-item" data-date="' + dateStr + '">' +
-      '<span class="session-list-dot' + ((colorIdx===0||colorIdx===1||colorIdx===2) ? (' day-c'+colorIdx) : '') + '"></span>' +
+      '<span class="session-list-dot' + (isValidDayColorIndex(colorIdx) ? (' day-c'+colorIdx) : '') + '"></span>' +
       '<div class="session-list-info"><p class="session-list-date">' + formatDateLong(dateStr) + '</p>' +
       '<p class="session-list-sub">' + escapeHtml(label) + durationTxt + '</p>' + noteTxt + '</div></div>';
   }).join("");
@@ -6583,15 +6893,25 @@ function renderHome(){
       });
     });
   });
-  const prEntries = Object.keys(state.prs).map(function(id){
-    return { name: idToName[id] || id, weight: state.prs[id].weight };
-  }).sort(function(a,b){ return b.weight - a.weight; }).slice(0, 5);
+  // Halte-Übungen (Plank, L-Sit, Front Lever …) speichern ihren Rekord in Sekunden, nicht in
+  // Kilogramm. Beides in eine gemeinsame, nach Zahlenwert sortierte Liste zu werfen wäre doppelt
+  // falsch: eine 75-Sekunden-Plank würde als "75kg" angezeigt und ein 60-kg-Bankdrücken aus den
+  // Top 5 verdrängen. Deshalb getrennt sortieren — Gewichts-Rekorde zuerst, Halte-Rekorde danach —
+  // und jeden mit seiner eigenen Einheit ausgeben.
+  const prAll = Object.keys(state.prs).map(function(id){
+    const pr = state.prs[id];
+    return { name: idToName[id] || id, weight: pr.weight, unit: pr.unit === "sek" ? "sek" : "kg" };
+  });
+  const byValueDesc = function(a, b){ return b.weight - a.weight; };
+  const prEntries = prAll.filter(function(p){ return p.unit === "kg"; }).sort(byValueDesc)
+    .concat(prAll.filter(function(p){ return p.unit === "sek"; }).sort(byValueDesc))
+    .slice(0, 5);
   const prList = document.getElementById("homePrList");
   if(!prEntries.length){
     prList.innerHTML = '<p class="rank-hint" style="margin:0;">Noch keine PRs — leg los und dein erster Rekord erscheint hier.</p>';
   } else {
     prList.innerHTML = prEntries.map(function(p){
-      return '<div class="home-pr-row"><span>' + escapeHtml(p.name) + '</span><strong>' + p.weight + 'kg</strong></div>';
+      return '<div class="home-pr-row"><span>' + escapeHtml(p.name) + '</span><strong>' + p.weight + (p.unit === "sek" ? ' Sek.' : 'kg') + '</strong></div>';
     }).join("");
   }
 }
