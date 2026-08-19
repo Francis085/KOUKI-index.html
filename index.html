@@ -1514,7 +1514,7 @@ const EXERCISE_LIBRARY = {
     {name:"Wadenheben", type:"isolation", mode:"bodyweight", bwFactor:0.5},
     {name:"Wadenheben stehend", type:"isolation"},
     {name:"Wadenheben sitzend", type:"isolation"},
-    {name:"Pistol Squats", type:"grund", mode:"bodyweight", bwFactor:0.9},
+    {name:"Pistol Squats", type:"grund", mode:"bodyweight", bwFactor:0.9, perSide:true},
     {name:"Nordic Curls", type:"grund", mode:"bodyweight", bwFactor:0.7},
   ],
   "Brust": [
@@ -1527,7 +1527,7 @@ const EXERCISE_LIBRARY = {
     {name:"Dips", type:"grund", mode:"bodyweight", bwFactor:1.0},
     {name:"Dips mit Zusatzgewicht", type:"grund", mode:"bodyweight", bwFactor:1.0},
     {name:"Liegestütze", type:"grund", mode:"bodyweight", bwFactor:0.64},
-    {name:"1-Arm-Liegestütze (Progression)", type:"grund", mode:"bodyweight", bwFactor:0.8},
+    {name:"1-Arm-Liegestütze (Progression)", type:"grund", mode:"bodyweight", bwFactor:0.8, perSide:true},
     {name:"Handstand-Liegestütze (an der Wand)", type:"grund", mode:"bodyweight", bwFactor:0.9},
     {name:"Tuck-Planche (Halten)", type:"isolation", mode:"hold", bwFactor:1.0},
     {name:"Kurzhantel-Fliegende", type:"isolation"},
@@ -1791,7 +1791,7 @@ const CALISTHENICS_PLAN = {
           { id: "cal_push_pushup", name: "Liegestütze", sets: "3x15-25", type: "grund", rirTarget: "1–2", restSeconds: 120, mode: "bodyweight", bwFactor: 0.64 },
         ]},
         { name: "Brust", exercises: [
-          { id: "cal_push_archer", name: "1-Arm-Liegestütze (Progression)", sets: "3x5-10", type: "grund", rirTarget: "1–2", restSeconds: 210, mode: "bodyweight", bwFactor: 0.8 },
+          { id: "cal_push_archer", name: "1-Arm-Liegestütze (Progression)", sets: "3x5-10", type: "grund", rirTarget: "1–2", restSeconds: 210, mode: "bodyweight", bwFactor: 0.8, perSide: true },
         ]},
         { name: "Schultern", exercises: [
           { id: "cal_push_hspu", name: "Handstand-Liegestütze (an der Wand)", sets: "3x5-10", type: "grund", rirTarget: "1–2", restSeconds: 210, mode: "bodyweight", bwFactor: 0.9 },
@@ -1805,7 +1805,7 @@ const CALISTHENICS_PLAN = {
       label: "Beine & Core", sub: "Beine · Bauch",
       groups: [
         { name: "Beine", exercises: [
-          { id: "cal_legs_pistol", name: "Pistol Squats", sets: "3x5-8", type: "grund", rirTarget: "1–2", restSeconds: 180, mode: "bodyweight", bwFactor: 0.9 },
+          { id: "cal_legs_pistol", name: "Pistol Squats", sets: "3x5-8", type: "grund", rirTarget: "1–2", restSeconds: 180, mode: "bodyweight", bwFactor: 0.9, perSide: true },
         ]},
         { name: "Beine", exercises: [
           { id: "cal_legs_nordic", name: "Nordic Curls", sets: "3x5-8", type: "grund", rirTarget: "1–2", restSeconds: 180, mode: "bodyweight", bwFactor: 0.7 },
@@ -2845,7 +2845,19 @@ function saveBuilderPlan(){
     dayOrder.push(dayKey);
     const exercises = d.exercises.map(function(ex, ei){
       const name = ex.source === "custom" ? (ex.customName.trim() || "Übung") : ex.libName;
-      return { id: planId + "_" + dayKey + "_ex" + ei, name: name, sets: ex.sets || "3x8-12", type: ex.type || "grund" };
+      const built = { id: planId + "_" + dayKey + "_ex" + ei, name: name, sets: ex.sets || "3x8-12", type: ex.type || "grund" };
+      // Bei aus der Bibliothek gewählten Übungen mode/bwFactor/perSide übernehmen — sonst würde
+      // z.B. "Klimmzüge (Kraft)" im eigenen Plan als normale Gewichtsübung behandelt statt als
+      // Körpergewichtsübung, und das kg-Feld würde falsch interpretiert.
+      if(ex.source === "lib"){
+        const libEx = (EXERCISE_LIBRARY[ex.group] || []).find(function(l){ return l.name === ex.libName; });
+        if(libEx){
+          if(libEx.mode) built.mode = libEx.mode;
+          if(typeof libEx.bwFactor === "number") built.bwFactor = libEx.bwFactor;
+          if(libEx.perSide) built.perSide = true;
+        }
+      }
+      return built;
     });
     days[dayKey] = { label: d.label.trim() || ("Tag " + (di+1)), sub: d.sub.trim() || "", groups: [{ name:"Übungen", exercises: exercises }] };
   });
@@ -3064,10 +3076,10 @@ function toggleSwap(id){
   openSwap[id] = !openSwap[id];
   renderContent();
 }
-function swapExercise(id, name, type, mode, bwFactor){
-  // mode/bwFactor mitgeben, sonst würde z.B. eine gegen "Liegestütze" getauschte Übung
-  // weiter als normale Gewichtsübung behandelt (falsches "kg"-Feld statt "+kg"-Zusatz).
-  state.exerciseSwaps[id] = { name: name, type: type, mode: mode || undefined, bwFactor: (typeof bwFactor === "number") ? bwFactor : undefined };
+function swapExercise(id, name, type, mode, bwFactor, perSide){
+  // mode/bwFactor/perSide mitgeben, sonst würde z.B. eine gegen "Liegestütze" getauschte
+  // Übung weiter als normale Gewichtsübung behandelt (falsches "kg"-Feld statt "+kg"-Zusatz).
+  state.exerciseSwaps[id] = { name: name, type: type, mode: mode || undefined, bwFactor: (typeof bwFactor === "number") ? bwFactor : undefined, perSide: perSide || undefined };
   openSwap[id] = false;
   delete swapSearch[id];
   saveState();
@@ -3099,7 +3111,7 @@ function searchExerciseLibrary(query, excludeName){
       // Doppelte Namen (manche Übungen stehen mehrfach in der Bibliothek) nur einmal zeigen
       if(results.some(function(r){ return r.name === libEx.name; })) return;
       if(!q || normalizeSearchText(libEx.name).indexOf(q) !== -1 || normalizeSearchText(group).indexOf(q) !== -1){
-        results.push({ name: libEx.name, type: libEx.type, group: group, mode: libEx.mode, bwFactor: libEx.bwFactor });
+        results.push({ name: libEx.name, type: libEx.type, group: group, mode: libEx.mode, bwFactor: libEx.bwFactor, perSide: libEx.perSide });
       }
     });
   });
@@ -3126,15 +3138,15 @@ function renderSwapList(exId, currentName, currentGroup){
   }
   listEl.innerHTML = (hint ? '<p class="hist-empty" style="margin:0 0 6px;">' + escapeHtml(hint) + '</p>' : "") +
     '<div class="hist-list">' + items.map(function(r){
-      return '<span data-swap-name="' + escapeHtml(r.name) + '" data-swap-type="' + r.type + '" data-swap-mode="' + (r.mode || "") + '" data-swap-bwfactor="' + (typeof r.bwFactor === "number" ? r.bwFactor : "") + '" style="cursor:pointer;">' +
-        escapeHtml(r.name) + (r.mode && r.mode !== "weight" ? ' <span style="opacity:.6;">· ' + (r.mode === "hold" ? "Halten" : "Körpergewicht") + '</span>' : "") +
+      return '<span data-swap-name="' + escapeHtml(r.name) + '" data-swap-type="' + r.type + '" data-swap-mode="' + (r.mode || "") + '" data-swap-bwfactor="' + (typeof r.bwFactor === "number" ? r.bwFactor : "") + '" data-swap-perside="' + (r.perSide ? "1" : "") + '" style="cursor:pointer;">' +
+        escapeHtml(r.name) + (r.mode && r.mode !== "weight" ? ' <span style="opacity:.6;">· ' + (r.mode === "hold" ? "Halten" : "Körpergewicht") + (r.perSide ? " · pro Seite" : "") + '</span>' : "") +
         (query.trim() ? ' <span style="opacity:.6;">· ' + escapeHtml(r.group) + '</span>' : "") +
       '</span>';
     }).join("") + '</div>';
   listEl.querySelectorAll("[data-swap-name]").forEach(function(chip){
     chip.onclick = function(){
       const bwf = chip.getAttribute("data-swap-bwfactor");
-      swapExercise(exId, chip.getAttribute("data-swap-name"), chip.getAttribute("data-swap-type"), chip.getAttribute("data-swap-mode") || undefined, bwf === "" ? undefined : parseFloat(bwf));
+      swapExercise(exId, chip.getAttribute("data-swap-name"), chip.getAttribute("data-swap-type"), chip.getAttribute("data-swap-mode") || undefined, bwf === "" ? undefined : parseFloat(bwf), chip.getAttribute("data-swap-perside") === "1");
     };
   });
 }
@@ -3354,16 +3366,24 @@ function weekRecapStats(){
   const start = ymd(monday), end = ymd(sunday);
   const sessions = state.completedDays.filter(function(d){ return d >= start && d <= end; }).length;
   let totalWeight = 0;
+  let totalHoldSeconds = 0;
   Object.keys(state.history).forEach(function(exId){
     const ex = findExerciseById(exId);
-    // Halte-Übungen tragen kein kg-Volumen bei (das reps-Feld sind dort Sekunden, keine
-    // Wiederholungen) — die zählen stattdessen über "Neue PRs" und den Verlauf.
-    if(ex && exerciseMode(ex) === "hold") return;
     (state.history[exId] || []).forEach(function(h){
       if(h.date >= start && h.date <= end){
         (h.sets || []).forEach(function(s){
+          // Halte-Übungen tragen kein kg-Volumen bei (das reps-Feld sind dort Sekunden,
+          // keine Wiederholungen) — die laufen stattdessen in die Halte-Zeit ein.
+          if(ex && exerciseMode(ex) === "hold"){
+            const sec = parseFloat(s.reps);
+            if(!isNaN(sec)) totalHoldSeconds += sec;
+            return;
+          }
           const w = ex ? effectiveLoad(ex, s.weight, h.date) : parseFloat(s.weight);
-          const r = parseFloat(s.reps);
+          let r = parseFloat(s.reps);
+          // "Pro Seite"-Übungen (z. B. Pistol Squats, 1-Arm-Liegestütze): die eingetragene
+          // Wiederholungszahl gilt pro Seite, insgesamt wird also die doppelte Menge bewegt.
+          if(ex && ex.perSide && !isNaN(r)) r *= 2;
           if(!isNaN(w) && !isNaN(r)) totalWeight += w * r;
         });
       }
@@ -3374,7 +3394,11 @@ function weekRecapStats(){
     const pr = state.prs[exId];
     if(pr && pr.date >= start && pr.date <= end) newPRs.push(exerciseNameById(exId) || exId);
   });
-  return { sessions: sessions, totalWeight: Math.round(totalWeight), newPRs: newPRs };
+  return { sessions: sessions, totalWeight: Math.round(totalWeight), totalHoldSeconds: Math.round(totalHoldSeconds), newPRs: newPRs };
+}
+function formatHoldDuration(totalSeconds){
+  const m = Math.floor(totalSeconds / 60), s = Math.round(totalSeconds % 60);
+  return m > 0 ? (m + " Min. " + s + " Sek.") : (s + " Sek.");
 }
 function renderWeekRecap(){
   const el = document.getElementById("weekRecapArea");
@@ -3382,6 +3406,7 @@ function renderWeekRecap(){
   const stats = weekRecapStats();
   let html = '<div class="vol-row"><span class="vol-label">Einheiten</span><span class="vol-count">' + stats.sessions + '</span></div>' +
     '<div class="vol-row"><span class="vol-label">Bewegtes Gewicht</span><span class="vol-count">' + stats.totalWeight.toLocaleString("de-DE") + ' kg</span></div>' +
+    (stats.totalHoldSeconds > 0 ? ('<div class="vol-row"><span class="vol-label">Zeit unter Spannung</span><span class="vol-count">' + formatHoldDuration(stats.totalHoldSeconds) + '</span></div>') : "") +
     '<div class="vol-row"><span class="vol-label">Neue PRs</span><span class="vol-count">' + stats.newPRs.length + '</span></div>';
   if(stats.newPRs.length) html += '<p class="rank-hint" style="margin-top:6px;">🏆 ' + stats.newPRs.map(escapeHtml).join(", ") + '</p>';
   if(stats.sessions === 0) html += '<p class="rank-hint" style="margin-top:8px;">Diese Woche noch nichts geloggt — leg los!</p>';
@@ -3751,6 +3776,7 @@ function buildExerciseCard(ex, dayColor, el){
         '<div class="ex-meta">' +
           (exGroupLabel ? ('<span class="tag">' + exGroupLabel + '</span>') : "") +
           '<span class="tag">' + ex.sets + '</span>' +
+          (ex.perSide ? '<span class="tag">pro Seite</span>' : "") +
           '<span class="tag">' + (exMode === "hold" ? "sauber halten, nicht zittern" : (ex.rirTarget ? ("RIR " + ex.rirTarget) : (ex.type === "grund" ? "RIR 1–2" : "bis Muskelversagen"))) + '</span>' +
           (pr ? ('<span class="tag pr">🏆 ' + pr.weight + (pr.unit === "sek" ? ' Sek.' : 'kg') + '</span>') : "") +
           (pr && pr.reps && pr.unit !== "sek" ? ('<span class="tag">~1RM ' + Math.round(epley1RM(pr.weight, pr.reps)) + 'kg</span>') : "") +
