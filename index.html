@@ -6944,7 +6944,14 @@ async function signUpWithPassword(){
   try{
     const { data, error } = await client.auth.signUp({ email: email, password: password });
     if(error) throw error;
-    if(data && data.user && !data.session){
+    // Wichtiger Sonderfall: Existiert die E-Mail bereits, antwortet Supabase aus Sicherheits-
+    // gründen (kein "User enumeration") NICHT mit einem Fehler, sondern mit einem User-Objekt
+    // ohne Session UND ohne "identities" — sieht täuschend echt nach "Bestätigung ausstehend"
+    // aus, obwohl in Wahrheit gar keine neue Mail verschickt wird. Genau daran erkennbar:
+    // data.user.identities ist dann ein leeres Array (bei einem echten Neu-Konto nicht leer).
+    if(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
+      hint.textContent = "Für diese E-Mail-Adresse existiert bereits ein Konto — es wurde keine neue Mail verschickt. Bitte stattdessen unten auf „Anmelden“ tippen. Passwort vergessen? Sag mir Bescheid, dann bauen wir eine „Passwort vergessen“-Funktion ein.";
+    } else if(data && data.user && !data.session){
       hint.textContent = "Fast fertig! Bitte bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben, und melde dich danach an.";
     } else {
       hint.textContent = "Konto erstellt und angemeldet.";
