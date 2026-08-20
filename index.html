@@ -1352,7 +1352,7 @@
       <div class="rank-head">
         <span class="rank-title">Grundumsatz & Makros</span>
       </div>
-      <p class="rank-hint">Berechnung nach der Mifflin-St-Jeor-Formel, auf Basis deines zuletzt eingetragenen Körpergewichts. Diese Formel gilt als die derzeit treffsicherste Schätzung und wird von Fachgesellschaften empfohlen. Der Gesamtumsatz ergibt sich aus Grundumsatz mal Aktivitätsfaktor — Sport und Alltagsbewegung sind darin bereits enthalten und werden nicht noch einmal addiert. Wichtig: Jede Formel ist eine Schätzung und liegt individuell etwa 10 % daneben. Der verlässlichste Abgleich ist dein Körpergewicht über 2-3 Wochen: bleibt es bei gleicher Kalorienzahl konstant, stimmt dein Erhaltungsbedarf.</p>
+      <p class="rank-hint">Berechnung nach der Mifflin-St-Jeor-Formel, auf Basis deines zuletzt eingetragenen Körpergewichts. Diese Formel gilt als die derzeit treffsicherste Schätzung und wird von Fachgesellschaften empfohlen. Der Gesamtumsatz ergibt sich aus Grundumsatz mal Aktivitätsfaktor — Sport und Alltagsbewegung sind darin bereits enthalten und werden nicht noch einmal addiert. Trägst du deine Schritte ein, zählt nur die <strong>Abweichung</strong>: Jeder Aktivitätsfaktor unterstellt eine typische Schrittzahl, und nur was du an einem Tag darüber oder darunter liegst, wird zusätzlich verrechnet. Ohne Eintrag bleibt es beim reinen Faktor. Wichtig: Jede Formel ist eine Schätzung und liegt individuell etwa 10 % daneben. Der verlässlichste Abgleich ist dein Körpergewicht über 2-3 Wochen: bleibt es bei gleicher Kalorienzahl konstant, stimmt dein Erhaltungsbedarf.</p>
       <div class="bmr-inputs">
         <input type="number" inputmode="numeric" id="bmrHeight" placeholder="Größe (cm)">
         <input type="number" inputmode="numeric" id="bmrAge" placeholder="Alter (Jahre)">
@@ -3319,14 +3319,8 @@ function renderNutritionTrend(){
     el.innerHTML = '<p class="rank-hint">Trage an mindestens zwei Tagen etwas ein, um hier deinen Kalorien-Trend zu sehen.</p>';
     return;
   }
-  const bw = latestBodyweight();
-  const height = parseFloat(state.bmr.height), age = parseFloat(state.bmr.age), activity = parseFloat(state.bmr.activity);
-  let targetKcal = null;
-  if(bw && height && age && activity){
-    const bmr = computeBMR(bw.weight, height, age, state.bmr.sex);
-    const goal = BMR_GOALS.find(function(g){ return g.key === state.activeGoal; }) || BMR_GOALS[0];
-    targetKcal = Math.max(1200, bmr * activity + goal.adjust);
-  }
+  const energie = computeDailyEnergy(state.activeGoal);
+  const targetKcal = energie ? energie.targetKcal : null;
   const kcalVals = daysWithData.map(function(d){ return d.kcal; });
   const svg = trendChartSVG(kcalVals, targetKcal, "var(--olive)");
   const n = daysWithData.length;
@@ -5548,6 +5542,54 @@ function estimateStepCalories(steps, weightKg, heightCm){
   const distanceKm = (steps * strideM) / 1000;
   return distanceKm * weightKg * 0.9; // grobe Energie pro kg Körpergewicht und km beim Gehen
 }
+// --- Schritte als ABWEICHUNG vom Aktivitätsfaktor -------------------------------------------
+// Jeder Aktivitätsfaktor unterstellt bereits eine typische Alltags-Schrittzahl (Einteilung nach
+// Tudor-Locke: sitzend < 5.000, gering aktiv 5.000-7.499, mäßig 7.500-9.999, aktiv 10.000-12.499,
+// sehr aktiv ab 12.500). Wer seine Schritte einträgt, soll trotzdem einen Effekt sehen — deshalb
+// wird nicht der volle Schritt-Verbrauch addiert (das wäre die frühere Doppelzählung), sondern
+// nur die DIFFERENZ zu dieser unterstellten Schrittzahl. Ein 18.000-Schritte-Tag hebt das Ziel
+// also spürbar an, ein Sofa-Tag senkt es.
+// Ohne Eintrag bleibt es bewusst beim reinen Faktor (Anpassung 0), damit ein vergessener Eintrag
+// das Tagesziel nicht grundlos abstürzen lässt.
+const ACTIVITY_STEP_BASELINE = { "1.2": 4000, "1.375": 6500, "1.55": 9000, "1.725": 12000, "1.9": 15000 };
+
+function baselineStepsForActivity(){
+  return ACTIVITY_STEP_BASELINE[String(state.bmr && state.bmr.activity)] || 9000;
+}
+
+function stepAdjustmentKcal(){
+  const steps = state.stepsLog[todayKey()];
+  if(typeof steps !== "number" || steps <= 0) return 0;
+  const bw = latestBodyweight();
+  const height = parseFloat(state.bmr && state.bmr.height);
+  if(!bw || !height) return 0;
+  const diff = steps - baselineStepsForActivity();
+  const kcal = estimateStepCalories(Math.abs(diff), bw.weight, height);
+  if(!kcal) return 0;
+  return diff < 0 ? -kcal : kcal;
+}
+
+// Einzige Stelle, an der der Tagesumsatz berechnet wird — vorher rechneten das vier Stellen
+// getrennt, was leicht auseinanderlaufen kann. Liefert null, wenn Grunddaten fehlen.
+function computeDailyEnergy(goalKey){
+  const bw = latestBodyweight();
+  const height = parseFloat(state.bmr.height), age = parseFloat(state.bmr.age), activity = parseFloat(state.bmr.activity);
+  if(!bw || !height || !age || !activity) return null;
+  const bmr = computeBMR(bw.weight, height, age, state.bmr.sex);
+  const stepAdjust = stepAdjustmentKcal();
+  const tdee = bmr * activity + stepAdjust;
+  const goal = BMR_GOALS.find(function(g){ return g.key === goalKey; }) || BMR_GOALS[0];
+  return {
+    bmr: bmr,
+    tdee: tdee,
+    stepAdjust: stepAdjust,
+    baselineSteps: baselineStepsForActivity(),
+    steps: state.stepsLog[todayKey()] || 0,
+    targetKcal: Math.max(1200, tdee + goal.adjust),
+    targetProtein: Math.round(bw.weight * 2.0),
+  };
+}
+
 function todayStepCalories(){
   const steps = state.stepsLog[todayKey()] || 0;
   const bw = latestBodyweight();
@@ -5559,12 +5601,22 @@ function updateStepsCalorieHint(){
   const hint = document.getElementById("stepsCalorieHint");
   if(!hint) return;
   const res = todayStepCalories();
+  const basis = baselineStepsForActivity();
   if(!res.steps){
-    hint.textContent = "Trag deine heutigen Schritte ein, um die zusätzlich verbrannten Kalorien zu sehen.";
+    hint.textContent = "Trag deine heutigen Schritte ein. Dein Aktivitätsfaktor rechnet mit rund " + basis +
+      " Schritten — weichst du davon ab, passt sich dein Tagesziel entsprechend an.";
   } else if(res.kcal === null){
     hint.textContent = res.steps + " Schritte geloggt. Für die Kalorienschätzung noch Größe und Körpergewicht eintragen (siehe unten).";
   } else {
-    hint.textContent = "≈ " + Math.round(res.kcal) + " kcal durch " + res.steps + " Schritte heute. Zur Einordnung — dein Kalorienziel unten richtet sich nach dem Aktivitätsfaktor, der diese Bewegung schon abdeckt.";
+    const diff = Math.round(stepAdjustmentKcal());
+    if(Math.abs(diff) < 15){
+      hint.textContent = res.steps + " Schritte heute — das entspricht ungefähr den rund " + basis +
+        " Schritten deines Aktivitätsfaktors. Dein Tagesziel bleibt dadurch unverändert.";
+    } else {
+      hint.textContent = res.steps + " Schritte heute gegenüber rund " + basis + " im Aktivitätsfaktor — " +
+        (diff > 0 ? "dein Tagesziel steigt dadurch um ca. " + diff + " kcal."
+                  : "dein Tagesziel sinkt dadurch um ca. " + Math.abs(diff) + " kcal.");
+    }
   }
 }
 function renderSteps(){
@@ -5927,20 +5979,11 @@ function renderNutritionLog(){
   if(!bw || !height || !age){
     summaryEl.innerHTML = '<p class="rank-hint" style="margin:0 0 10px;">Trage Körpergewicht, Größe und Alter ein (unten bei "Grundumsatz & Makros"), um dein Tagesziel zu sehen.</p>';
   } else {
-    const bmr = computeBMR(bw.weight, height, age, state.bmr.sex);
-    const stepInfo = todayStepCalories();
+    const energie = computeDailyEnergy(state.activeGoal);
     const trainedToday = state.completedDays.indexOf(todayKey()) !== -1;
-    // Der Aktivitätsfaktor beschreibt laut seiner eigenen Beschriftung ("1-3x Sport/Woche",
-    // "3-5x Sport/Woche", …) bereits den GESAMTEN Tagesumsatz inklusive Sport. Vorher wurden
-    // darauf zusätzlich die Schritt-Kalorien UND ein Trainingsbonus von 250 kcal addiert —
-    // dieselbe Energie also zwei- bis dreimal gezählt. Für einen Mann mit 82 kg/180 cm/30 J
-    // und Faktor 1,55 ergab das an einem Trainingstag rund 675 kcal/Tag zu viel (+24 %): Das
-    // vermeintliche 500-kcal-Defizit zum Abnehmen lag damit faktisch beim Erhaltungsbedarf.
-    // Schritte und Trainingstag werden weiterhin angezeigt, aber nur noch als Information.
-    const tdee = bmr * activity;
-    const goal = BMR_GOALS.find(function(g){ return g.key === state.activeGoal; }) || BMR_GOALS[0];
-    const targetKcal = Math.max(1200, tdee + goal.adjust);
-    const targetProtein = Math.round(bw.weight * 2.0);
+    const tdee = energie.tdee;
+    const targetKcal = energie.targetKcal;
+    const targetProtein = energie.targetProtein;
     const pctKcal = Math.min(100, Math.round((sums.kcal / targetKcal) * 100));
     const pctProtein = Math.min(100, Math.round((sums.p / targetProtein) * 100));
     summaryEl.innerHTML =
@@ -6247,13 +6290,9 @@ function renderBmr(){
   }
 
   const weight = bw.weight;
-  const bmr = computeBMR(weight, height, age, state.bmr.sex);
-  // Siehe ausführlichen Kommentar in renderNutritionLog(): der Aktivitätsfaktor deckt den
-  // gesamten Tagesumsatz inklusive Sport bereits ab. Schritte und Trainingstag werden deshalb
-  // nur noch nachrichtlich angezeigt und nicht mehr aufaddiert.
-  const tdee = bmr * activity;
-  const stepInfo = todayStepCalories();
-  const stepKcal = stepInfo.kcal || 0;
+  const energie = computeDailyEnergy(state.activeGoal);
+  const bmr = energie.bmr;
+  const tdee = energie.tdee;
   const trainedToday = state.completedDays.indexOf(todayKey()) !== -1;
 
   const today = todayKey();
@@ -6269,11 +6308,24 @@ function renderBmr(){
     '<div><span class="num">' + Math.round(bmr) + '</span><span class="lbl">Grundumsatz (BMR)</span></div>' +
     '<div><span class="num">' + Math.round(tdee) + '</span><span class="lbl">Gesamtumsatz (TDEE)</span></div>' +
     '</div>';
-  if(stepKcal > 0){
-    html += '<p class="bmr-hint" style="margin:-4px 0 4px;">🚶 ' + stepInfo.steps + ' Schritte heute ≈ ' + Math.round(stepKcal) + ' kcal — im Aktivitätsfaktor oben bereits enthalten, wird nicht zusätzlich addiert.</p>';
+  // Schritte werden als Abweichung vom Aktivitätsfaktor verrechnet — der Text macht deshalb
+  // transparent, mit welcher Schrittzahl der gewählte Faktor rechnet und wie sich der heutige
+  // Tag dazu verhält. Ohne Eintrag wird bewusst gar nichts angepasst.
+  if(energie.steps > 0){
+    const diff = Math.round(energie.stepAdjust);
+    const richtung = diff > 0 ? "mehr" : "weniger";
+    html += '<p class="bmr-hint" style="margin:-4px 0 4px;">🚶 ' + energie.steps + ' Schritte heute. Dein Aktivitätsfaktor rechnet mit rund ' +
+      energie.baselineSteps + ' — ' +
+      (Math.abs(diff) < 15
+        ? 'das passt in etwa, der Gesamtumsatz bleibt unverändert.'
+        : ('du warst also ' + richtung + ' unterwegs: <strong>' + (diff > 0 ? '+' : '−') + Math.abs(diff) + ' kcal</strong> sind oben bereits eingerechnet.')) +
+      '</p>';
+  } else {
+    html += '<p class="bmr-hint" style="margin:-4px 0 4px;">🚶 Noch keine Schritte eingetragen — gerechnet wird mit den rund ' +
+      energie.baselineSteps + ' Schritten, die dein Aktivitätsfaktor unterstellt.</p>';
   }
   if(trainedToday){
-    html += '<p class="bmr-hint" style="margin:-4px 0 12px;">🏋️ Heute trainiert — auch das steckt schon im gewählten Aktivitätsfaktor.</p>';
+    html += '<p class="bmr-hint" style="margin:-4px 0 12px;">🏋️ Heute trainiert — der Sport steckt bereits im gewählten Aktivitätsfaktor.</p>';
   }
 
   BMR_GOALS.forEach(function(goal){
@@ -6592,14 +6644,9 @@ function renderGoalFilter(){
   });
 }
 function getMealTargetKcal(){
-  const bw = latestBodyweight();
-  const height = parseFloat(state.bmr.height), age = parseFloat(state.bmr.age), activity = parseFloat(state.bmr.activity);
-  if(!bw || !height || !age) return null;
-  const bmr = computeBMR(bw.weight, height, age, state.bmr.sex);
-  const tdee = bmr * activity;
-  const goal = BMR_GOALS.find(function(g){ return g.key === recipeGoal; });
-  const dailyTarget = Math.max(1200, tdee + goal.adjust);
-  return dailyTarget / 3;
+  const energie = computeDailyEnergy(recipeGoal);
+  if(!energie) return null;
+  return energie.targetKcal / 3;
 }
 function toggleRecipe(id){ openRecipe[id] = !openRecipe[id]; renderRecipes(); }
 
