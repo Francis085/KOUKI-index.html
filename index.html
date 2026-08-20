@@ -2714,7 +2714,13 @@ function findExerciseById(exId){
   });
   return found;
 }
+// Extra Rückfrage vor Hinzufügen/Entfernen eines Satzes — als Sicherung gegen versehentliches
+// Antippen (z.B. beim Ablegen des Handys während des Trainings). exerciseNameById() statt
+// rohem ex.name, damit die Rückfrage bei einer getauschten Übung den tatsächlich trainierten
+// Namen zeigt, nicht den ursprünglichen aus der Planvorlage.
 function addSet(ex){
+  const displayName = exerciseNameById(ex.id) || ex.name;
+  if(!confirm('Einen weiteren Satz zu "' + displayName + '" hinzufügen?')) return;
   const e = getEntry(ex);
   const lastReps = e.sets.length ? e.sets[e.sets.length-1].reps : "";
   const lastRir = e.sets.length ? e.sets[e.sets.length-1].rir : "";
@@ -2726,6 +2732,8 @@ function addSet(ex){
 function removeSet(ex, idx){
   const e = getEntry(ex);
   if(e.sets.length <= 1) return;
+  const displayName = exerciseNameById(ex.id) || ex.name;
+  if(!confirm('Satz ' + (idx + 1) + ' bei "' + displayName + '" wirklich entfernen? Eingetragene Werte für diesen Satz gehen dabei verloren.')) return;
   e.sets.splice(idx, 1);
   saveState();
   renderContent();
