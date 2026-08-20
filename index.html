@@ -1240,6 +1240,10 @@
       <div class="filter-row" id="activeGoalRow"></div>
       <div id="nutritionLogSummary"></div>
       <div id="nutritionLogList"></div>
+      <div id="recentFoodsGroup" class="measure-group" style="margin-top:14px;display:none;">
+        <p class="measure-label">Nochmal eintragen — ein Tipp genügt</p>
+        <div class="filter-row" id="recentFoodsRow" style="margin-bottom:0;"></div>
+      </div>
       <div class="measure-group" style="margin-top:12px;">
         <p class="measure-label">Manuell hinzufügen</p>
         <div class="measure-input-row" style="margin-bottom:8px;">
@@ -5430,6 +5434,16 @@ function latestBodyweight(){
 function renderBodyweight(){
   const cur = latestBodyweight();
   document.getElementById("bwCurrent").textContent = cur ? (cur.weight + " kg (" + formatDate(cur.date) + ")") : "–";
+  // Beim täglichen Wiegen ändert sich meist nur die Nachkommastelle. Deshalb den zuletzt
+  // eingetragenen Wert schon ins Feld schreiben — dann muss nicht die ganze Zahl neu getippt,
+  // sondern nur noch angepasst werden. Ob heute schon gewogen wurde, steht direkt daneben mit
+  // Datum (bwCurrent), sodass ein vorbelegter Wert nicht mit einem echten Eintrag verwechselt
+  // werden kann. Nur füllen, solange niemand im Feld tippt, sonst würde die Eingabe
+  // überschrieben (renderBodyweight läuft auch aus anderen Auslösern).
+  const input = document.getElementById("bwInput");
+  if(input && document.activeElement !== input && !input.value && cur){
+    input.value = cur.weight;
+  }
   const area = document.getElementById("bwChartArea");
   const pts = state.bodyweight.map(function(b){ return b.weight; });
   const svg = pts.length >= 2 ? sparklineSVG(pts, "#38351f") : null;
@@ -5727,6 +5741,57 @@ function removeFoodLog(index){
   saveState();
   renderNutritionLog();
 }
+// --- Schnellauswahl "Nochmal eintragen" ---------------------------------------------------
+// Die meisten Menschen essen immer wieder dieselben Dinge, mussten dafür aber jedes Mal Name,
+// Kalorien und Eiweiß neu eintippen. Diese Liste entsteht komplett aus dem bereits
+// vorhandenen Ernährungsprotokoll — es wird also keine zusätzliche Datenstruktur gepflegt,
+// die mit dem Protokoll auseinanderlaufen könnte, und es geht auch nichts verloren, wenn
+// jemand einen Eintrag wieder löscht.
+// Gleiches Lebensmittel = gleicher Name + gleiche Kalorienzahl; dieselbe Speise mit anderer
+// Portionsgröße bleibt dadurch bewusst als eigener Vorschlag erhalten.
+function recentFoods(maxItems){
+  const seen = {};
+  const out = [];
+  const tage = Object.keys(state.nutritionLog).sort().reverse();
+  for(let k = 0; k < tage.length && out.length < maxItems; k++){
+    const items = state.nutritionLog[tage[k]] || [];
+    // Innerhalb eines Tages das zuletzt Eingetragene zuerst vorschlagen.
+    for(let i = items.length - 1; i >= 0 && out.length < maxItems; i--){
+      const it = items[i];
+      if(!it || !it.name) continue;
+      const sig = String(it.name).toLowerCase() + "|" + Math.round(it.kcal || 0);
+      if(seen[sig]) continue;
+      seen[sig] = true;
+      out.push(it);
+    }
+  }
+  return out;
+}
+
+function renderRecentFoods(){
+  const group = document.getElementById("recentFoodsGroup");
+  const row = document.getElementById("recentFoodsRow");
+  if(!group || !row) return;
+  row.innerHTML = "";
+  const items = recentFoods(10);
+  if(!items.length){ group.style.display = "none"; return; }
+  group.style.display = "block";
+  items.forEach(function(it){
+    const chip = document.createElement("div");
+    chip.className = "filter-chip";
+    chip.textContent = it.name + " · " + Math.round(it.kcal || 0) + " kcal";
+    chip.onclick = function(){
+      // Bewusst eine Kopie loggen: sonst läge dasselbe Objekt in mehreren Tagen des
+      // Protokolls und eine spätere Änderung würde alle Tage gleichzeitig betreffen.
+      logFoodToday({
+        name: it.name, kcal: it.kcal || 0, p: it.p || 0, c: it.c || 0, f: it.f || 0,
+        sugar: it.sugar || 0, salt: it.salt || 0,
+      });
+    };
+    row.appendChild(chip);
+  });
+}
+
 function renderNutritionLog(){
   const row = document.getElementById("activeGoalRow");
   if(!row) return;
@@ -5782,6 +5847,7 @@ function renderNutritionLog(){
       btn.onclick = function(){ removeFoodLog(parseInt(btn.getAttribute("data-idx"), 10)); };
     });
   }
+  renderRecentFoods();
   renderNutritionTrend();
 }
 document.getElementById("manualFoodAddBtn").onclick = function(){
