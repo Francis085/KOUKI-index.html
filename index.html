@@ -111,6 +111,52 @@
        die Mischung greift automatisch auf die themespezifischen Werte zu. */
     --day-c3:color-mix(in srgb, var(--yellow-deep) 55%, var(--lilac-deep));
     --day-c4:color-mix(in srgb, var(--pink-deep) 55%, var(--lilac-deep));
+
+    /* --- Zentrales Design-System: Spacing/Radius/Font/Shadow -------------------------------
+       Die App wurde bisher konsistent mit literalen px-Werten gebaut, die aber bereits einer
+       klaren Skala folgen (siehe Zahlen unten). Diese Tokens machen diese Skala explizit und
+       zentral steuerbar, ohne die hunderten bestehenden, bereits fein abgestimmten Regeln
+       riskant "maschinell" auf die Tokens umzuschreiben. Neue bzw. hier überarbeitete Regeln
+       (Safe-Areas, Touch-Targets, Fokus-Stile, responsive Anpassungen) nutzen ab jetzt diese
+       Variablen; bestehende, unveränderte Selektoren bleiben unangetastet, um keine optischen
+       Regressionen an einer bereits gut durchdachten, großen Oberfläche zu riskieren. */
+    --space-xs:4px;
+    --space-sm:8px;
+    --space-md:12px;
+    --space-lg:16px;
+    --space-xl:24px;
+    --space-xxl:32px;
+
+    --radius-sm:12px;
+    --radius-md:16px;
+    --radius-lg:20px;
+    --radius-xl:24px;
+    --radius-round:50%;
+
+    --font-xs:11px;
+    --font-sm:12.5px;
+    --font-md:14px;
+    --font-lg:16px;
+    --font-xl:19px;
+    --font-xxl:clamp(26px, 7vw, 34px);
+
+    --container-padding:18px;
+    --card-padding:16px;
+    --button-height:48px;
+
+    --shadow-sm:0 2px 8px rgba(0,0,0,.08);
+    --shadow-md:0 8px 24px rgba(0,0,0,.18);
+    --shadow-lg:0 10px 30px rgba(0,0,0,.25);
+
+    /* Mindestgröße für Tap-Flächen (Apple HIG / Material Design empfehlen ~44-48px) */
+    --tap-min:44px;
+
+    /* env()-Fallbacks: auf Geräten ohne Notch/Home-Indicator liefert env() 0px zurück,
+       dadurch bleibt das Verhalten auf allen bisherigen Geräten exakt identisch. */
+    --safe-top:env(safe-area-inset-top, 0px);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+    --safe-left:env(safe-area-inset-left, 0px);
+    --safe-right:env(safe-area-inset-right, 0px);
   }
   /* --- KOUKI Themes: Hintergrund, Fläche, Text, Akzent UND die pastellfarbenen
      Übungs-/Kalender-/Rezept-Kacheln passen sich pro Theme an. Innerhalb eines Themes bleiben
@@ -158,7 +204,11 @@
      unterbindet aber gezielt nur die Kneif-Zoom-Geste — zusätzlich zum maximum-scale/user-
      scalable im viewport-Meta-Tag oben, das nicht jeder Browser (v.a. iOS Safari) zuverlässig
      respektiert. So bleibt die App "app-artig" fixiert, ohne echtes Scrollen zu beeinträchtigen. */
-  html{background:var(--bg);touch-action:pan-x pan-y;}
+  /* overflow-x:hidden als zentrales Sicherheitsnetz: einzelne Ursachen für horizontales
+     Scrollen werden weiterhin gezielt behoben, aber diese eine Regel verhindert, dass ein
+     übersehener Fall die gesamte Seite seitlich verschiebbar macht (App-Feeling statt
+     Webseiten-Feeling, siehe Audit-Auftrag). */
+  html{background:var(--bg);touch-action:pan-x pan-y;overflow-x:hidden;}
   body{
     margin:0;
     min-height:100vh;
@@ -166,14 +216,26 @@
     color:var(--ink);
     font-family:'Inter',sans-serif;
     -webkit-font-smoothing:antialiased;
-    padding-bottom:96px;
+    /* viewport-fit=cover (siehe <meta name="viewport">) lässt die Seite bewusst bis unter
+       Notch/Dynamic Island/Home-Indicator laufen — deshalb müssen Kopf- und Fußbereich die
+       echten Safe-Area-Insets zusätzlich zu den bisherigen festen Abständen einrechnen, sonst
+       verschwinden Inhalte auf neueren iPhones (im installierten PWA-Modus) unter der
+       Systemleiste. Auf Geräten ohne Safe-Area liefert env() 0px, das Verhalten bleibt also
+       für alle bisherigen Nutzer exakt gleich. */
+    padding-top:var(--safe-top);
+    padding-bottom:calc(96px + var(--safe-bottom));
+    overflow-x:hidden;
     transition:background-color .35s ease, color .35s ease;
     touch-action:pan-x pan-y;
   }
   .rank-card, .exercise, .bw-card, .progress-card, .recipe-card, .supp-card, .science-card, .legal-card, .notes, .day-modal, .product-card, .not-found-card{
     transition:background-color .35s ease, border-color .35s ease, color .35s ease;
   }
-  .wrap{max-width:640px;margin:0 auto;padding:0 18px;}
+  .wrap{
+    max-width:640px;margin:0 auto;
+    padding-left:calc(18px + var(--safe-left));
+    padding-right:calc(18px + var(--safe-right));
+  }
 
   header{padding:30px 0 6px;}
   .eyebrow{
@@ -181,11 +243,16 @@
     letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 4px;
   }
   h1{
-    font-family:'Baloo 2',sans-serif;font-weight:800;font-size:34px;
-    margin:0;line-height:1.05;color:var(--text-strong);
+    font-family:'Baloo 2',sans-serif;font-weight:800;font-size:var(--font-xxl);
+    margin:0;line-height:1.15;color:var(--text-strong);overflow-wrap:break-word;
   }
   h1 .brand-kouki, .reward-panel h3 .brand-kouki{color:var(--pink-deep);}
 
+  /* Bug: der dynamische Bildschirmtitel (#frameTitle, z.B. "Ernährung · Supplemente") konnte
+     bei längeren Titeln auf schmalen Displays über den Bildschirmrand hinauslaufen — Ursache
+     war die Flexbox-Standardeinstellung min-width:auto, wodurch weder .header-left noch sein
+     Textblock schrumpfen konnten, obwohl h1 selbst eigentlich umbrechen würde. min-width:0 auf
+     beiden Ebenen behebt das ursächlich (statt nur den Titeltext einzukürzen). */
   .header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
   .theme-toggle{
     flex-shrink:0;width:42px;height:42px;border-radius:50%;background:var(--surface);
@@ -278,15 +345,6 @@
   .exercise.pc-1{background:var(--lilac);}
   .exercise.pc-2{background:var(--pink);}
   .exercise.done{opacity:.55;}
-
-  .check{
-    width:28px;height:28px;flex-shrink:0;border-radius:50%;border:2px solid var(--pastel-border);
-    background:var(--pastel-overlay);cursor:pointer;display:flex;align-items:center;justify-content:center;
-    transition:background .15s,border-color .15s;
-  }
-  .check.checked{background:var(--olive);border-color:var(--olive);}
-  .check svg{width:14px;height:14px;opacity:0;transition:opacity .1s;}
-  .check.checked svg{opacity:1;stroke:#fff !important;}
 
   .ex-info{flex:1;min-width:0;}
   .ex-name{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15.5px;margin:0 0 4px;line-height:1.2;color:var(--pastel-text);}
@@ -442,7 +500,7 @@
   .science-disclaimer{margin-top:14px !important;font-size:11px !important;font-style:italic;}
 
   .toast{
-    position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);
+    position:fixed;bottom:calc(96px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--olive);color:#fff;font-family:'Baloo 2',sans-serif;font-weight:700;
     font-size:13px;padding:12px 22px;border-radius:50px;opacity:0;
     transition:opacity .25s,transform .25s;pointer-events:none;z-index:60;
@@ -586,10 +644,11 @@
   .builder-actions{display:flex;gap:10px;margin-top:14px;}
 
   .bottom-nav{
-    position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+    position:fixed;left:50%;bottom:calc(16px + var(--safe-bottom));transform:translateX(-50%);
     background:var(--olive);border-radius:24px;padding:8px 5px;display:flex;gap:1px;
     box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:40;
-    max-width:96vw;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    max-width:min(96vw, calc(100vw - var(--safe-left) - var(--safe-right) - 12px));
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
   }
   .bottom-nav::-webkit-scrollbar{display:none;}
   .nav-btn{
@@ -839,7 +898,8 @@
     display:flex;align-items:flex-end;justify-content:center;
   }
   .day-modal{
-    background:var(--surface);border-radius:24px 24px 0 0;padding:20px 18px 30px;
+    background:var(--surface);border-radius:24px 24px 0 0;
+    padding:20px calc(18px + var(--safe-right)) calc(30px + var(--safe-bottom)) calc(18px + var(--safe-left));
     max-width:520px;width:100%;max-height:80vh;overflow-y:auto;box-sizing:border-box;
   }
   .day-modal-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
@@ -949,8 +1009,49 @@
   .splash-screen img{width:140px;height:140px;border-radius:50%;}
   .splash-screen.hide{opacity:0;pointer-events:none;}
 
-  .header-left{display:flex;align-items:center;gap:10px;}
+  .header-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+  .header-left > div{min-width:0;}
   .header-logo{height:38px;width:auto;border-radius:9px;flex-shrink:0;}
+
+  /* --- Zentrale Touch-Target-Vergrößerung ------------------------------------------------
+     Mehrere Buttons sind mit 22-32px kleiner als die empfohlene Mindest-Tap-Fläche von
+     ~44px (Apple HIG / Material Design). Statt jedes Element einzeln zu vergrößern (was das
+     bestehende, fein abgestimmte Layout optisch verändern würde), wird hier über ein
+     unsichtbares ::after-Pseudoelement pro Gruppe die tatsächliche Tap-Fläche erweitert —
+     die sichtbare Größe bleibt exakt gleich.
+     Zwei Gruppen, weil der verfügbare Abstand zu Nachbar-Elementen unterschiedlich groß ist:
+     - "eng" (Satz-Häkchen/-Löschen, Icon-Buttons in der Übungskarte): dort stehen die
+       Elemente in dicht gepackten Grids/Stacks mit nur 2-6px Abstand, deshalb nur ein
+       kleiner, auf den jeweiligen Abstand abgestimmter Zuwachs.
+     - "frei" (Modal schließen, Pausen-Leiste schließen, Plan löschen, Zitat favorisieren):
+       dort ist genug Abstand zu Nachbarn vorhanden, deshalb großzügigerer Zuwachs. */
+  .set-check, .set-del, .icon-btn{ position:relative; }
+  .set-check::after, .set-del::after, .icon-btn::after{
+    content:""; position:absolute; inset:-3px -2px;
+  }
+  .day-modal-close, .rest-close, .plan-delete, .quote-fav{ position:relative; }
+  .day-modal-close::after, .rest-close::after, .plan-delete::after, .quote-fav::after{
+    content:""; position:absolute; inset:-6px;
+  }
+
+  /* --- Zentrale Fokus-Sichtbarkeit für Tastatur-/Switch-Bedienung -------------------------
+     :focus-visible sorgt dafür, dass der Ring nur bei Tastatur-/Assistive-Tech-Fokus
+     erscheint (nicht bei jedem Maus-/Touch-Tap, das würde bei den vielen runden Buttons
+     unruhig wirken). Deckt alle interaktiven Elemente app-weit einheitlich ab, statt
+     Fokus-Stile einzeln nachzurüsten. */
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+  textarea:focus-visible, [tabindex]:focus-visible, .btn:focus-visible,
+  .icon-btn:focus-visible, .nav-btn:focus-visible, .set-check:focus-visible{
+    outline:2.5px solid var(--olive);
+    outline-offset:2px;
+    border-radius:inherit;
+  }
+  /* Die beiden Eingabefelder mit outline:none (bewusst entfernt, weil sie in schmale,
+     rahmenlose Kapseln eingebettet sind) bekommen stattdessen einen sichtbaren Fokus-Ring
+     auf ihrem Container, statt komplett ohne Fokus-Indikator zu bleiben. */
+  .weight-field:focus-within, .set-row:focus-within{
+    outline:2.5px solid var(--olive); outline-offset:1px;
+  }
 
   @media (prefers-reduced-motion: reduce){ *{transition:none !important;animation:none !important;} }
 </style>
@@ -2224,7 +2325,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2320,6 +2421,7 @@ function normalizeState(){
   if(typeof state.installHintDismissed !== "boolean") state.installHintDismissed = false;
   if(!state.frameHintsSeen || typeof state.frameHintsSeen !== "object") state.frameHintsSeen = {};
   if(typeof state.weeklyReviewDismissedDate !== "string") state.weeklyReviewDismissedDate = "";
+  if(typeof state.cloudOwnerId !== "string") state.cloudOwnerId = "";
   if(typeof state.onboardingSeen !== "boolean"){
     // Bestehende Nutzer (schon Daten vorhanden) sollen das Onboarding nicht nachträglich
     // aufgedrängt bekommen — nur wirklich frische Installationen zeigen es.
@@ -7851,9 +7953,32 @@ async function onAccountLoggedIn(user){
   try{ if(typeof dismissWelcomeGateToApp === "function") dismissWelcomeGateToApp(); }catch(e){}
 }
 
+// Sicherheitsnetz für gemeinsam genutzte Geräte: erkennt, ob der lokale Stand auf diesem
+// Gerät erkennbar zu einem ANDEREN Konto gehört (state.cloudOwnerId wurde beim letzten
+// erfolgreichen Cloud-Abgleich auf die jeweilige Nutzer-ID gesetzt) und noch nennenswerten
+// Inhalt hat. Ohne diese Prüfung würde sich sonst z.B. bei einem geteilten Familien-Tablet
+// beim ersten Login eines zweiten Kontos automatisch der liegen gebliebene lokale Stand des
+// ERSTEN Kontos in den neuen Cloud-Account hochladen (siehe pushToCloud()-Zweig unten) —
+// zwei Nutzer würden dann faktisch dieselben Trainingsdaten sehen/überschreiben.
+function localDataLooksMeaningful(){
+  return !!((state.completedDays && state.completedDays.length) ||
+    (state.history && Object.keys(state.history).length) ||
+    (state.bodyweight && state.bodyweight.length) ||
+    (state.nutritionLog && Object.keys(state.nutritionLog).length));
+}
+
 async function syncFromCloudOrMigrate(){
   const client = getSupabaseClient();
   if(!client || !currentUserId) return;
+  if(state.cloudOwnerId && state.cloudOwnerId !== currentUserId && localDataLooksMeaningful()){
+    const resetLocal = confirm("Auf diesem Gerät liegen noch lokale Trainings-/Ernährungsdaten von einem ANDEREN Konto. Damit sie nicht versehentlich in dieses Konto übernommen werden, jetzt zurücksetzen? (OK = lokalen Stand hier verwerfen und sauber mit diesem Konto starten. Abbrechen = lokalen Stand trotzdem behalten, z.B. wenn du diese Daten bewusst mitnehmen möchtest.)");
+    if(resetLocal){
+      state = {};
+      normalizeState();
+      await saveState();
+      renderAll();
+    }
+  }
   try{
     const { data, error } = await client.from("user_data").select("data").eq("user_id", currentUserId).maybeSingle();
     if(error) throw error;
@@ -7861,11 +7986,13 @@ async function syncFromCloudOrMigrate(){
       if(confirm("In der Cloud liegt bereits ein gespeicherter Stand für dieses Konto. Jetzt laden? (Der aktuelle lokale Stand auf diesem Gerät wird dabei ersetzt.)")){
         state = data.data;
         normalizeState();
+        state.cloudOwnerId = currentUserId;
         await saveState();
         renderAll();
         showToast("Cloud-Daten geladen");
       }
     } else {
+      state.cloudOwnerId = currentUserId;
       await pushToCloud();
       showToast("Lokale Daten in die Cloud gesichert");
     }
