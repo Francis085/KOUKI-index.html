@@ -1083,6 +1083,7 @@
 
   <div id="frame-home">
     <div class="home-greeting" id="homeGreeting"></div>
+    <div id="firstStepsHome"></div>
     <div id="installHintHome"></div>
     <div id="backupHintHome"></div>
     <div class="rank-card" id="homeXpCard" style="margin-bottom:14px;"></div>
@@ -2343,7 +2344,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2440,6 +2441,7 @@ function normalizeState(){
   if(!state.frameHintsSeen || typeof state.frameHintsSeen !== "object") state.frameHintsSeen = {};
   if(typeof state.weeklyReviewDismissedDate !== "string") state.weeklyReviewDismissedDate = "";
   if(typeof state.cloudOwnerId !== "string") state.cloudOwnerId = "";
+  if(typeof state.firstStepsDismissed !== "boolean") state.firstStepsDismissed = false;
   if(typeof state.onboardingSeen !== "boolean"){
     // Bestehende Nutzer (schon Daten vorhanden) sollen das Onboarding nicht nachträglich
     // aufgedrängt bekommen — nur wirklich frische Installationen zeigen es.
@@ -2852,6 +2854,31 @@ function maybeAutoCheckSet(ex, idx){
   }
   return true;
 }
+// Überträgt ein gerade eingetragenes Gewicht auf die folgenden, noch leeren Sätze derselben
+// Übung. Das ist die mit Abstand größte Tipp-Ersparnis im Training: innerhalb einer Einheit
+// bleibt das Gewicht pro Satz fast immer gleich, sodass es bisher bei 10 Übungen mit je 3
+// Sätzen bis zu 30-mal von Hand eingetippt werden musste.
+// Bewusst NUR das Gewicht, nicht die Wiederholungen: die unterscheiden sich real von Satz zu
+// Satz (10/9/8 statt 3x10), und eine falsch vorbelegte Wiederholungszahl würde man leichter
+// übersehen als ein falsches Gewicht.
+// Bereits ausgefüllte oder abgehakte Sätze bleiben unangetastet, und die vorbelegten Sätze
+// werden NICHT abgehakt — sie zählen also erst mit, wenn wirklich Wiederholungen eingetragen
+// wurden (finishSession() wertet nur Sätze mit done && setHasData aus).
+function carryWeightToFollowingSets(ex, idx){
+  const e = getEntry(ex);
+  const source = e.sets[idx];
+  if(!source || !source.weight) return false;
+  let changed = false;
+  for(let i = idx + 1; i < e.sets.length; i++){
+    const s = e.sets[i];
+    if(s.done || s.weight) continue;
+    s.weight = source.weight;
+    changed = true;
+  }
+  if(changed) saveState();
+  return changed;
+}
+
 // Übungsdefinition anhand ihrer Verlaufs-ID über alle Pläne suchen (für Statistiken, die nur
 // die ID aus state.history kennen, nicht das volle Übungsobjekt).
 function findExerciseById(exId){
@@ -4681,6 +4708,18 @@ function buildExerciseCard(ex, dayColor, el){
           fillBtn.onclick = function(){ quickFillFromLastSession(ex); };
           card.appendChild(fillBtn);
         }
+      } else if(state.completedDays.length < 3){
+        // Ohne Historie zeigt die Karte sonst gar nichts an: kein "Letzte Werte übernehmen"
+        // und auch keinen Progressionsvorschlag (der braucht Verlaufsdaten). Genau dann steht
+        // ein Anfänger aber vor der Frage, welches Gewicht er überhaupt nehmen soll. Der
+        // Hinweis greift den RIR-Zielwert der Übung auf, der ohnehin schon im Plan steht.
+        // Bewusst nur in den ersten Trainings (< 3 abgeschlossene Einheiten) — wer die App
+        // länger nutzt und eine neue Übung einwechselt, braucht diese Erklärung nicht mehr.
+        const startTip = document.createElement("div");
+        startTip.className = "progression-tip tip-info";
+        startTip.innerHTML = '<span class="tip-icon">🎯</span><span>Neu? Taste dich mit einem leichten Gewicht heran — richtig ist es, wenn du die Wiederholungen sauber schaffst und noch etwa ' +
+          escapeHtml(ex.rirTarget || "1–2") + ' Wiederholungen in Reserve hättest. Ab dem nächsten Mal schlägt dir KOUKI die Steigerung von selbst vor.</span>';
+        card.appendChild(startTip);
       }
 
       const suggestion = getProgressionSuggestion(ex);
@@ -4727,7 +4766,10 @@ function buildExerciseCard(ex, dayColor, el){
         weightInput.title = exMode === "weight" ? "" : "Zusatzgewicht (0 = nur Körpergewicht, negativ = Bandunterstützung)";
         weightInput.value = s.weight || "";
         weightInput.oninput = function(){ setSetWeight(ex, sIdx, weightInput.value); };
-        weightInput.onblur = function(){ if(maybeAutoCheckSet(ex, sIdx)){ renderContent(); renderProgressRing(); } };
+        weightInput.onblur = function(){
+          const carried = carryWeightToFollowingSets(ex, sIdx);
+          if(maybeAutoCheckSet(ex, sIdx) || carried){ renderContent(); renderProgressRing(); }
+        };
         row.appendChild(weightInput);
 
         const kgUnit = document.createElement("span");
@@ -7327,6 +7369,127 @@ function greetingName(){
   return nameFromEmail(currentUserEmail);
 }
 
+// --- "Erste Schritte" für frisch installierte Apps ---------------------------------------
+// Nach der Neuinstallation steht auf der Startseite überall eine Null und es ist nicht
+// ersichtlich, womit man anfangen soll. Diese Karte gibt genau vier konkrete Schritte vor,
+// hakt sie automatisch ab, sobald sie erledigt sind, und springt beim Antippen direkt in den
+// passenden Bereich — so muss niemand die Navigation erst durchsuchen.
+// Sie verschwindet von selbst, sobald alle vier Schritte erledigt sind, und lässt sich
+// jederzeit dauerhaft ausblenden.
+function firstStepsItems(){
+  // Wichtig: NICHT auf die bloße Existenz von state.entries prüfen. getEntry() legt für jede
+  // angezeigte Übung automatisch einen leeren Eintrag an, sobald irgendetwas gerendert wird —
+  // der Schritt wäre dadurch schon beim allerersten App-Start abgehakt, ohne dass jemand etwas
+  // getan hat. Stattdessen zählt nur, ob wirklich ein Wert eingetragen wurde.
+  const hatEingetragen = Object.keys(state.entries).some(function(id){
+    const e = state.entries[id];
+    return e && Array.isArray(e.sets) && e.sets.some(function(s){ return s.weight || s.reps || s.done; });
+  });
+  const hatTrainingsdaten = hatEingetragen || !!Object.keys(state.history).length;
+  return [
+    { icon: "🏋️", label: "Trainingsplan ansehen",
+      hint: "Schau dir an, was am ersten Tag ansteht.",
+      done: hatTrainingsdaten || state.completedDays.length > 0,
+      go: function(){ showGroup("navTraining", 0); } },
+    { icon: "✅", label: "Erstes Training abschließen",
+      hint: "Sätze eintragen und unten auf \"Training abschließen\".",
+      done: state.completedDays.length > 0,
+      go: function(){ showGroup("navTraining", 0); } },
+    { icon: "⚖️", label: "Körpergewicht eintragen",
+      hint: "Damit KOUKI deinen Verlauf und deinen Kraft-Rang berechnen kann.",
+      done: state.bodyweight.length > 0,
+      go: function(){ showGroup("navNutritionGroup", 0); } },
+    { icon: "🍎", label: "Kalorienbedarf berechnen",
+      hint: "Einmal Größe, Alter und Aktivität — den Rest rechnet die App.",
+      done: !!(state.bmr && state.bmr.height && state.bmr.age),
+      go: function(){ showGroup("navNutritionGroup", 0); } },
+  ];
+}
+
+function dismissFirstSteps(){
+  state.firstStepsDismissed = true;
+  saveState();
+  renderFirstSteps();
+}
+
+function renderFirstSteps(){
+  const el = document.getElementById("firstStepsHome");
+  if(!el) return;
+  el.innerHTML = "";
+  if(state.firstStepsDismissed) return;
+  const items = firstStepsItems();
+  const erledigt = items.filter(function(i){ return i.done; }).length;
+  // Alles geschafft: Karte hat ihren Zweck erfüllt und verschwindet dauerhaft, damit die
+  // Startseite für eingespielte Nutzer nicht dauerhaft eine abgehakte Liste mitschleppt.
+  if(erledigt === items.length){
+    if(!state.firstStepsDismissed){ state.firstStepsDismissed = true; saveState(); }
+    return;
+  }
+
+  const card = document.createElement("div");
+  card.className = "rank-card";
+  card.style.marginBottom = "14px";
+
+  const head = document.createElement("div");
+  head.className = "rank-head";
+  head.innerHTML = '<span class="rank-title">🚀 Erste Schritte</span>' +
+    '<span class="rank-overall" style="background:var(--olive);">' + erledigt + '/' + items.length + '</span>';
+  card.appendChild(head);
+
+  const sub = document.createElement("p");
+  sub.className = "rank-hint";
+  sub.textContent = "Tippe einen Schritt an, um direkt dorthin zu springen.";
+  card.appendChild(sub);
+
+  items.forEach(function(item){
+    const row = document.createElement("div");
+    row.className = "session-list-item";
+    row.style.cursor = item.done ? "default" : "pointer";
+    if(item.done) row.style.opacity = ".55";
+
+    const mark = document.createElement("span");
+    mark.style.cssText = "flex-shrink:0;width:26px;height:26px;border-radius:50%;display:flex;" +
+      "align-items:center;justify-content:center;font-size:14px;" +
+      (item.done ? "background:var(--olive);color:#fff;" : "background:var(--bg);border:1px solid var(--line);");
+    mark.textContent = item.done ? "✓" : item.icon;
+    row.appendChild(mark);
+
+    const info = document.createElement("div");
+    info.className = "session-list-info";
+    const title = document.createElement("p");
+    title.className = "session-list-date";
+    title.textContent = item.label;
+    if(item.done) title.style.textDecoration = "line-through";
+    const hint = document.createElement("p");
+    hint.className = "session-list-sub";
+    hint.textContent = item.hint;
+    info.appendChild(title);
+    if(!item.done) info.appendChild(hint);
+    row.appendChild(info);
+
+    if(!item.done){
+      const chevron = document.createElement("span");
+      chevron.style.cssText = "flex-shrink:0;color:var(--ink-soft);font-size:15px;";
+      chevron.textContent = "›";
+      row.appendChild(chevron);
+      row.onclick = function(){ item.go(); };
+    }
+    card.appendChild(row);
+  });
+
+  const dismiss = document.createElement("div");
+  dismiss.style.cssText = "text-align:center;margin-top:12px;";
+  const dismissBtn = document.createElement("button");
+  dismissBtn.className = "btn btn-ghost";
+  dismissBtn.style.cssText = "width:100%;font-size:12px;padding:9px;";
+  dismissBtn.textContent = "Brauche ich nicht — ausblenden";
+  dismissBtn.onclick = dismissFirstSteps;
+  dismiss.appendChild(dismissBtn);
+  card.appendChild(dismiss);
+
+  el.appendChild(card);
+}
+
 function renderHome(){
   const greetEl = document.getElementById("homeGreeting");
   if(!greetEl) return;
@@ -7339,6 +7502,7 @@ function renderHome(){
   } else {
     greetEl.textContent = hour < 11 ? "Guten Morgen! ☀️" : hour < 18 ? "Hey, schön dass du da bist 👋" : "Guten Abend! 🌙";
   }
+  renderFirstSteps();
   renderInstallHint();
   renderBackupHint();
 
