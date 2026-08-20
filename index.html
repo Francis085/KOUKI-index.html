@@ -1013,6 +1013,24 @@
   .header-left > div{min-width:0;}
   .header-logo{height:38px;width:auto;border-radius:9px;flex-shrink:0;}
 
+  /* --- Kreise bleiben unter allen Umständen rund ------------------------------------------
+     border-radius:50% beschreibt keinen Kreis, sondern folgt der Box: wird ein Element in
+     einer Richtung gestaucht, entsteht daraus eine Ellipse. Genau das kann in Flex- und
+     Grid-Containern passieren, denn flex-shrink steht standardmäßig auf 1 — bei knappem Platz
+     (viele Icon-Knöpfe untereinander, schmale Satzzeilen, große Systemschrift) schrumpfen die
+     Elemente dann in einer Richtung, obwohl Breite und Höhe gleich gesetzt sind.
+     Deshalb hier zentral für alle runden Elemente:
+       flex-shrink:0  — verhindert das Stauchen in Flex-Containern
+       aspect-ratio:1 — hält das Seitenverhältnis auch dann, wenn eine der beiden Größen doch
+                        vom Layout bestimmt wird (Grid-Spalte, min-content, Zoom)
+     Das ist bewusst eine Regel für alle statt einzelner Pixel-Korrekturen pro Element. */
+  .icon-btn, .step-dot, .set-check, .set-del, .supp-check, .theme-toggle, .plan-delete,
+  .rest-close, .day-modal-close, .quote-fav, .cal-legend-dot, .session-list-dot,
+  .product-nutri-badge, .nav-btn .nav-icon, .ring-wrap, .mystery-card{
+    flex-shrink:0;
+    aspect-ratio:1;
+  }
+
   /* --- Zentrale Touch-Target-Vergrößerung ------------------------------------------------
      Mehrere Buttons sind mit 22-32px kleiner als die empfohlene Mindest-Tap-Fläche von
      ~44px (Apple HIG / Material Design). Statt jedes Element einzeln zu vergrößern (was das
