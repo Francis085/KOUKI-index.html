@@ -7304,11 +7304,41 @@ function renderAll(){
   renderShoppingList();
 }
 
+// Leitet aus einer E-Mail-Adresse einen ansprechbaren Vornamen ab, z.B.
+// "anna.beispiel@web.de" -> "Anna", "franzi85@gmail.com" -> "Franzi".
+// Gibt bewusst "" zurück, wenn nichts sinnvoll Ansprechbares übrig bleibt (z.B. "123@x.de"
+// oder ein einzelner Buchstabe) — dann wird lieber neutral gegrüßt als mit einem Fragment.
+function nameFromEmail(email){
+  if(!email || email.indexOf("@") === -1) return "";
+  const local = String(email).split("@")[0].replace(/[0-9]+$/, "");
+  const first = local.split(/[._+\-]/)[0];
+  if(first.length < 2) return "";
+  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+}
+
+// Name für die persönliche Begrüßung auf der Startseite. Nur bei bestehender Cloud-Anmeldung,
+// denn ohne Konto weiß die App schlicht nicht, wer vor ihr sitzt. Der selbst gewählte
+// Bestenlisten-Name hat Vorrang vor der E-Mail-Adresse: er ist bewusst als eigener Anzeigename
+// eingegeben worden und trifft deshalb eher, wie jemand angesprochen werden möchte.
+function greetingName(){
+  if(!currentUserId) return "";
+  const nickname = (state.leaderboardNickname || "").trim();
+  if(nickname) return nickname;
+  return nameFromEmail(currentUserEmail);
+}
+
 function renderHome(){
   const greetEl = document.getElementById("homeGreeting");
   if(!greetEl) return;
   const hour = new Date().getHours();
-  greetEl.textContent = hour < 11 ? "Guten Morgen! ☀️" : hour < 18 ? "Hey, schön dass du da bist 👋" : "Guten Abend! 🌙";
+  const name = greetingName();
+  if(name){
+    greetEl.textContent = hour < 11 ? "Guten Morgen, " + name + "! ☀️" :
+      hour < 18 ? "Hey " + name + ", schön dass du da bist 👋" :
+      "Guten Abend, " + name + "! 🌙";
+  } else {
+    greetEl.textContent = hour < 11 ? "Guten Morgen! ☀️" : hour < 18 ? "Hey, schön dass du da bist 👋" : "Guten Abend! 🌙";
+  }
   renderInstallHint();
   renderBackupHint();
 
@@ -7684,6 +7714,10 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let sbClient = null;
 let cloudSyncEnabled = false;
 let currentUserId = null;
+// Wird beim Anmelden mitgeführt, damit die Startseite persönlich begrüßen kann. Bewusst nur
+// im Arbeitsspeicher und NICHT in state/localStorage: die E-Mail-Adresse ist ein persönliches
+// Datum, das nach dem Abmelden nicht auf dem Gerät zurückbleiben soll.
+let currentUserEmail = null;
 let cloudPushTimer = null;
 
 function getSupabaseClient(){
@@ -7923,6 +7957,7 @@ async function deleteCloudAccount(){
 
 function onAccountLoggedOut(){
   currentUserId = null;
+  currentUserEmail = null;
   cloudSyncEnabled = false;
   setAccountStatus("Nicht angemeldet — Daten bleiben lokal auf diesem Gerät.");
   const row = document.getElementById("accountLoginRow");
@@ -7936,6 +7971,9 @@ function onAccountLoggedOut(){
   if(deleteBtn) deleteBtn.style.display = "none";
   if(deleteHint) deleteHint.style.display = "none";
   renderLeaderboardSettings();
+  // Begrüßung auf der Startseite wieder neutral zeigen — ohne Anmeldung weiß die App nicht
+  // mehr, wer das Gerät benutzt.
+  renderHome();
 }
 
 async function onAccountLoggedIn(user){
@@ -7948,6 +7986,7 @@ async function onAccountLoggedIn(user){
   // Zustand zu behalten.
   const alreadySynced = cloudSyncEnabled && currentUserId === user.id;
   currentUserId = user.id;
+  currentUserEmail = user.email || null;
   setAccountStatus("Angemeldet als " + user.email);
   const row = document.getElementById("accountLoginRow");
   const resetRow = document.getElementById("accountResetRow");
@@ -7964,6 +8003,9 @@ async function onAccountLoggedIn(user){
     cloudSyncEnabled = true;
   }
   renderLeaderboardSettings();
+  // Erst NACH dem Cloud-Abgleich begrüßen: liegt in der Cloud bereits ein Bestenlisten-Name,
+  // wird der eben erst hier geladen und soll dann auch gleich in der Begrüßung stehen.
+  renderHome();
   // Falls der Start-Bildschirm (Neuinstallation) gerade offen ist — z.B. weil sich hier
   // bereits eine gültige Sitzung aus einer früheren Anmeldung wiederhergestellt hat, oder weil
   // die Anmeldung über den Start-Bildschirm selbst sofort erfolgreich war — automatisch
@@ -8118,6 +8160,9 @@ if(leaderboardNickInputEl){
   leaderboardNickInputEl.oninput = function(){
     state.leaderboardNickname = leaderboardNickInputEl.value;
     saveState();
+    // Der Bestenlisten-Name ist zugleich der Anzeigename in der Begrüßung auf der Startseite —
+    // deshalb dort direkt mitziehen, statt erst beim nächsten vollständigen Neuaufbau.
+    renderHome();
     clearTimeout(leaderboardNickTimer);
     leaderboardNickTimer = setTimeout(function(){ pushLeaderboardStats().then(fetchLeaderboard); }, 800);
   };
