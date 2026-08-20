@@ -2698,6 +2698,40 @@ function setHasData(ex, s){
   if(mode === "weight") return !!s.weight;
   return !!s.weight || !!s.reps;
 }
+// Ein Satz gilt als "vollständig genug", um automatisch abgehakt zu werden — RIR ist dabei
+// bewusst NICHT nötig (bleibt komplett optional, auch nachträglich einzutragen). Der Schwellen-
+// wert unterscheidet sich je nach Übungsmodus: bei reinen Gewichtsübungen zählen Gewicht UND
+// Wiederholungen (wie gewünscht), bei Körpergewichts-/Halte-Übungen reicht die Wiederholungs-/
+// Sekundenzahl allein — das Zusatzgewicht-Feld darf dort bewusst leer bleiben (bedeutet "kein
+// Zusatzgewicht", nicht "unvollständig"), genau wie schon bei setHasData() oben.
+function setLooksComplete(ex, s){
+  const mode = exerciseMode(ex);
+  if(mode === "weight") return !!s.weight && !!s.reps;
+  return !!s.reps;
+}
+// Hakt einen Satz automatisch ab, sobald genug Daten eingetragen sind — spart den zusätzlichen
+// Tippvorgang auf den Haken, wenn Gewicht/Wiederholungen ohnehin schon eingetragen wurden. Wird
+// beim Verlassen (blur) des Gewichts-/Wiederholungsfelds aufgerufen, NICHT bei jedem Tastendruck
+// — sonst würde z.B. bei "10" schon nach der ersten Ziffer "1" abgehakt und der Pausentimer
+// verfrüht starten. Hakt NIE automatisch wieder AB, auch wenn später ein Wert korrigiert/
+// gelöscht wird — wer einen Satz einmal (ob manuell oder automatisch) abgehakt hat, soll dadurch
+// nie überrascht werden; unvollständige Sätze zählen über setHasData() beim Abschließen der
+// Einheit ohnehin nicht mit, das ist also kein Datenrisiko. Gibt zurück, ob sich etwas geändert
+// hat, damit die aufrufende Stelle nur bei Bedarf neu rendert.
+function maybeAutoCheckSet(ex, idx){
+  const e = getEntry(ex);
+  const s = e.sets[idx];
+  if(!s || s.done || !setLooksComplete(ex, s)) return false;
+  s.done = true;
+  saveState();
+  // Gleiches Verhalten wie beim manuellen Abhaken (toggleSetDone): Pausentimer automatisch
+  // starten, außer bei Supersätzen, wo es ohne Pause direkt zur Partnerübung geht.
+  if(state.autoRestTimer){
+    const inSuperset = state.supersets && state.supersets[ex.id];
+    if(!inSuperset) startRestTimer(getDefaultRestSeconds(ex), ex.id);
+  }
+  return true;
+}
 // Übungsdefinition anhand ihrer Verlaufs-ID über alle Pläne suchen (für Statistiken, die nur
 // die ID aus state.history kennen, nicht das volle Übungsobjekt).
 function findExerciseById(exId){
@@ -4573,6 +4607,7 @@ function buildExerciseCard(ex, dayColor, el){
         weightInput.title = exMode === "weight" ? "" : "Zusatzgewicht (0 = nur Körpergewicht, negativ = Bandunterstützung)";
         weightInput.value = s.weight || "";
         weightInput.oninput = function(){ setSetWeight(ex, sIdx, weightInput.value); };
+        weightInput.onblur = function(){ if(maybeAutoCheckSet(ex, sIdx)){ renderContent(); renderProgressRing(); } };
         row.appendChild(weightInput);
 
         const kgUnit = document.createElement("span");
@@ -4592,6 +4627,7 @@ function buildExerciseCard(ex, dayColor, el){
         repsInput.placeholder = entry.repsHint || (exMode === "hold" ? "Sek." : "–");
         repsInput.value = s.reps || "";
         repsInput.oninput = function(){ setSetReps(ex, sIdx, repsInput.value); };
+        repsInput.onblur = function(){ if(maybeAutoCheckSet(ex, sIdx)){ renderContent(); renderProgressRing(); } };
         row.appendChild(repsInput);
 
         const repsUnit = document.createElement("span");
