@@ -1508,7 +1508,7 @@
         <div class="measure-group">
           <p class="measure-label">Passwort</p>
           <div style="position:relative;">
-            <input type="password" id="accountPasswordInput" placeholder="mind. 6 Zeichen" autocomplete="current-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <input type="password" id="accountPasswordInput" placeholder="mind. 8 Zeichen" autocomplete="current-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
             <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
         </div>
@@ -1536,7 +1536,7 @@
         <div class="measure-group">
           <p class="measure-label">Neues Passwort</p>
           <div style="position:relative;">
-            <input type="password" id="accountNewPasswordInput" placeholder="mind. 6 Zeichen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+            <input type="password" id="accountNewPasswordInput" placeholder="mind. 8 Zeichen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
             <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
         </div>
@@ -1562,6 +1562,13 @@
           Beim Start fragt die App nur dann nach, wenn in der Cloud ein Stand liegt, der <em>nicht</em> von diesem Gerät stammt — also etwa, wenn du zwischendurch auf einem zweiten Handy trainiert hast. Möchtest du den Cloud-Stand unabhängig davon einmal bewusst herunterladen, geht das hier jederzeit von Hand:
         </p>
         <button class="backup-btn" id="loadCloudBtn" style="background:var(--surface);color:var(--text-strong);border:1px solid var(--line);">☁️ Cloud-Stand jetzt laden</button>
+
+        <p class="measure-label" style="margin-top:16px;">Sicherheit deiner Cloud-Daten</p>
+        <p class="rank-hint" style="margin:0 0 8px;">
+          Jeder Account sieht ausschließlich seine eigenen Daten. Durchgesetzt wird das von den Zugriffsregeln der Datenbank — nicht von der App selbst. Mit diesem Test kannst du jederzeit selbst nachsehen, ob diese Regeln wirklich greifen: Er versucht bewusst, die Daten <em>ohne Anmeldung</em> abzurufen.
+        </p>
+        <button class="backup-btn" id="securityTestBtn" style="background:var(--surface);color:var(--text-strong);border:1px solid var(--line);">🔒 Schutz jetzt prüfen</button>
+        <div id="securityTestResult"></div>
       </div>
       <button class="backup-btn" id="accountLogoutBtn" style="display:none;margin-top:8px;">Abmelden</button>
       <button class="backup-btn" id="accountDeleteBtn" style="display:none;margin-top:8px;background:var(--warn);">Konto & Cloud-Daten löschen</button>
@@ -1660,7 +1667,7 @@
     <div class="measure-group">
       <p class="measure-label">Passwort</p>
       <div style="position:relative;">
-        <input type="password" id="welcomePasswordInput" placeholder="mind. 6 Zeichen" autocomplete="current-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
+        <input type="password" id="welcomePasswordInput" placeholder="mind. 8 Zeichen" autocomplete="current-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
         <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
       </div>
     </div>
@@ -8164,7 +8171,7 @@ async function signUpWithPassword(ids){
   const email = (document.getElementById(ids.email || "accountEmailInput").value || "").trim();
   const password = document.getElementById(ids.password || "accountPasswordInput").value || "";
   const passwordConfirm = document.getElementById(ids.passwordConfirm || "accountPasswordConfirmInput").value || "";
-  if(!email || password.length < 6){ hint.textContent = "Bitte E-Mail eingeben und ein Passwort mit mind. 6 Zeichen wählen."; return; }
+  if(!email || password.length < 8){ hint.textContent = "Bitte E-Mail eingeben und ein Passwort mit mind. 8 Zeichen wählen."; return; }
   if(password !== passwordConfirm){ hint.textContent = "Die beiden Passwörter stimmen nicht überein."; return; }
   hint.textContent = "Konto wird erstellt …";
   try{
@@ -8253,7 +8260,7 @@ async function saveNewPassword(){
   if(!client){ hint.textContent = "Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."; return; }
   const pw = document.getElementById("accountNewPasswordInput").value || "";
   const pwConfirm = document.getElementById("accountNewPasswordConfirmInput").value || "";
-  if(pw.length < 6){ hint.textContent = "Bitte ein Passwort mit mind. 6 Zeichen wählen."; return; }
+  if(pw.length < 8){ hint.textContent = "Bitte ein Passwort mit mind. 8 Zeichen wählen."; return; }
   if(pw !== pwConfirm){ hint.textContent = "Die beiden Passwörter stimmen nicht überein."; return; }
   hint.textContent = "Wird gespeichert …";
   try{
@@ -8452,6 +8459,76 @@ function formatCloudTimestamp(iso){
   }catch(e){ return ""; }
 }
 
+// --- Sicherheits-Selbsttest der Cloud-Rechte ------------------------------------------------
+// Der öffentliche "anon"-Schlüssel steht zwangsläufig im Quelltext dieser Seite — das ist bei
+// Supabase so vorgesehen und für sich genommen kein Fehler. Der eigentliche Schutz liegt
+// ausschließlich in den Zeilen-Schutzregeln (Row Level Security) der Datenbank: nur sie
+// verhindern, dass jemand mit diesem öffentlichen Schlüssel die Trainingsdaten ALLER Nutzer
+// ausliest. Sind sie nicht oder falsch gesetzt, liegen sämtliche Nutzerdaten offen.
+// Aus dem Anwendungscode heraus lässt sich das nicht erzwingen — wohl aber überprüfen: Dieser
+// Test fragt die Tabellen mit einer bewusst NICHT angemeldeten Verbindung ab. Kommen dabei
+// Daten zurück, greifen die Schutzregeln nicht.
+async function runCloudSecuritySelfTest(){
+  const el = document.getElementById("securityTestResult");
+  if(!el) return;
+  el.innerHTML = '<p class="rank-hint" style="margin:8px 0 0;">Prüfe …</p>';
+  if(typeof supabase === "undefined" || !supabase.createClient){
+    el.innerHTML = '<p class="rank-hint" style="margin:8px 0 0;">Cloud-Verbindung gerade nicht verfügbar — bitte Internetverbindung prüfen und erneut versuchen.</p>';
+    return;
+  }
+  let pruefClient;
+  try{
+    // Eigene Verbindung ohne gespeicherte Anmeldung: nur so fragt der Test wirklich als
+    // "beliebiger Fremder" an und nicht versehentlich mit der eigenen Sitzung.
+    pruefClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, storageKey: "kouki-sicherheitstest" },
+    });
+  }catch(e){
+    el.innerHTML = '<p class="rank-hint" style="margin:8px 0 0;">Test konnte nicht gestartet werden.</p>';
+    return;
+  }
+
+  const tabellen = [
+    { name: "user_data", label: "Trainings- & Ernährungsdaten" },
+    { name: "leaderboard_stats", label: "Freunde-Vergleich" },
+  ];
+  const ergebnisse = [];
+  for(let i = 0; i < tabellen.length; i++){
+    const t = tabellen[i];
+    try{
+      const { data, error } = await pruefClient.from(t.name).select("user_id").limit(1);
+      if(error){
+        // Zugriff abgelehnt ist genau das erwünschte Ergebnis.
+        ergebnisse.push({ t: t, status: "geschuetzt", detail: "Zugriff abgelehnt" });
+      } else if(data && data.length){
+        ergebnisse.push({ t: t, status: "offen", detail: "Daten ohne Anmeldung lesbar" });
+      } else {
+        ergebnisse.push({ t: t, status: "geschuetzt", detail: "keine Daten ohne Anmeldung" });
+      }
+    }catch(e){
+      ergebnisse.push({ t: t, status: "unklar", detail: "nicht erreichbar" });
+    }
+  }
+
+  // Der Freunde-Vergleich ist absichtlich für alle Angemeldeten lesbar. Kritisch ist allein,
+  // wenn er auch ohne jede Anmeldung offensteht — und vor allem, wenn user_data offen ist.
+  const offen = ergebnisse.filter(function(r){ return r.status === "offen"; });
+  const unklar = ergebnisse.filter(function(r){ return r.status === "unklar"; });
+  let html = "";
+  if(offen.length){
+    html += '<div class="legal-medbox" style="margin-top:10px;"><p><strong>Achtung: Die Schutzregeln greifen nicht.</strong> ' +
+      'Folgende Daten sind ohne Anmeldung lesbar: ' +
+      escapeHtml(offen.map(function(r){ return r.t.label; }).join(", ")) +
+      '. Bitte in Supabase für diese Tabellen "Row Level Security" aktivieren und passende Richtlinien anlegen (siehe README des Projekts).</p></div>';
+  } else if(unklar.length === ergebnisse.length){
+    html += '<p class="rank-hint" style="margin:8px 0 0;">Die Cloud war gerade nicht erreichbar — Test bitte später wiederholen.</p>';
+  } else {
+    html += '<p class="rank-hint" style="margin:8px 0 0;color:var(--done);font-weight:700;">✓ Schutzregeln greifen: ohne Anmeldung sind keine Nutzerdaten abrufbar.</p>';
+  }
+  html += '<p class="rank-hint" style="margin:6px 0 0;">Geprüft am ' + formatCloudTimestamp(new Date().toISOString()) + '.</p>';
+  el.innerHTML = html;
+}
+
 // Holt den Cloud-Stand auf ausdrücklichen Wunsch — der bewusste Ersatz für die frühere
 // Rückfrage bei jedem Start. Steht im Profil unter "Konto & Cloud-Sync".
 async function loadCloudStateManually(){
@@ -8642,6 +8719,8 @@ const accountForgotPasswordBtnEl = document.getElementById("accountForgotPasswor
 if(accountForgotPasswordBtnEl) accountForgotPasswordBtnEl.onclick = requestPasswordReset;
 const accountSaveNewPasswordBtnEl = document.getElementById("accountSaveNewPasswordBtn");
 if(accountSaveNewPasswordBtnEl) accountSaveNewPasswordBtnEl.onclick = saveNewPassword;
+const securityTestBtnEl = document.getElementById("securityTestBtn");
+if(securityTestBtnEl) securityTestBtnEl.onclick = runCloudSecuritySelfTest;
 const loadCloudBtnEl = document.getElementById("loadCloudBtn");
 if(loadCloudBtnEl) loadCloudBtnEl.onclick = loadCloudStateManually;
 const accountLogoutBtnEl = document.getElementById("accountLogoutBtn");
