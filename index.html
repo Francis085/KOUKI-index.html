@@ -1352,7 +1352,7 @@
       <div class="rank-head">
         <span class="rank-title">Grundumsatz & Makros</span>
       </div>
-      <p class="rank-hint">Berechnung nach der Harris-Benedict-Formel, auf Basis deines zuletzt eingetragenen Körpergewichts. Zusätzlich verbrannte Kalorien durch die heute eingetragenen Schritte werden automatisch grob mit eingerechnet. Individuelle Werte können je nach Stoffwechsel und Gehtempo abweichen.</p>
+      <p class="rank-hint">Berechnung nach der Mifflin-St-Jeor-Formel, auf Basis deines zuletzt eingetragenen Körpergewichts. Diese Formel gilt als die derzeit treffsicherste Schätzung und wird von Fachgesellschaften empfohlen. Der Gesamtumsatz ergibt sich aus Grundumsatz mal Aktivitätsfaktor — Sport und Alltagsbewegung sind darin bereits enthalten und werden nicht noch einmal addiert. Wichtig: Jede Formel ist eine Schätzung und liegt individuell etwa 10 % daneben. Der verlässlichste Abgleich ist dein Körpergewicht über 2-3 Wochen: bleibt es bei gleicher Kalorienzahl konstant, stimmt dein Erhaltungsbedarf.</p>
       <div class="bmr-inputs">
         <input type="number" inputmode="numeric" id="bmrHeight" placeholder="Größe (cm)">
         <input type="number" inputmode="numeric" id="bmrAge" placeholder="Alter (Jahre)">
@@ -5564,7 +5564,7 @@ function updateStepsCalorieHint(){
   } else if(res.kcal === null){
     hint.textContent = res.steps + " Schritte geloggt. Für die Kalorienschätzung noch Größe und Körpergewicht eintragen (siehe unten).";
   } else {
-    hint.textContent = "≈ " + Math.round(res.kcal) + " kcal zusätzlich durch " + res.steps + " Schritte heute — bereits in deine Kalorienziele unten eingerechnet.";
+    hint.textContent = "≈ " + Math.round(res.kcal) + " kcal durch " + res.steps + " Schritte heute. Zur Einordnung — dein Kalorienziel unten richtet sich nach dem Aktivitätsfaktor, der diese Bewegung schon abdeckt.";
   }
 }
 function renderSteps(){
@@ -5766,9 +5766,16 @@ function tierForRatio(ratio, thresholds){
   for(let i=0;i<thresholds.length;i++){ if(ratio >= thresholds[i]) idx = i; }
   return idx;
 }
+// Grundumsatz nach Mifflin-St Jeor (1990).
+// Vorher stand hier die überarbeitete Harris-Benedict-Formel (Roza & Shizgal 1984). Deren
+// Koeffizienten waren korrekt umgesetzt, sie ist aber die schlechtere Wahl: Vergleichsstudien
+// zeigen, dass Harris-Benedict den Grundumsatz systematisch ÜBERschätzt und nur bei 38-80 %
+// der Menschen auf 10 % genau liegt, während Mifflin-St Jeor unverzerrt ist (70-82 % innerhalb
+// von 10 %) und deshalb von der amerikanischen Ernährungsgesellschaft empfohlen wird.
+// Für einen Mann mit 82 kg/180 cm/30 J lag der alte Wert rund 80 kcal höher.
 function computeBMR(weight, height, age, sex){
-  if(sex === "m") return 88.362 + 13.397*weight + 4.799*height - 5.677*age;
-  return 447.593 + 9.247*weight + 3.098*height - 4.330*age;
+  const basis = 10*weight + 6.25*height - 5*age;
+  return sex === "m" ? basis + 5 : basis - 161;
 }
 const BMR_GOALS = [
   { key:"maintain", cls:"g-maintain", label:"Halten", adjust:0 },
@@ -5923,8 +5930,14 @@ function renderNutritionLog(){
     const bmr = computeBMR(bw.weight, height, age, state.bmr.sex);
     const stepInfo = todayStepCalories();
     const trainedToday = state.completedDays.indexOf(todayKey()) !== -1;
-    const trainingBonus = trainedToday ? 250 : 0;
-    const tdee = bmr * activity + (stepInfo.kcal || 0) + trainingBonus;
+    // Der Aktivitätsfaktor beschreibt laut seiner eigenen Beschriftung ("1-3x Sport/Woche",
+    // "3-5x Sport/Woche", …) bereits den GESAMTEN Tagesumsatz inklusive Sport. Vorher wurden
+    // darauf zusätzlich die Schritt-Kalorien UND ein Trainingsbonus von 250 kcal addiert —
+    // dieselbe Energie also zwei- bis dreimal gezählt. Für einen Mann mit 82 kg/180 cm/30 J
+    // und Faktor 1,55 ergab das an einem Trainingstag rund 675 kcal/Tag zu viel (+24 %): Das
+    // vermeintliche 500-kcal-Defizit zum Abnehmen lag damit faktisch beim Erhaltungsbedarf.
+    // Schritte und Trainingstag werden weiterhin angezeigt, aber nur noch als Information.
+    const tdee = bmr * activity;
     const goal = BMR_GOALS.find(function(g){ return g.key === state.activeGoal; }) || BMR_GOALS[0];
     const targetKcal = Math.max(1200, tdee + goal.adjust);
     const targetProtein = Math.round(bw.weight * 2.0);
@@ -5934,7 +5947,7 @@ function renderNutritionLog(){
       '<div class="vol-row"><span class="vol-label">Kalorien</span><div class="vol-bar-track"><div class="vol-bar-fill" style="width:' + pctKcal + '%;"></div></div><span class="vol-count">' + Math.round(sums.kcal) + '/' + Math.round(targetKcal) + '</span></div>' +
       '<div class="vol-row"><span class="vol-label">Eiweiß</span><div class="vol-bar-track"><div class="vol-bar-fill" style="width:' + pctProtein + '%;"></div></div><span class="vol-count">' + Math.round(sums.p) + '/' + targetProtein + 'g</span></div>' +
       '<p class="rank-hint" style="margin:8px 0 0;">Noch ca. ' + Math.max(0, Math.round(targetKcal - sums.kcal)) + ' kcal und ' + Math.max(0, Math.round(targetProtein - sums.p)) + 'g Eiweiß übrig für heute.</p>' +
-      (trainedToday ? '<p class="rank-hint" style="margin:4px 0 0;">🏋️ +250 kcal Trainingsbonus bereits eingerechnet — du hast heute trainiert.</p>' : '') +
+      (trainedToday ? '<p class="rank-hint" style="margin:4px 0 0;">🏋️ Heute trainiert — der Verbrauch steckt bereits im gewählten Aktivitätsfaktor.</p>' : '') +
       (items.length ? ('<p class="rank-hint" style="margin:4px 0 0;">Außerdem heute: ' + Math.round(sums.c) + 'g Kohlenhydrate · ' + Math.round(sums.f) + 'g Fett · ' + Math.round(sums.sugar) + 'g Zucker · ' + (Math.round(sums.salt*10)/10) + 'g Salz</p>') : '');
   }
 
@@ -6235,12 +6248,13 @@ function renderBmr(){
 
   const weight = bw.weight;
   const bmr = computeBMR(weight, height, age, state.bmr.sex);
-  const baseTdee = bmr * activity;
+  // Siehe ausführlichen Kommentar in renderNutritionLog(): der Aktivitätsfaktor deckt den
+  // gesamten Tagesumsatz inklusive Sport bereits ab. Schritte und Trainingstag werden deshalb
+  // nur noch nachrichtlich angezeigt und nicht mehr aufaddiert.
+  const tdee = bmr * activity;
   const stepInfo = todayStepCalories();
   const stepKcal = stepInfo.kcal || 0;
   const trainedToday = state.completedDays.indexOf(todayKey()) !== -1;
-  const trainingBonus = trainedToday ? 250 : 0;
-  const tdee = baseTdee + stepKcal + trainingBonus;
 
   const today = todayKey();
   const existingIdx = state.bmrHistory.findIndex(function(h){ return h.date === today; });
@@ -6256,10 +6270,10 @@ function renderBmr(){
     '<div><span class="num">' + Math.round(tdee) + '</span><span class="lbl">Gesamtumsatz (TDEE)</span></div>' +
     '</div>';
   if(stepKcal > 0){
-    html += '<p class="bmr-hint" style="margin:-4px 0 4px;">🚶 davon ≈ ' + Math.round(stepKcal) + ' kcal zusätzlich durch ' + stepInfo.steps + ' Schritte heute</p>';
+    html += '<p class="bmr-hint" style="margin:-4px 0 4px;">🚶 ' + stepInfo.steps + ' Schritte heute ≈ ' + Math.round(stepKcal) + ' kcal — im Aktivitätsfaktor oben bereits enthalten, wird nicht zusätzlich addiert.</p>';
   }
   if(trainedToday){
-    html += '<p class="bmr-hint" style="margin:-4px 0 12px;">🏋️ davon +250 kcal Trainingsbonus, weil du heute bereits trainiert hast</p>';
+    html += '<p class="bmr-hint" style="margin:-4px 0 12px;">🏋️ Heute trainiert — auch das steckt schon im gewählten Aktivitätsfaktor.</p>';
   }
 
   BMR_GOALS.forEach(function(goal){
