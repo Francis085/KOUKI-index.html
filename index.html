@@ -1550,6 +1550,19 @@
         <button class="btn btn-primary" id="accountSaveNewPasswordBtn" style="width:100%;">Neues Passwort speichern</button>
         <p id="accountResetHint" class="rank-hint" style="margin:8px 0 0;"></p>
       </div>
+      <div id="accountSyncInfo" style="display:none;margin-top:12px;">
+        <p class="measure-label">So werden deine Daten gespeichert</p>
+        <p class="rank-hint" style="margin:0 0 8px;">
+          <strong style="color:var(--text-strong);">Immer lokal:</strong> Alles, was du einträgst, wird zuerst direkt auf diesem Gerät gespeichert — auch ohne Internet. Die App funktioniert dadurch vollständig offline.
+        </p>
+        <p class="rank-hint" style="margin:0 0 8px;">
+          <strong style="color:var(--text-strong);">Zusätzlich in der Cloud:</strong> Solange du angemeldet bist, wird dein Stand nach jeder Änderung automatisch hochgeladen. Du musst dazu nichts bestätigen und dich auch nicht erneut anmelden — einmal angemeldet bleibt angemeldet.
+        </p>
+        <p class="rank-hint" style="margin:0 0 10px;">
+          Beim Start fragt die App nur dann nach, wenn in der Cloud ein Stand liegt, der <em>nicht</em> von diesem Gerät stammt — also etwa, wenn du zwischendurch auf einem zweiten Handy trainiert hast. Möchtest du den Cloud-Stand unabhängig davon einmal bewusst herunterladen, geht das hier jederzeit von Hand:
+        </p>
+        <button class="backup-btn" id="loadCloudBtn" style="background:var(--surface);color:var(--text-strong);border:1px solid var(--line);">☁️ Cloud-Stand jetzt laden</button>
+      </div>
       <button class="backup-btn" id="accountLogoutBtn" style="display:none;margin-top:8px;">Abmelden</button>
       <button class="backup-btn" id="accountDeleteBtn" style="display:none;margin-top:8px;background:var(--warn);">Konto & Cloud-Daten löschen</button>
       <p id="accountDeleteHint" class="rank-hint" style="display:none;margin:8px 0 0;">Entfernt deine Trainings- und Ernährungsdaten unwiderruflich aus der Cloud (auf allen verbundenen Geräten) und meldet dich ab. Für die vollständige Löschung deiner E-Mail-Adresse bei unserem Anmelde-Anbieter schreib uns kurz eine Mail (Kontakt siehe Impressum) — das kann aus Sicherheitsgründen nicht automatisch direkt aus der App heraus passieren.</p>
@@ -2352,7 +2365,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2450,6 +2463,7 @@ function normalizeState(){
   if(typeof state.weeklyReviewDismissedDate !== "string") state.weeklyReviewDismissedDate = "";
   if(typeof state.cloudOwnerId !== "string") state.cloudOwnerId = "";
   if(typeof state.firstStepsDismissed !== "boolean") state.firstStepsDismissed = false;
+  if(typeof state.lastCloudPushAt !== "string") state.lastCloudPushAt = "";
   if(typeof state.onboardingSeen !== "boolean"){
     // Bestehende Nutzer (schon Daten vorhanden) sollen das Onboarding nicht nachträglich
     // aufgedrängt bekommen — nur wirklich frische Installationen zeigen es.
@@ -8306,6 +8320,8 @@ function onAccountLoggedOut(){
   if(logoutBtn) logoutBtn.style.display = "none";
   if(deleteBtn) deleteBtn.style.display = "none";
   if(deleteHint) deleteHint.style.display = "none";
+  const syncInfoOut = document.getElementById("accountSyncInfo");
+  if(syncInfoOut) syncInfoOut.style.display = "none";
   renderLeaderboardSettings();
   // Begrüßung auf der Startseite wieder neutral zeigen — ohne Anmeldung weiß die App nicht
   // mehr, wer das Gerät benutzt.
@@ -8334,6 +8350,8 @@ async function onAccountLoggedIn(user){
   if(logoutBtn) logoutBtn.style.display = "block";
   if(deleteBtn) deleteBtn.style.display = "block";
   if(deleteHint) deleteHint.style.display = "block";
+  const syncInfoIn = document.getElementById("accountSyncInfo");
+  if(syncInfoIn) syncInfoIn.style.display = "block";
   if(!alreadySynced){
     await syncFromCloudOrMigrate();
     cloudSyncEnabled = true;
@@ -8376,16 +8394,43 @@ async function syncFromCloudOrMigrate(){
     }
   }
   try{
-    const { data, error } = await client.from("user_data").select("data").eq("user_id", currentUserId).maybeSingle();
+    const { data, error } = await client.from("user_data").select("data, updated_at").eq("user_id", currentUserId).maybeSingle();
     if(error) throw error;
     if(data && data.data && Object.keys(data.data).length){
-      if(confirm("In der Cloud liegt bereits ein gespeicherter Stand für dieses Konto. Jetzt laden? (Der aktuelle lokale Stand auf diesem Gerät wird dabei ersetzt.)")){
+      // Bis hierhin wurde bei JEDEM Start gefragt, ob der Cloud-Stand geladen werden soll.
+      // Grund: die Sperre gegen Mehrfach-Abgleich hing an cloudSyncEnabled/currentUserId, und
+      // die liegen nur im Arbeitsspeicher — beim Schließen und erneuten Öffnen der App sind sie
+      // zurückgesetzt, die Sitzung wird aber wiederhergestellt. Ergebnis: dieselbe Rückfrage
+      // bei jedem App-Start, obwohl es gar nichts zu entscheiden gab.
+      //
+      // Jetzt entscheidet der Vergleich mit dem eigenen letzten Hochladen: state.lastCloudPushAt
+      // enthält exakt den Zeitstempel, den dieses Gerät zuletzt selbst in die Cloud geschrieben
+      // hat. Stimmt er mit updated_at überein, ist der Cloud-Stand unser eigener — dann gibt es
+      // nichts zu fragen und der Start läuft still durch. Bewusst ein Vergleich auf Gleichheit
+      // statt auf "neuer": der Zeitstempel wird vom jeweiligen Gerät gesetzt, ein Vergleich auf
+      // "neuer" wäre bei abweichend gestellten Uhren zweier Geräte unzuverlässig.
+      const eigenerStand = state.lastCloudPushAt && data.updated_at &&
+        state.cloudOwnerId === currentUserId && state.lastCloudPushAt === data.updated_at;
+      if(eigenerStand){
+        cloudSyncEnabled = true;
+        return;
+      }
+      // Hier liegt wirklich ein fremder bzw. neuerer Stand vor (anderes Gerät hat gespeichert,
+      // oder dieses Gerät synchronisiert zum ersten Mal mit diesem Konto). Nur dann fragen.
+      const wann = data.updated_at ? formatCloudTimestamp(data.updated_at) : "";
+      if(confirm("In der Cloud liegt ein Stand" + (wann ? " von " + wann : "") + ", der nicht von diesem Gerät stammt. Jetzt laden? (Der aktuelle lokale Stand auf diesem Gerät wird dabei ersetzt.)")){
         state = data.data;
         normalizeState();
         state.cloudOwnerId = currentUserId;
+        state.lastCloudPushAt = data.updated_at || "";
         await saveState();
         renderAll();
         showToast("Cloud-Daten geladen");
+      } else {
+        // Bewusst behalten: dann gilt ab jetzt der lokale Stand als der maßgebliche und wird
+        // hochgeladen. Ohne das würde bei jedem weiteren Start erneut gefragt.
+        state.cloudOwnerId = currentUserId;
+        await pushToCloud();
       }
     } else {
       state.cloudOwnerId = currentUserId;
@@ -8398,11 +8443,56 @@ async function syncFromCloudOrMigrate(){
   }
 }
 
+function formatCloudTimestamp(iso){
+  try{
+    const d = new Date(iso);
+    if(isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("de-DE", { day:"2-digit", month:"2-digit", year:"numeric" }) +
+      " um " + d.toLocaleTimeString("de-DE", { hour:"2-digit", minute:"2-digit" }) + " Uhr";
+  }catch(e){ return ""; }
+}
+
+// Holt den Cloud-Stand auf ausdrücklichen Wunsch — der bewusste Ersatz für die frühere
+// Rückfrage bei jedem Start. Steht im Profil unter "Konto & Cloud-Sync".
+async function loadCloudStateManually(){
+  const client = getSupabaseClient();
+  if(!client || !currentUserId){ showToast("Dafür musst du angemeldet sein"); return; }
+  try{
+    const { data, error } = await client.from("user_data").select("data, updated_at").eq("user_id", currentUserId).maybeSingle();
+    if(error) throw error;
+    if(!data || !data.data || !Object.keys(data.data).length){ showToast("In der Cloud liegt noch kein Stand"); return; }
+    const wann = data.updated_at ? formatCloudTimestamp(data.updated_at) : "";
+    if(!confirm("Cloud-Stand" + (wann ? " von " + wann : "") + " jetzt laden? Der aktuelle Stand auf diesem Gerät wird dabei ersetzt.")) return;
+    state = data.data;
+    normalizeState();
+    state.cloudOwnerId = currentUserId;
+    state.lastCloudPushAt = data.updated_at || "";
+    await saveState();
+    renderAll();
+    showToast("Cloud-Daten geladen");
+  }catch(e){
+    console.error("Cloud-Stand konnte nicht geladen werden", e);
+    showToast("Cloud gerade nicht erreichbar — bitte später erneut versuchen");
+  }
+}
+
 async function pushToCloud(){
   const client = getSupabaseClient();
   if(!client || !currentUserId) return;
+  const stempel = new Date().toISOString();
   try{
-    await client.from("user_data").upsert({ user_id: currentUserId, data: state, updated_at: new Date().toISOString() });
+    // Supabase wirft bei einem abgelehnten Schreibvorgang keine Ausnahme, sondern liefert das
+    // Problem in .error zurück — das wurde hier bisher gar nicht ausgewertet. Wichtig für den
+    // Zeitstempel unten: er darf NUR bei echtem Erfolg gemerkt werden. Sonst würde ein
+    // fehlgeschlagenes Hochladen (z.B. offline) so aussehen, als sei der Cloud-Stand von diesem
+    // Gerät — und ein tatsächlich abweichender Stand bliebe beim nächsten Start unbemerkt.
+    const { error } = await client.from("user_data").upsert({ user_id: currentUserId, data: state, updated_at: stempel });
+    if(error) throw error;
+    if(state.lastCloudPushAt !== stempel){
+      state.lastCloudPushAt = stempel;
+      // Ohne await: saveState() löst über scheduleCloudPush() sonst eine Endlosschleife aus.
+      try{ if(storageAvailable()) localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    }
   }catch(e){ console.error("Cloud-Speichern fehlgeschlagen", e); }
   if(state.leaderboardOptIn) pushLeaderboardStats();
 }
@@ -8552,6 +8642,8 @@ const accountForgotPasswordBtnEl = document.getElementById("accountForgotPasswor
 if(accountForgotPasswordBtnEl) accountForgotPasswordBtnEl.onclick = requestPasswordReset;
 const accountSaveNewPasswordBtnEl = document.getElementById("accountSaveNewPasswordBtn");
 if(accountSaveNewPasswordBtnEl) accountSaveNewPasswordBtnEl.onclick = saveNewPassword;
+const loadCloudBtnEl = document.getElementById("loadCloudBtn");
+if(loadCloudBtnEl) loadCloudBtnEl.onclick = loadCloudStateManually;
 const accountLogoutBtnEl = document.getElementById("accountLogoutBtn");
 if(accountLogoutBtnEl) accountLogoutBtnEl.onclick = logoutAccount;
 const accountDeleteBtnEl = document.getElementById("accountDeleteBtn");
