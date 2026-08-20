@@ -2513,7 +2513,10 @@ function exportTrainingPDF(){
     getAllPlans().forEach(function(plan){
       Object.keys(plan.days).forEach(function(dKey){
         plan.days[dKey].groups.forEach(function(g){
-          g.exercises.forEach(function(ex){ idToName[ex.id] = ex.name; });
+          // Getauschte Übung berücksichtigen — sonst würde hier trotz Tausch weiterhin der
+          // ursprüngliche Übungsname aus der Planvorlage auftauchen (state.exerciseSwaps ist
+          // global nach Übungs-ID, unabhängig davon, aus welchem Plan gerade gescannt wird).
+          g.exercises.forEach(function(ex){ idToName[ex.id] = (state.exerciseSwaps[ex.id] && state.exerciseSwaps[ex.id].name) || ex.name; });
         });
       });
     });
@@ -3858,7 +3861,7 @@ function volumeByGroupInRange(start, end){
   getAllPlans().forEach(function(plan){
     Object.keys(plan.days).forEach(function(dKey){
       plan.days[dKey].groups.forEach(function(g){
-        g.exercises.forEach(function(ex){ idToName[ex.id] = ex.name; });
+        g.exercises.forEach(function(ex){ idToName[ex.id] = (state.exerciseSwaps[ex.id] && state.exerciseSwaps[ex.id].name) || ex.name; });
       });
     });
   });
@@ -4261,7 +4264,9 @@ function openDayDetail(dateStr){
           const hist = state.history[ex.id];
           if(!hist) return;
           const found = hist.find(function(h){ return h.date === dateStr; });
-          if(found){ rows.push({ name: ex.name, sets: found.sets }); seenIds[ex.id] = true; }
+          // exerciseNameById() statt rohem ex.name — berücksichtigt eine getauschte Übung,
+          // sonst würde der Kalendereintrag weiterhin den ursprünglichen Plan-Namen zeigen.
+          if(found){ rows.push({ name: exerciseNameById(ex.id) || ex.name, sets: found.sets }); seenIds[ex.id] = true; }
         });
       });
     });
@@ -4269,7 +4274,7 @@ function openDayDetail(dateStr){
   Object.keys(state.history).forEach(function(id){
     if(seenIds[id]) return;
     const found = (state.history[id] || []).find(function(h){ return h.date === dateStr; });
-    if(found){ rows.push({ name: id, sets: found.sets }); seenIds[id] = true; }
+    if(found){ rows.push({ name: exerciseNameById(id) || id, sets: found.sets }); seenIds[id] = true; }
   });
 
   let html = '<div class="day-modal-head"><h3>' + formatDateLong(dateStr) + '</h3>' +
@@ -5008,8 +5013,12 @@ async function finishSession(){
         const unit = mode === "hold" ? "sek" : "kg";
         if(!currentPR || bestWeight > currentPR.weight){
           state.prs[ex.id] = { weight: bestWeight, date: today, reps: bestReps, unit: unit };
-          newPRs.push(ex.name);
-          newPRDetails.push({ name: ex.name, weight: bestWeight, reps: bestReps, unit: unit });
+          // exerciseNameById() statt rohem ex.name — sonst zeigten der "Neuer PR"-Toast und die
+          // Teilen-Karte nach einem Übungstausch weiterhin den ursprünglichen Übungsnamen aus
+          // der Planvorlage statt der tatsächlich trainierten (getauschten) Übung.
+          const displayName = exerciseNameById(ex.id) || ex.name;
+          newPRs.push(displayName);
+          newPRDetails.push({ name: displayName, weight: bestWeight, reps: bestReps, unit: unit });
         }
       }
     }
@@ -7165,7 +7174,7 @@ function renderHome(){
   getAllPlans().forEach(function(p){
     Object.keys(p.days).forEach(function(dKey){
       p.days[dKey].groups.forEach(function(g){
-        g.exercises.forEach(function(ex){ idToName[ex.id] = ex.name; });
+        g.exercises.forEach(function(ex){ idToName[ex.id] = (state.exerciseSwaps[ex.id] && state.exerciseSwaps[ex.id].name) || ex.name; });
       });
     });
   });
