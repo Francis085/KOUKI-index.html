@@ -1240,6 +1240,10 @@
       <div class="filter-row" id="activeGoalRow"></div>
       <div id="nutritionLogSummary"></div>
       <div id="nutritionLogList"></div>
+      <div id="favoriteFoodsGroup" class="measure-group" style="margin-top:14px;display:none;">
+        <p class="measure-label">⭐ Favoriten</p>
+        <div class="filter-row" id="favoriteFoodsRow" style="margin-bottom:0;"></div>
+      </div>
       <div id="recentFoodsGroup" class="measure-group" style="margin-top:14px;display:none;">
         <p class="measure-label">Nochmal eintragen — ein Tipp genügt</p>
         <div class="filter-row" id="recentFoodsRow" style="margin-bottom:0;"></div>
@@ -3322,6 +3326,13 @@ function renderPlanSwitch(){
 function deleteCurrentPlan(){
   const plan = getPlanById(currentPlanId);
   if(plan.builtin) return;
+  // Bis hierhin genügte ein einziger Tipp auf das Papierkorb-Symbol, um einen selbst gebauten
+  // Plan mit allen Tagen und Übungen unwiderruflich zu löschen — deutlich folgenschwerer als
+  // das Entfernen eines einzelnen Satzes, das bereits nachfragt. Der Hinweis nennt zusätzlich
+  // ausdrücklich, dass Verlauf und Rekorde erhalten bleiben (siehe Kommentar unten), damit
+  // niemand aus Sorge um seine Historie zögert.
+  const tage = Object.keys(plan.days || {}).length;
+  if(!confirm('Trainingsplan "' + (plan.label || "") + '" mit ' + tage + ' Trainingstagen wirklich löschen? Dein bisheriger Trainingsverlauf und deine Rekorde bleiben dabei erhalten.')) return;
   // Verweise auf die Übungen dieses Plans mit aufräumen, damit keine verwaisten Einträge
   // dauerhaft im Speicher liegen bleiben. Trainingsverlauf und Rekorde bleiben bewusst
   // erhalten — die sind Teil der persönlichen Historie, auch wenn der Plan weg ist.
@@ -5749,9 +5760,52 @@ function removeFoodLog(index){
 // jemand einen Eintrag wieder löscht.
 // Gleiches Lebensmittel = gleicher Name + gleiche Kalorienzahl; dieselbe Speise mit anderer
 // Portionsgröße bleibt dadurch bewusst als eigener Vorschlag erhalten.
+// Ein Lebensmittel wird über Name + Kalorienzahl identifiziert (Groß-/Kleinschreibung egal).
+// Dieselbe Speise mit anderer Portionsgröße bleibt dadurch bewusst etwas Eigenes.
+function foodSignature(item){
+  if(!item || !item.name) return "";
+  return String(item.name).toLowerCase().trim() + "|" + Math.round(item.kcal || 0);
+}
+
+// Immer eine Kopie ablegen statt der Original-Referenz: sonst läge dasselbe Objekt gleichzeitig
+// im Protokoll und in den Favoriten, und eine spätere Korrektur würde beide Seiten (und alte
+// Tage) rückwirkend mitverändern.
+function copyFood(item){
+  return {
+    name: item.name, kcal: item.kcal || 0, p: item.p || 0, c: item.c || 0, f: item.f || 0,
+    sugar: item.sugar || 0, salt: item.salt || 0,
+  };
+}
+
+function isFavoriteFood(item){
+  const sig = foodSignature(item);
+  if(!sig) return false;
+  return state.favoriteFoods.some(function(f){ return foodSignature(f) === sig; });
+}
+
+// Anheften bzw. lösen. Favoriten sind bewusst dauerhaft und altern — anders als die
+// "Nochmal eintragen"-Vorschläge — nicht aus dem Protokoll heraus.
+function toggleFavoriteFood(item){
+  const sig = foodSignature(item);
+  if(!sig) return;
+  const idx = state.favoriteFoods.findIndex(function(f){ return foodSignature(f) === sig; });
+  if(idx === -1){
+    state.favoriteFoods.unshift(copyFood(item));
+    showToast(item.name + " zu Favoriten hinzugefügt");
+  } else {
+    state.favoriteFoods.splice(idx, 1);
+    showToast(item.name + " aus Favoriten entfernt");
+  }
+  saveState();
+  renderNutritionLog();
+}
+
 function recentFoods(maxItems){
   const seen = {};
   const out = [];
+  // Bereits angeheftete Lebensmittel haben ihre eigene Reihe und werden hier ausgelassen,
+  // damit dieselbe Sache nicht doppelt zur Auswahl steht.
+  state.favoriteFoods.forEach(function(f){ seen[foodSignature(f)] = true; });
   const tage = Object.keys(state.nutritionLog).sort().reverse();
   for(let k = 0; k < tage.length && out.length < maxItems; k++){
     const items = state.nutritionLog[tage[k]] || [];
@@ -5759,13 +5813,29 @@ function recentFoods(maxItems){
     for(let i = items.length - 1; i >= 0 && out.length < maxItems; i--){
       const it = items[i];
       if(!it || !it.name) continue;
-      const sig = String(it.name).toLowerCase() + "|" + Math.round(it.kcal || 0);
+      const sig = foodSignature(it);
       if(seen[sig]) continue;
       seen[sig] = true;
       out.push(it);
     }
   }
   return out;
+}
+
+function renderFavoriteFoods(){
+  const group = document.getElementById("favoriteFoodsGroup");
+  const row = document.getElementById("favoriteFoodsRow");
+  if(!group || !row) return;
+  row.innerHTML = "";
+  if(!state.favoriteFoods.length){ group.style.display = "none"; return; }
+  group.style.display = "block";
+  state.favoriteFoods.forEach(function(it){
+    const chip = document.createElement("div");
+    chip.className = "filter-chip";
+    chip.textContent = "⭐ " + it.name + " · " + Math.round(it.kcal || 0) + " kcal";
+    chip.onclick = function(){ logFoodToday(copyFood(it)); };
+    row.appendChild(chip);
+  });
 }
 
 function renderRecentFoods(){
@@ -5780,14 +5850,7 @@ function renderRecentFoods(){
     const chip = document.createElement("div");
     chip.className = "filter-chip";
     chip.textContent = it.name + " · " + Math.round(it.kcal || 0) + " kcal";
-    chip.onclick = function(){
-      // Bewusst eine Kopie loggen: sonst läge dasselbe Objekt in mehreren Tagen des
-      // Protokolls und eine spätere Änderung würde alle Tage gleichzeitig betreffen.
-      logFoodToday({
-        name: it.name, kcal: it.kcal || 0, p: it.p || 0, c: it.c || 0, f: it.f || 0,
-        sugar: it.sugar || 0, salt: it.salt || 0,
-      });
-    };
+    chip.onclick = function(){ logFoodToday(copyFood(it)); };
     row.appendChild(chip);
   });
 }
@@ -5840,13 +5903,36 @@ function renderNutritionLog(){
   if(!items.length){
     listEl.innerHTML = '<p class="rank-hint" style="margin:8px 0 0;">Noch nichts geloggt — über die Rezepte oder unten manuell hinzufügen.</p>';
   } else {
+    // Der Stern hängt genau hier, wo man ohnehin sieht, was man gerade gegessen hat — das ist
+    // der Moment, in dem auffällt "das esse ich ständig". Ausgefüllt = bereits angeheftet.
     listEl.innerHTML = items.map(function(it, i){
-      return '<div class="home-pr-row"><span>' + escapeHtml(it.name) + ' — ' + Math.round(it.kcal) + ' kcal</span><span class="set-del" data-idx="' + i + '">✕</span></div>';
+      const fav = isFavoriteFood(it);
+      return '<div class="home-pr-row"><span>' + escapeHtml(it.name) + ' — ' + Math.round(it.kcal) + ' kcal</span>' +
+        // gap:10px, nicht enger: beide Symbole sind .set-del und tragen dadurch die zentrale
+        // Tap-Flächen-Vergrößerung (::after, inset -3px/-2px). Bei kleinerem Abstand würden
+        // sich die unsichtbaren Trefferflächen berühren — und direkt neben dem Stern liegt das
+        // endgültige Löschen des Eintrags, da darf kein Vertippen möglich sein.
+        '<span style="display:flex;align-items:center;gap:10px;">' +
+        '<span class="set-del food-fav" data-idx="' + i + '" role="button" tabindex="0" ' +
+        'title="' + (fav ? 'Aus Favoriten entfernen' : 'Als Favorit anheften') + '" ' +
+        'aria-label="' + (fav ? 'Aus Favoriten entfernen' : 'Als Favorit anheften') + '">' +
+        (fav ? '⭐' : '☆') + '</span>' +
+        '<span class="set-del food-remove" data-idx="' + i + '" role="button" tabindex="0" ' +
+        'title="Eintrag löschen" aria-label="Eintrag löschen">✕</span>' +
+        '</span></div>';
     }).join("");
-    listEl.querySelectorAll(".set-del").forEach(function(btn){
+    listEl.querySelectorAll(".food-remove").forEach(function(btn){
       btn.onclick = function(){ removeFoodLog(parseInt(btn.getAttribute("data-idx"), 10)); };
     });
+    listEl.querySelectorAll(".food-fav").forEach(function(btn){
+      btn.onclick = function(){
+        const idx = parseInt(btn.getAttribute("data-idx"), 10);
+        const eintrag = (state.nutritionLog[todayKey()] || [])[idx];
+        if(eintrag) toggleFavoriteFood(eintrag);
+      };
+    });
   }
+  renderFavoriteFoods();
   renderRecentFoods();
   renderNutritionTrend();
 }
@@ -6009,8 +6095,8 @@ function renderManualScanForm(barcode){
     '<div class="product-card">' +
       '<h4 style="font-family:\'Baloo 2\',sans-serif;margin:0 0 10px;">Produkt manuell hinzufügen</h4>' +
       '<div class="measure-input-row" style="margin-bottom:8px;"><input type="text" id="manualScanName" placeholder="Produktname"></div>' +
-      '<div class="bmr-inputs" style="margin-bottom:8px;"><input type="number" id="manualScanKcal" placeholder="kcal / 100g"><input type="number" id="manualScanProtein" placeholder="Eiweiß g / 100g"></div>' +
-      '<div class="bmr-inputs" style="margin-bottom:8px;"><input type="number" id="manualScanCarbs" placeholder="Kohlenhydrate g / 100g"><input type="number" id="manualScanFat" placeholder="Fett g / 100g"></div>' +
+      '<div class="bmr-inputs" style="margin-bottom:8px;"><input type="number" inputmode="numeric" id="manualScanKcal" placeholder="kcal / 100g"><input type="number" inputmode="decimal" id="manualScanProtein" placeholder="Eiweiß g / 100g"></div>' +
+      '<div class="bmr-inputs" style="margin-bottom:8px;"><input type="number" inputmode="decimal" id="manualScanCarbs" placeholder="Kohlenhydrate g / 100g"><input type="number" inputmode="decimal" id="manualScanFat" placeholder="Fett g / 100g"></div>' +
       '<button class="btn btn-primary" id="manualScanSaveBtn" style="width:100%;">+ Zum Ernährungstagebuch</button>' +
     '</div>';
   document.getElementById("manualScanSaveBtn").onclick = function(){
@@ -6050,7 +6136,7 @@ function renderScannedProduct(product){
       '</div>' +
       (product.servingSize ? ('<p class="rank-hint" style="margin:0 0 8px;">Portion laut Verpackung: ' + escapeHtml(product.servingSize) + '</p>') : "") +
       '<p class="rank-hint" style="margin:0 0 4px;">Menge für dein Tagebuch:</p>' +
-      '<div class="product-qty-row"><input type="number" id="productQtyInput" value="100"><span class="rank-hint" style="margin:0;">g / ml</span></div>' +
+      '<div class="product-qty-row"><input type="number" inputmode="decimal" id="productQtyInput" value="100"><span class="rank-hint" style="margin:0;">g / ml</span></div>' +
       '<p class="rank-hint" id="productQtyPreview" style="margin:0 0 10px;"></p>' +
       '<button class="btn btn-primary" id="addProductToLogBtn" style="width:100%;">+ Zum Ernährungstagebuch</button>' +
     '</div>';
@@ -6488,6 +6574,10 @@ function removeShoppingItem(idx){
   renderShoppingList();
 }
 function clearShoppingList(){
+  // "Liste leeren" löschte bisher die komplette Einkaufsliste mit einem einzigen Tipp und ohne
+  // Weg zurück — inklusive aller von Hand ergänzten Einträge.
+  if(!state.shoppingList.length) return;
+  if(!confirm("Komplette Einkaufsliste mit " + state.shoppingList.length + " Einträgen leeren? Das lässt sich nicht rückgängig machen.")) return;
   state.shoppingList = [];
   saveState();
   renderShoppingList();
