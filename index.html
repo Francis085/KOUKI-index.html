@@ -1037,16 +1037,30 @@
      bestehende, fein abgestimmte Layout optisch verändern würde), wird hier über ein
      unsichtbares ::after-Pseudoelement pro Gruppe die tatsächliche Tap-Fläche erweitert —
      die sichtbare Größe bleibt exakt gleich.
-     Zwei Gruppen, weil der verfügbare Abstand zu Nachbar-Elementen unterschiedlich groß ist:
-     - "eng" (Satz-Häkchen/-Löschen, Icon-Buttons in der Übungskarte): dort stehen die
-       Elemente in dicht gepackten Grids/Stacks mit nur 2-6px Abstand, deshalb nur ein
-       kleiner, auf den jeweiligen Abstand abgestimmter Zuwachs.
+     Drei Gruppen, weil der verfügbare Abstand zu Nachbar-Elementen unterschiedlich groß ist:
+     - "eng" (Icon-Buttons in der Übungskarte): dort stehen die Elemente in dicht gepackten
+       Stacks mit nur 2-6px Abstand, deshalb nur ein kleiner, auf den jeweiligen Abstand
+       abgestimmter Zuwachs.
+     - "Satzzeile" (Häkchen und Löschen im Satz-Grid): hier wurde der Freiraum ausgemessen —
+       die Zeile ist 36px hoch bei 22-24px großen Symbolen, sodass die Flächen senkrecht bis
+       an den Zeilenrand wachsen können, ohne die 6px-Lücke zur Nachbarzeile anzutasten.
+       Waagerecht liegen zwischen Häkchen und Löschen je nach Displaybreite 20px (bei 320px)
+       bis 90px Luft; maßgeblich ist der schmalste Fall, deshalb wachsen beide dort um
+       zusammen 16px und lassen 4px Abstand. Links vom Häkchen steht das RIR-Feld mit nur 2px
+       Abstand, rechts vom Löschen endet die Zeile nach 6px — daher die asymmetrischen Werte.
      - "frei" (Modal schließen, Pausen-Leiste schließen, Plan löschen, Zitat favorisieren):
        dort ist genug Abstand zu Nachbarn vorhanden, deshalb großzügigerer Zuwachs. */
   .set-check, .set-del, .icon-btn{ position:relative; }
-  .set-check::after, .set-del::after, .icon-btn::after{
+  .icon-btn::after{
     content:""; position:absolute; inset:-3px -2px;
   }
+  .set-check::after, .set-del::after{
+    content:""; position:absolute; inset:-4px;
+  }
+  /* Zu beachten: Bezugsgröße für inset ist die Padding-Box. Beim Häkchen zieht der 2px-Rand
+     davon ab (24px sichtbar -> 20px Bezug), deshalb sind die Werte dort größer. */
+  .set-row .set-check::after{ inset:-7px -8px -7px -2px; }   /* ergibt 30 x 34 statt 28 x 30 */
+  .set-row .set-del::after{ inset:-7px -6px -7px -8px; }     /* ergibt 36 x 36 statt 26 x 28 */
   .day-modal-close, .rest-close, .plan-delete, .quote-fav{ position:relative; }
   .day-modal-close::after, .rest-close::after, .plan-delete::after, .quote-fav::after{
     content:""; position:absolute; inset:-6px;
@@ -1354,13 +1368,13 @@
       </div>
       <p class="rank-hint">Berechnung nach der Mifflin-St-Jeor-Formel, auf Basis deines zuletzt eingetragenen Körpergewichts. Diese Formel gilt als die derzeit treffsicherste Schätzung und wird von Fachgesellschaften empfohlen. Der Gesamtumsatz ergibt sich aus Grundumsatz mal Aktivitätsfaktor — Sport und Alltagsbewegung sind darin bereits enthalten und werden nicht noch einmal addiert. Trägst du deine Schritte ein, zählt nur die <strong>Abweichung</strong>: Jeder Aktivitätsfaktor unterstellt eine typische Schrittzahl, und nur was du an einem Tag darüber oder darunter liegst, wird zusätzlich verrechnet. Ohne Eintrag bleibt es beim reinen Faktor. Wichtig: Jede Formel ist eine Schätzung und liegt individuell etwa 10 % daneben. Der verlässlichste Abgleich ist dein Körpergewicht über 2-3 Wochen: bleibt es bei gleicher Kalorienzahl konstant, stimmt dein Erhaltungsbedarf.</p>
       <div class="bmr-inputs">
-        <input type="number" inputmode="numeric" id="bmrHeight" placeholder="Größe (cm)">
-        <input type="number" inputmode="numeric" id="bmrAge" placeholder="Alter (Jahre)">
-        <select id="bmrSex">
+        <input type="number" inputmode="numeric" id="bmrHeight" placeholder="Größe (cm)" min="100" max="250">
+        <input type="number" inputmode="numeric" id="bmrAge" placeholder="Alter (Jahre)" min="10" max="120">
+        <select id="bmrSex" aria-label="Geschlecht für die Grundumsatz-Berechnung">
           <option value="m">Männlich</option>
           <option value="w">Weiblich</option>
         </select>
-        <select id="bmrActivity">
+        <select id="bmrActivity" aria-label="Aktivitätsniveau für die Grundumsatz-Berechnung">
           <option value="1.2">Kaum aktiv (Bürojob)</option>
           <option value="1.375">Leicht aktiv (1-3x Sport/Woche)</option>
           <option value="1.55" selected>Mäßig aktiv (3-5x Sport/Woche)</option>
@@ -1611,7 +1625,7 @@
         <button class="backup-btn" id="exportBackupBtn">📤 Backup exportieren</button>
         <button class="backup-btn" id="importBackupBtn">📥 Backup importieren</button>
       </div>
-      <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+      <input type="file" id="importFileInput" accept="application/json" aria-label="Backup-Datei auswählen" style="display:none;">
     </div>
 
     <div class="legal-card">
@@ -3173,6 +3187,43 @@ function allPRs(){
   return out;
 }
 
+// --- Zentrale Plausibilitätsprüfung für Zahleneingaben --------------------------------------
+// Ein Audit über alle Eingabefelder zeigte, dass zwar auf "keine Zahl" und teilweise auf
+// negative Werte geprüft wurde, aber nirgends auf eine Obergrenze. Dadurch ließen sich Werte
+// wie 999.999.999 kg Körpergewicht oder 999.999.999 Schritte speichern — die Diagramme, der
+// Kraft-Rang und das Kalorienziel wurden damit unbrauchbar. Eingaben wie "1e400" ergeben in
+// JavaScript sogar Infinity und führten am Ende zu "NaN" als Tagesziel.
+// Liefert null, wenn der Wert nicht brauchbar ist; sonst die auf den erlaubten Bereich
+// geprüfte Zahl. Bewusst KEIN stilles Zurechtstutzen: Wer sich vertippt, soll das erfahren,
+// statt unbemerkt einen anderen Wert gespeichert zu bekommen.
+function pruefeZahl(rohwert, min, max, ganzzahl){
+  const text = String(rohwert === null || rohwert === undefined ? "" : rohwert).trim().replace(",", ".");
+  if(!text) return null;
+  const zahl = ganzzahl ? parseInt(text, 10) : parseFloat(text);
+  if(!isFinite(zahl)) return null;
+  if(zahl < min || zahl > max) return null;
+  return zahl;
+}
+
+// Grenzen für die Grundumsatz-Eingaben an einer Stelle, damit renderBmr() und
+// computeDailyEnergy() garantiert dieselben Werte verwenden. Die Bereiche decken jeden
+// realistischen Menschen ab und schließen nur offensichtliche Vertipper aus.
+const BMR_GRENZEN = { height: [100, 250], age: [10, 120], activity: [1, 2.5] };
+function bmrEingaben(){
+  const b = state.bmr || {};
+  const height = pruefeZahl(b.height, BMR_GRENZEN.height[0], BMR_GRENZEN.height[1], false);
+  const age = pruefeZahl(b.age, BMR_GRENZEN.age[0], BMR_GRENZEN.age[1], false);
+  const activity = pruefeZahl(b.activity, BMR_GRENZEN.activity[0], BMR_GRENZEN.activity[1], false);
+  if(height === null || age === null || activity === null) return null;
+  return { height: height, age: age, activity: activity, sex: b.sex === "w" ? "w" : "m" };
+}
+// Unterscheidet "noch nichts eingetragen" von "unplausibel eingetragen", damit der Hinweis
+// in der Grundumsatz-Karte zum tatsächlichen Problem passt.
+function bmrEingabeLeer(){
+  const b = state.bmr || {};
+  return !String(b.height || "").trim() || !String(b.age || "").trim();
+}
+
 function getProgressionSuggestion(ex){
   const mode = exerciseMode(ex);
   if(mode === "hold") return getProgressionSuggestionHold(ex);
@@ -4111,16 +4162,6 @@ function addXP(amount){
   if(!amount) return 0;
   state.xp += amount;
   return amount;
-}
-function awardXP(amount, reason){
-  if(!amount) return;
-  const prevLevel = xpLevel(state.xp);
-  addXP(amount);
-  saveState();
-  const newLevel = xpLevel(state.xp);
-  if(newLevel > prevLevel) showToast("Level " + newLevel + " erreicht! +" + amount + " XP");
-  else showToast("+" + amount + " XP · " + reason);
-  renderXP();
 }
 function checkWeeklyXpBonus(){
   const monday = mondayOf(new Date());
@@ -5185,15 +5226,6 @@ function buildExerciseCard(ex, dayColor, el){
       }
 }
 
-function spawnSparkle(x, y){
-  const s = document.createElement("div");
-  s.className = "sparkle-fx";
-  s.textContent = "✨";
-  s.style.left = x + "px";
-  s.style.top = y + "px";
-  document.getElementById("fxLayer").appendChild(s);
-  setTimeout(function(){ s.remove(); }, 900);
-}
 
 let celebrateTimeout = null;
 let lastCelebratePRs = null;
@@ -5613,8 +5645,8 @@ function renderBodyweight(){
 }
 document.getElementById("bwSave").onclick = async function(){
   const input = document.getElementById("bwInput");
-  const val = parseFloat(input.value);
-  if(isNaN(val) || val <= 0){ showToast("Bitte gültiges Gewicht eingeben"); return; }
+  const val = pruefeZahl(input.value, 20, 400, false);
+  if(val === null){ showToast("Bitte ein Körpergewicht zwischen 20 und 400 kg eingeben"); return; }
   const today = todayKey();
   state.bodyweight = state.bodyweight.filter(function(b){ return b.date !== today; });
   state.bodyweight.push({ date: today, weight: val });
@@ -5674,8 +5706,9 @@ function stepAdjustmentKcal(){
   const steps = state.stepsLog[todayKey()];
   if(typeof steps !== "number" || steps <= 0) return 0;
   const bw = latestBodyweight();
-  const height = parseFloat(state.bmr && state.bmr.height);
-  if(!bw || !height) return 0;
+  const eingaben = bmrEingaben();
+  if(!bw || !eingaben) return 0;
+  const height = eingaben.height;
   const diff = steps - baselineStepsForActivity();
   const kcal = estimateStepCalories(Math.abs(diff), bw.weight, height);
   if(!kcal) return 0;
@@ -5686,9 +5719,10 @@ function stepAdjustmentKcal(){
 // getrennt, was leicht auseinanderlaufen kann. Liefert null, wenn Grunddaten fehlen.
 function computeDailyEnergy(goalKey){
   const bw = latestBodyweight();
-  const height = parseFloat(state.bmr.height), age = parseFloat(state.bmr.age), activity = parseFloat(state.bmr.activity);
-  if(!bw || !height || !age || !activity) return null;
-  const bmr = computeBMR(bw.weight, height, age, state.bmr.sex);
+  const eingaben = bmrEingaben();
+  if(!bw || !eingaben) return null;
+  const height = eingaben.height, age = eingaben.age, activity = eingaben.activity;
+  const bmr = computeBMR(bw.weight, height, age, eingaben.sex);
   const stepAdjust = stepAdjustmentKcal();
   const tdee = bmr * activity + stepAdjust;
   const goal = BMR_GOALS.find(function(g){ return g.key === goalKey; }) || BMR_GOALS[0];
@@ -5706,9 +5740,9 @@ function computeDailyEnergy(goalKey){
 function todayStepCalories(){
   const steps = state.stepsLog[todayKey()] || 0;
   const bw = latestBodyweight();
-  const height = parseFloat(state.bmr && state.bmr.height);
-  if(!steps || !bw || !height) return { steps: steps, kcal: null };
-  return { steps: steps, kcal: estimateStepCalories(steps, bw.weight, height) };
+  const eingaben = bmrEingaben();
+  if(!steps || !bw || !eingaben) return { steps: steps, kcal: null };
+  return { steps: steps, kcal: estimateStepCalories(steps, bw.weight, eingaben.height) };
 }
 function updateStepsCalorieHint(){
   const hint = document.getElementById("stepsCalorieHint");
@@ -5742,9 +5776,11 @@ function renderSteps(){
 let stepsSaveTimer = null;
 function saveStepsFromInput(showConfirmation){
   const input = document.getElementById("stepsInput");
-  const val = parseInt(input.value, 10);
-  if(isNaN(val) || val < 0){
-    if(showConfirmation) showToast("Bitte eine gültige Schrittzahl eingeben");
+  // 100.000 Schritte entsprechen rund 70 km Gehstrecke — jenseits davon ist es sicher ein
+  // Tippfehler und keine reale Tagesleistung.
+  const val = pruefeZahl(input.value, 0, 100000, true);
+  if(val === null){
+    if(showConfirmation) showToast("Bitte eine Schrittzahl zwischen 0 und 100.000 eingeben");
     return;
   }
   state.stepsLog[todayKey()] = val;
@@ -6087,13 +6123,14 @@ function renderNutritionLog(){
     return acc;
   }, { kcal: 0, p: 0, c: 0, f: 0, sugar: 0, salt: 0 });
 
-  const bw = latestBodyweight();
-  const height = parseFloat(state.bmr.height), age = parseFloat(state.bmr.age), activity = parseFloat(state.bmr.activity);
   const summaryEl = document.getElementById("nutritionLogSummary");
-  if(!bw || !height || !age){
+  // Bewusst am Ergebnis von computeDailyEnergy() entschieden statt an einzeln geprüften
+  // Rohwerten: so kann die Anzeige nie auf ein "null" zugreifen, wenn eine der Eingaben
+  // zwar gefüllt, aber unplausibel ist.
+  const energie = computeDailyEnergy(state.activeGoal);
+  if(!energie){
     summaryEl.innerHTML = '<p class="rank-hint" style="margin:0 0 10px;">Trage Körpergewicht, Größe und Alter ein (unten bei "Grundumsatz & Makros"), um dein Tagesziel zu sehen.</p>';
   } else {
-    const energie = computeDailyEnergy(state.activeGoal);
     const trainedToday = state.completedDays.indexOf(todayKey()) !== -1;
     const tdee = energie.tdee;
     const targetKcal = energie.targetKcal;
@@ -6118,9 +6155,10 @@ function renderNutritionLog(){
       const fav = isFavoriteFood(it);
       return '<div class="home-pr-row"><span>' + escapeHtml(it.name) + ' — ' + Math.round(it.kcal) + ' kcal</span>' +
         // gap:10px, nicht enger: beide Symbole sind .set-del und tragen dadurch die zentrale
-        // Tap-Flächen-Vergrößerung (::after, inset -3px/-2px). Bei kleinerem Abstand würden
-        // sich die unsichtbaren Trefferflächen berühren — und direkt neben dem Stern liegt das
-        // endgültige Löschen des Eintrags, da darf kein Vertippen möglich sein.
+        // Tap-Flächen-Vergrößerung (::after, inset -4px). Zwei Nachbarn wachsen also um je 4px
+        // aufeinander zu und lassen bei 10px Abstand noch 2px Luft. Bei kleinerem Abstand
+        // würden sich die unsichtbaren Trefferflächen berühren — und direkt neben dem Stern
+        // liegt das endgültige Löschen des Eintrags, da darf kein Vertippen möglich sein.
         '<span style="display:flex;align-items:center;gap:10px;">' +
         '<span class="set-del food-fav" data-idx="' + i + '" role="button" tabindex="0" ' +
         'title="' + (fav ? 'Aus Favoriten entfernen' : 'Als Favorit anheften') + '" ' +
@@ -6149,9 +6187,12 @@ document.getElementById("manualFoodAddBtn").onclick = function(){
   const nameEl = document.getElementById("manualFoodName");
   const kcalEl = document.getElementById("manualFoodKcal");
   const proteinEl = document.getElementById("manualFoodProtein");
-  const kcal = parseFloat(kcalEl.value);
-  if(!nameEl.value.trim() || isNaN(kcal)){ showToast("Bitte Name und Kalorien eingeben"); return; }
-  logFoodToday({ name: nameEl.value.trim(), kcal: kcal, p: parseFloat(proteinEl.value) || 0, f: 0, c: 0 });
+  const kcal = pruefeZahl(kcalEl.value, 0, 20000, false);
+  const eiweiss = proteinEl.value.trim() ? pruefeZahl(proteinEl.value, 0, 1000, false) : 0;
+  if(!nameEl.value.trim()){ showToast("Bitte einen Namen eingeben"); return; }
+  if(kcal === null){ showToast("Bitte Kalorien zwischen 0 und 20.000 eingeben"); return; }
+  if(eiweiss === null){ showToast("Bitte Eiweiß zwischen 0 und 1.000 g eingeben"); return; }
+  logFoodToday({ name: nameEl.value.trim().slice(0, 120), kcal: kcal, p: eiweiss, f: 0, c: 0 });
   nameEl.value = ""; kcalEl.value = ""; proteinEl.value = "";
 };
 
@@ -6388,17 +6429,22 @@ function renderBmr(){
 
   const results = document.getElementById("bmrResults");
   const bw = latestBodyweight();
-  const height = parseFloat(state.bmr.height);
-  const age = parseFloat(state.bmr.age);
-  const activity = parseFloat(state.bmr.activity);
 
   if(!bw){
     results.innerHTML = '<p class="bmr-hint">Trage zuerst dein Körpergewicht in der Karte "Körpergewicht" ein.</p>';
     document.getElementById("bmrHistoryArea").innerHTML = "";
     return;
   }
-  if(!height || !age){
-    results.innerHTML = '<p class="bmr-hint">Trage noch Größe und Alter ein, um deinen Grundumsatz zu berechnen.</p>';
+  // Zwei verschiedene Ursachen, zwei verschiedene Hinweise: noch nichts eingetragen ist
+  // etwas anderes als ein Vertipper wie "1800" als Größe. Vorher führten beide Fälle zum
+  // selben Text — beim Vertipper wurde sogar weitergerechnet und "NaN" ausgegeben.
+  const eingaben = bmrEingaben();
+  if(!eingaben){
+    results.innerHTML = bmrEingabeLeer()
+      ? '<p class="bmr-hint">Trage noch Größe und Alter ein, um deinen Grundumsatz zu berechnen.</p>'
+      : '<p class="bmr-hint">Bitte prüfe Größe und Alter — die Berechnung braucht plausible Werte (Größe ' +
+        BMR_GRENZEN.height[0] + '-' + BMR_GRENZEN.height[1] + ' cm, Alter ' +
+        BMR_GRENZEN.age[0] + '-' + BMR_GRENZEN.age[1] + ' Jahre).</p>';
     document.getElementById("bmrHistoryArea").innerHTML = "";
     return;
   }
@@ -8496,13 +8542,24 @@ async function deleteCloudAccount(){
   const client = getSupabaseClient();
   if(!client){ showToast("Cloud-Funktion nicht verfügbar — bitte Internetverbindung prüfen"); return; }
   try{
-    await client.from("user_data").delete().eq("user_id", currentUserId);
-    await client.from("leaderboard_stats").delete().eq("user_id", currentUserId);
+    // Supabase wirft bei einem abgelehnten Schreibvorgang keine Ausnahme, sondern liefert das
+    // Problem in .error zurück. Das wurde hier nicht ausgewertet: Schlug das Löschen fehl
+    // (Rechte, Netzwerk), meldete die App trotzdem "Cloud-Daten gelöscht" — obwohl die Daten
+    // noch vorhanden waren. Bei einer Löschzusage ist eine falsche Erfolgsmeldung das
+    // Schlimmste, was passieren kann, deshalb wird jetzt jeder Schritt geprüft.
+    const r1 = await client.from("user_data").delete().eq("user_id", currentUserId);
+    if(r1 && r1.error) throw r1.error;
+    const r2 = await client.from("leaderboard_stats").delete().eq("user_id", currentUserId);
+    if(r2 && r2.error) throw r2.error;
     await client.auth.signOut();
     showToast("Cloud-Daten gelöscht und abgemeldet");
   }catch(e){
     console.error("Cloud-Daten konnten nicht vollständig gelöscht werden", e);
-    showToast("Löschen teilweise fehlgeschlagen — bitte erneut versuchen oder den Entwickler kontaktieren");
+    showToast("Löschen fehlgeschlagen — deine Cloud-Daten sind NICHT gelöscht. Bitte erneut versuchen.");
+    // Bewusst NICHT abmelden: Wer angemeldet bleibt, kann den Versuch sofort wiederholen.
+    // Ein Abmelden nach einem fehlgeschlagenen Löschen würde den Eindruck erwecken, es sei
+    // etwas passiert, und den zweiten Versuch unnötig erschweren.
+    return;
   }
   onAccountLoggedOut();
 }
@@ -8782,7 +8839,7 @@ async function pushLeaderboardStats(){
   if(!client || !currentUserId) return;
   try{
     const nickname = (state.leaderboardNickname || "").trim() || "Anonym";
-    await client.from("leaderboard_stats").upsert({
+    const res = await client.from("leaderboard_stats").upsert({
       user_id: currentUserId,
       display_name: nickname,
       week_streak: computeWeekStreak(),
@@ -8791,6 +8848,7 @@ async function pushLeaderboardStats(){
       total_xp: state.xp,
       updated_at: new Date().toISOString(),
     });
+    if(res && res.error) throw res.error;
   }catch(e){ console.error("Freunde-Vergleich-Update fehlgeschlagen", e); }
 }
 async function removeLeaderboardEntry(){
