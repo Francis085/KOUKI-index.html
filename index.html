@@ -3003,7 +3003,7 @@ function toggleSetDone(ex, idx){
   }
 }
 function quickFillFromLastSession(ex){
-  const hist = state.history[ex.id];
+  const hist = historyFor(ex);
   if(!hist || !hist.length) return;
   const last = hist[hist.length - 1];
   const entry = getEntry(ex);
@@ -3072,6 +3072,61 @@ function repRangeFor(ex){
   if(!m) return null;
   return { min: parseInt(m[1],10), max: parseInt(m[2],10) };
 }
+// Verlauf, der wirklich zur AKTUELL eingestellten Übung gehört.
+// Beim Austauschen bleibt die Verlaufs-ID erhalten (der Plan-Slot soll ja bestehen bleiben),
+// dahinter steckt aber eine andere Übung. Ohne Filterung würde ein Vorschlag die Gewichte der
+// alten Übung als Empfehlung für die neue ausgeben — bei Hack Squat gegen Beinpresse liegen
+// die typischen Gewichte weit auseinander, das wäre im Zweifel sogar gefährlich.
+// Einträge ohne Namen stammen aus der Zeit vor dieser Änderung: Sie gehören zu der Übung, die
+// damals im Slot stand. Steht heute keine getauschte Übung darin, ist das die aktuelle und sie
+// zählen mit; bei aktivem Tausch werden sie bewusst ausgelassen.
+function historyFor(ex){
+  const alle = state.history[ex.id] || [];
+  const aktuell = exerciseNameById(ex.id) || ex.name;
+  const getauscht = !!(state.exerciseSwaps && state.exerciseSwaps[ex.id]);
+  return alle.filter(function(h){
+    if(!h || !h.name) return !getauscht;
+    return h.name === aktuell;
+  });
+}
+
+// --- Trainingstag automatisch zum heutigen Wochentag wählen ------------------------------
+// Bisher startete die App immer auf dem ERSTEN Tag des Plans (meist Montag). Wer freitags
+// trainiert, musste den Tag jedes Mal von Hand umstellen — und bekam bis dahin die Übungen und
+// Empfehlungen eines ganz anderen Tages zu sehen.
+// Greift nur bei Plänen, deren Tage tatsächlich Wochentage sind. Push/Pull/Legs und selbst
+// gebaute Pläne haben eigene Tagesschlüssel ohne Wochentagsbezug — dort bleibt es beim ersten
+// Tag, weil es keine sinnvolle Zuordnung gäbe.
+// Ist heute kein Trainingstag (z.B. Dienstag bei Mo/Mi/Fr), wird der nächste anstehende Tag
+// gewählt: So sieht man, was als Nächstes dran ist, statt eines beliebigen Tages.
+const WEEKDAY_KEYS = ["sun","mon","tue","wed","thu","fri","sat"];
+
+function isWeekdayPlan(plan){
+  return !!(plan && plan.dayOrder && plan.dayOrder.length &&
+    plan.dayOrder.every(function(k){ return WEEKDAY_KEYS.indexOf(k) !== -1; }));
+}
+
+function dayKeyForToday(plan){
+  if(!isWeekdayPlan(plan)) return null;
+  const heute = new Date().getDay();
+  for(let i = 0; i < 7; i++){
+    const key = WEEKDAY_KEYS[(heute + i) % 7];
+    if(plan.dayOrder.indexOf(key) !== -1) return key;
+  }
+  return null;
+}
+
+// Setzt den passenden Tag, sofern der Plan Wochentage nutzt. Gibt zurück, ob etwas geändert
+// wurde. Bewusst nur an den Stellen aufgerufen, an denen die App ohnehin einen Tag vorgibt
+// (App-Start, Planwechsel) — eine eigene Tagesauswahl des Nutzers wird nie überschrieben.
+function selectTodaysTrainingDay(plan){
+  const key = dayKeyForToday(plan || getActivePlan());
+  if(!key || key === currentDay) return false;
+  currentDay = key;
+  currentExerciseIndex = 0;
+  return true;
+}
+
 function getProgressionSuggestion(ex){
   const mode = exerciseMode(ex);
   if(mode === "hold") return getProgressionSuggestionHold(ex);
@@ -3079,7 +3134,7 @@ function getProgressionSuggestion(ex){
   return getProgressionSuggestionWeight(ex);
 }
 function getProgressionSuggestionWeight(ex){
-  const hist = state.history[ex.id];
+  const hist = historyFor(ex);
   if(!hist || !hist.length) return null;
   const range = repRangeFor(ex);
   if(!range) return null;
@@ -3164,7 +3219,7 @@ function getProgressionSuggestionWeight(ex){
 // ist, empfiehlt sich Zusatzgewicht oder eine schwerere Variante (klassische Calisthenics-
 // Progression: mehr Wdh. → Zusatzgewicht → nächste Variante).
 function getProgressionSuggestionBodyweight(ex){
-  const hist = state.history[ex.id];
+  const hist = historyFor(ex);
   if(!hist || !hist.length) return null;
   const range = repRangeFor(ex);
   if(!range) return null;
@@ -3218,7 +3273,7 @@ function getProgressionSuggestionBodyweight(ex){
 // Halte-Übungen (Front Lever, L-Sit, Planche, Plank …): Progression läuft über Sekunden statt
 // über kg — das reps-Feld speichert bei mode:"hold" die gehaltene Zeit.
 function getProgressionSuggestionHold(ex){
-  const hist = state.history[ex.id];
+  const hist = historyFor(ex);
   if(!hist || !hist.length) return null;
   const range = repRangeFor(ex);
   if(!range) return null;
@@ -3340,6 +3395,7 @@ function renderPlanSwitch(){
       currentPlanId = plan.id;
       currentDay = plan.dayOrder[0];
       currentExerciseIndex = 0;
+      selectTodaysTrainingDay(plan);
       builderDraft = null;
       renderAll();
     };
@@ -4501,7 +4557,7 @@ function openDayDetail(dateStr){
       plan.days[dKey].groups.forEach(function(g){
         g.exercises.forEach(function(ex){
           if(seenIds[ex.id]) return;
-          const hist = state.history[ex.id];
+          const hist = historyFor(ex);
           if(!hist) return;
           const found = hist.find(function(h){ return h.date === dateStr; });
           // exerciseNameById() statt rohem ex.name — berücksichtigt eine getauschte Übung,
@@ -4669,7 +4725,7 @@ function buildExerciseCard(ex, dayColor, el){
       const pr = state.prs[ex.id];
       const trend = trendFor(ex.id);
       const exGroupLabel = exerciseGroupName(ex);
-      const hist = state.history[ex.id];
+      const hist = historyFor(ex);
       const lastSession = hist && hist.length ? hist[hist.length - 1] : null;
       const supersetPartner = supersetPartnerName(ex.id);
       const top = document.createElement("div");
@@ -4919,7 +4975,7 @@ function buildExerciseCard(ex, dayColor, el){
       el.appendChild(card);
 
       if(openHistory[ex.id]){
-        const hist = state.history[ex.id] || [];
+        const hist = historyFor(ex);
         const panel = document.createElement("div");
         panel.className = "history-panel open";
         let inner = "";
@@ -5241,6 +5297,12 @@ async function finishSession(){
       if(!state.history[ex.id]) state.history[ex.id] = [];
       state.history[ex.id].push({
         date: today,
+        // Name der tatsächlich ausgeführten Übung mitschreiben. Beim Austauschen bleibt die
+        // Verlaufs-ID gleich (damit der Plan-Slot erhalten bleibt), die Übung dahinter ist aber
+        // eine andere. Ohne diesen Namen ließe sich später nicht mehr unterscheiden, welche
+        // Einträge zu welcher Übung gehören — und ein Progressionsvorschlag würde z.B.
+        // Hack-Squat-Gewichte als Empfehlung für die Beinpresse ausgeben.
+        name: exerciseNameById(ex.id) || ex.name,
         sets: performedSets.map(function(s){ return { weight: s.weight, reps: s.reps || "", rir: s.rir || "", note: s.note || "" }; })
       });
       if(state.history[ex.id].length > 30) state.history[ex.id].shift();
@@ -9134,7 +9196,12 @@ function init(){
   try{ loadTheme(); }catch(e){ console.error("Theme-Ladefehler", e); }
   try{ renderAll(); }catch(e){ console.error("Erster Render-Durchlauf fehlgeschlagen", e); }
   loadState()
-    .then(function(){ try{ renderAll(); }catch(e){ console.error("Render nach Laden fehlgeschlagen", e); } })
+    .then(function(){
+      // Erst nach loadState(), weil vorher weder der gespeicherte Plan noch eigene Pläne
+      // bekannt sind.
+      try{ selectTodaysTrainingDay(); }catch(e){ console.error("Tagesauswahl fehlgeschlagen", e); }
+      try{ renderAll(); }catch(e){ console.error("Render nach Laden fehlgeschlagen", e); }
+    })
     .catch(function(e){ console.error("Initialisierung ohne Speicher fortgesetzt", e); })
     .then(function(){
       try{ renderReminderSettings(); }catch(e){ console.error("Erinnerungs-Einstellungen konnten nicht angezeigt werden", e); }
