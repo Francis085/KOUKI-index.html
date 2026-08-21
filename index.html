@@ -787,6 +787,32 @@
   .supp-detail h4{font-family:'Baloo 2',sans-serif;font-size:13px;color:var(--text-strong);margin:0 0 4px;}
   .supp-detail p{font-size:12.5px;line-height:1.65;margin:0 0 12px;}
   .supp-detail p:last-child{margin-bottom:0;}
+  /* Stern für "Meine Auswahl" — dasselbe Bedienmuster wie bei den Lieblings-Mahlzeiten,
+     damit man es nicht neu lernen muss. Die zentrale Tap-Flächen-Regel greift über
+     .supp-check, .supp-fav weiter unten. */
+  .supp-fav{
+    width:26px;height:26px;flex-shrink:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px;line-height:1;color:var(--pastel-text);opacity:.85;
+  }
+  .supp-tags .tag-warn{background:rgba(200,80,40,.16);color:var(--pastel-text);font-weight:700;}
+  /* Der Warnhinweis steht bewusst VOR allen anderen Abschnitten und hebt sich ab: Bei Eisen
+     ist die Frage "sollte ich das überhaupt nehmen" wichtiger als jede Einnahmeempfehlung. */
+  .supp-warn{
+    background:rgba(200,80,40,.1);border:1px solid rgba(200,80,40,.35);
+    border-radius:14px;padding:10px 12px;margin:0 0 12px;
+  }
+  .supp-warn h4{color:#b04a20;}
+  .supp-warn p{margin-bottom:0;}
+  .supp-interaktion{
+    background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:14px 16px;margin:0 0 12px;color:var(--ink-soft);
+  }
+  .supp-interaktion h4{font-family:'Baloo 2',sans-serif;font-size:13px;color:var(--text-strong);margin:0 0 8px;}
+  .supp-interaktion p{font-size:12.5px;line-height:1.6;margin:0 0 8px;}
+  .supp-interaktion p:last-child{margin-bottom:0;}
+  .supp-ia-warn{color:#b04a20;}
+  .supp-filter-row{margin-bottom:10px;}
 
   .cal-month{margin-bottom:20px;}
   .cal-month-title{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;color:var(--text-strong);margin:0 0 8px;}
@@ -1024,7 +1050,7 @@
        aspect-ratio:1 — hält das Seitenverhältnis auch dann, wenn eine der beiden Größen doch
                         vom Layout bestimmt wird (Grid-Spalte, min-content, Zoom)
      Das ist bewusst eine Regel für alle statt einzelner Pixel-Korrekturen pro Element. */
-  .icon-btn, .step-dot, .set-check, .set-del, .supp-check, .theme-toggle, .plan-delete,
+  .icon-btn, .step-dot, .set-check, .set-del, .supp-check, .supp-fav, .theme-toggle, .plan-delete,
   .rest-close, .day-modal-close, .quote-fav, .cal-legend-dot, .session-list-dot,
   .product-nutri-badge, .nav-btn .nav-icon, .ring-wrap, .mystery-card{
     flex-shrink:0;
@@ -1061,6 +1087,10 @@
      davon ab (24px sichtbar -> 20px Bezug), deshalb sind die Werte dort größer. */
   .set-row .set-check::after{ inset:-7px -8px -7px -2px; }   /* ergibt 30 x 34 statt 28 x 30 */
   .set-row .set-del::after{ inset:-7px -6px -7px -8px; }     /* ergibt 36 x 36 statt 26 x 28 */
+  /* Stern und Häkchen der Supplement-Karte stehen mit 10px Abstand nebeneinander; beide
+     wachsen um je 4px aufeinander zu und lassen damit 2px Luft. */
+  .supp-check, .supp-fav{ position:relative; }
+  .supp-check::after, .supp-fav::after{ content:""; position:absolute; inset:-4px; }
   .day-modal-close, .rest-close, .plan-delete, .quote-fav{ position:relative; }
   .day-modal-close::after, .rest-close::after, .plan-delete::after, .quote-fav::after{
     content:""; position:absolute; inset:-6px;
@@ -2404,7 +2434,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2482,6 +2512,11 @@ function normalizeState(){
   if(!state.waterLog) state.waterLog = {};
   if(!state.stepsLog) state.stepsLog = {};
   if(!state.suppLog) state.suppLog = {};
+  if(!Array.isArray(state.suppSelection)) state.suppSelection = [];
+  // Präparate, die es nicht mehr gibt, dürfen die Auswahl nicht als Karteileichen belasten.
+  state.suppSelection = state.suppSelection.filter(function(id){
+    return SUPPLEMENTS.some(function(s){ return s.id === id; });
+  });
   if(!state.customRestTimes) state.customRestTimes = {};
   if(!state.skippedExercises) state.skippedExercises = {};
   if(!state.weakPoints) state.weakPoints = [];
@@ -7078,7 +7113,7 @@ const SUPPLEMENTS = [
     when:"Morgens oder mittags zusammen mit einer fetthaltigen Mahlzeit, da beide Vitamine fettlöslich sind.",
     how:"Immer mit etwas Fett einnehmen (z. B. Frühstück mit Nüssen oder Avocado). K2 (Form MK-7) wird meist ergänzend zu D3-Präparaten eingenommen.",
     blood:"Der 25(OH)D-Wert im Blut wird oft im Bereich von 40–60 ng/ml (100–150 nmol/l) als optimal angesehen; Werte unter 20 ng/ml gelten allgemein als Mangel." },
-  { id:"s6", name:"Creatin", icon:"💪", category:"Sonstiges",
+  { id:"s6", name:"Creatin", icon:"💪", category:"Leistung",
     fn:"Unterstützt die schnelle Energiebereitstellung (ATP-Regeneration) in den Muskelzellen und kann so Kraft- und Leistungsfähigkeit beim Training verbessern — eines der am besten erforschten Sport-Supplemente.",
     when:"Der Zeitpunkt ist zweitrangig — entscheidend ist die tägliche, regelmäßige Einnahme, auch an trainingsfreien Tagen.",
     how:"Meist als Creatin-Monohydrat, üblicherweise 3–5 g täglich mit Wasser oder in einem Shake. Eine anfängliche 'Ladephase' ist nicht notwendig.",
@@ -7092,7 +7127,8 @@ const SUPPLEMENTS = [
     fn:"Zentraler Bestandteil des Hämoglobins und damit wichtig für den Sauerstofftransport im Blut, Energielevel und kognitive Funktion. Besonders relevant für Frauen und Ausdauersportler.",
     when:"Am besten auf nüchternen Magen für die beste Aufnahme; bei Magenproblemen alternativ zu einer leichten Mahlzeit.",
     how:"Mit Vitamin C kombinieren (verbessert die Aufnahme deutlich), nicht zusammen mit Calcium, Kaffee oder schwarzem/grünem Tee einnehmen, da diese die Aufnahme hemmen.",
-    blood:"Ferritin (Eisenspeicher) wird häufig im Bereich von 30–100 ng/ml als guter Wert angesehen, bei Sportlern eher im oberen Bereich." },
+    blood:"Ferritin (Eisenspeicher) wird häufig im Bereich von 30–100 ng/ml als guter Wert angesehen, bei Sportlern eher im oberen Bereich.",
+    warn:"Eisen ist das einzige Supplement in dieser Liste, das man nicht vorsorglich nehmen sollte. Der Körper hat keinen Weg, überschüssiges Eisen wieder auszuscheiden — es lagert sich ein. Ohne nachgewiesenen Mangel bringt eine Einnahme nichts und kann auf Dauer schaden. Lass deinen Ferritin-Wert bestimmen, bevor du damit anfängst." },
   { id:"s9", name:"Calcium", icon:"🦴", category:"Mineralstoff",
     fn:"Wichtigster Baustein für Knochen und Zähne, außerdem zentral für Muskelkontraktion, Nervenreizleitung und Blutgerinnung.",
     when:"Über den Tag verteilt in kleineren Portionen (max. ca. 500 mg auf einmal) für eine bessere Aufnahme, z. B. mittags und abends.",
@@ -7103,10 +7139,84 @@ const SUPPLEMENTS = [
     when:"Idealerweise morgens auf nüchternen Magen, etwa 30 Minuten vor dem Frühstück.",
     how:"Mit einem Glas Wasser einnehmen; manche Präparate müssen gekühlt gelagert werden (Herstellerangabe beachten). Für einen spürbaren Effekt ist eine regelmäßige Einnahme über mehrere Wochen sinnvoll.",
     blood:"Es gibt keinen klassischen Blutwert zur Kontrolle — eine Stuhlanalyse kann bei Bedarf Aufschluss über die Zusammensetzung der Darmflora geben." },
+  { id:"s11", name:"Eiweißpulver", icon:"🥛", category:"Protein",
+    fn:"Kein Wundermittel, sondern schlicht eine bequeme Eiweißquelle. Entscheidend für den Muskelaufbau ist die Gesamtmenge an Eiweiß über den Tag — ob die aus Quark, Hühnchen, Linsen oder einem Shake kommt, macht kaum einen Unterschied. Ein Pulver hilft vor allem dann, wenn du dein Tagesziel über normale Mahlzeiten nur schwer erreichst.",
+    when:"Wann am Tag ist zweitrangig. Das früher viel beschworene 'anabole Fenster' direkt nach dem Training ist deutlich weiter als lange angenommen — wichtiger ist, das Eiweiß über den Tag auf etwa 3–5 Portionen zu verteilen.",
+    how:"Üblich sind 20–40 g pro Portion. Molkenprotein (Whey) wird schnell aufgenommen, Casein langsamer und eignet sich daher eher abends. Bei Laktoseunverträglichkeit funktioniert Whey-Isolat oder ein pflanzliches Pulver aus Erbse und Reis, das kombiniert ein vollständiges Aminosäureprofil ergibt.",
+    blood:"Es gibt keinen Blutwert dafür. Die passende Kontrolle ist dein Eiweißziel in dieser App: etwa 2,0 g pro Kilogramm Körpergewicht am Tag." },
+  { id:"s12", name:"Koffein", icon:"☕", category:"Leistung",
+    fn:"Nach Creatin das am besten untersuchte Mittel zur Leistungssteigerung. Senkt das empfundene Anstrengungsniveau, verbessert Konzentration und Reaktionsfähigkeit und kann Kraft- wie Ausdauerleistung messbar anheben.",
+    when:"Etwa 30–60 Minuten vor dem Training. Die Halbwertszeit liegt bei rund 5 Stunden — wer abends trainiert, sollte das beim Schlaf mitdenken.",
+    how:"Übliche Mengen liegen bei etwa 3–6 mg pro Kilogramm Körpergewicht; bei 80 kg sind das rund 240–480 mg, also grob zwei bis vier Tassen Kaffee. Mehr bringt nicht mehr, sondern meist nur Unruhe und Herzrasen. Bei täglicher Einnahme gewöhnt sich der Körper daran — eine Pause von ein bis zwei Wochen stellt die Wirkung wieder her.",
+    blood:"Kein sinnvoller Blutwert. Die ehrlichste Rückmeldung ist dein Schlaf: Wer schlecht einschläft, hat zu spät oder zu viel genommen.",
+    warn:"Koffein am Nachmittag kostet Schlaf, auch wenn du es nicht merkst — und Schlaf ist für den Muskelaufbau wichtiger als jedes Supplement. Bei Herzproblemen, Bluthochdruck, Angststörungen oder in der Schwangerschaft vorher ärztlich abklären." },
+  { id:"s13", name:"Beta-Alanin", icon:"🔥", category:"Leistung",
+    fn:"Erhöht den Carnosin-Gehalt im Muskel und puffert damit die Übersäuerung ab. Der Nutzen zeigt sich vor allem bei Belastungen von etwa 1 bis 4 Minuten — also bei hohen Wiederholungszahlen, kurzen Pausen und Intervallen, weniger bei schweren Dreier-Sätzen.",
+    when:"Der Zeitpunkt ist unwichtig, weil die Wirkung über die Anreicherung im Muskel entsteht und nicht akut. Entscheidend ist die tägliche Einnahme über mehrere Wochen.",
+    how:"Üblich sind 3–6 g täglich. Die Sättigung im Muskel braucht etwa 4 Wochen. Das typische Kribbeln auf der Haut ist harmlos und lässt sich durch Aufteilen in kleinere Portionen oder ein Präparat mit verzögerter Freisetzung vermeiden.",
+    blood:"Kein üblicher Blutwert — relevant ist der Carnosin-Gehalt im Muskel, der sich im Alltag nicht messen lässt." },
+  { id:"s14", name:"Elektrolyte", icon:"🧂", category:"Mineralstoff",
+    fn:"Natrium, Kalium und Magnesium steuern den Flüssigkeitshaushalt, die Nervenreizleitung und die Muskelkontraktion. Beim Schwitzen geht vor allem Natrium verloren — wer nur Wasser nachtrinkt, verdünnt den Rest zusätzlich.",
+    when:"Bei langen oder sehr schweißtreibenden Einheiten währenddessen, sonst danach. An normalen Tagen mit gemischter Ernährung meist gar nicht nötig.",
+    how:"Ein Getränk mit etwa 300–700 mg Natrium pro Liter deckt den üblichen Bedarf. Eine Prise Salz im Wasser tut es auch — teure Fertigmischungen sind selten nötig.",
+    blood:"Serum-Natrium liegt im Normbereich meist bei 135–145 mmol/l, Kalium bei 3,5–5,0 mmol/l. Beides wird vom Körper eng geregelt und sagt wenig über die Zufuhr aus." },
+  { id:"s15", name:"Kollagen + Vitamin C", icon:"🦵", category:"Protein",
+    fn:"Liefert die Bausteine für Sehnen, Bänder, Knorpel und Bindegewebe. Die Studienlage ist ordentlich, aber nicht so eindeutig wie bei Creatin — Hinweise auf weniger Gelenkbeschwerden und bessere Sehnenbelastbarkeit gibt es, ein Wundermittel ist es nicht.",
+    when:"Etwa 30–60 Minuten vor der Belastung, weil die Durchblutung von Sehnen und Bändern dann am höchsten ist und die Bausteine dort ankommen.",
+    how:"Üblich sind 10–15 g Kollagenpeptide zusammen mit etwa 50 mg Vitamin C — ohne Vitamin C kann der Körper kein Kollagen aufbauen. Für den Muskelaufbau ist es als Eiweißquelle ungeeignet, weil ihm eine wichtige Aminosäure fehlt.",
+    blood:"Kein Blutwert zur Kontrolle. Die Rückmeldung sind deine Gelenke über mehrere Wochen." },
+  { id:"s16", name:"Ashwagandha", icon:"🌿", category:"Sonstiges",
+    fn:"Eine Heilpflanze aus der ayurvedischen Medizin. Mehrere Studien zeigen eine Senkung von Stressempfinden und Cortisolspiegel sowie eine bessere Schlafqualität; einzelne deuten auf leichte Vorteile bei Kraft und Regeneration hin. Die Studien sind meist klein, der Effekt gilt als moderat.",
+    when:"Abends, da die beruhigende Wirkung dann am nützlichsten ist. Manche teilen die Menge auf morgens und abends auf.",
+    how:"Üblich sind 300–600 mg eines standardisierten Extrakts täglich, über mindestens 4–8 Wochen — vorher ist kaum etwas zu spüren.",
+    blood:"Kein direkter Blutwert. Wenn überhaupt, lässt sich der Cortisol-Tagesverlauf bestimmen, was aber selten nötig ist.",
+    warn:"Nicht in Schwangerschaft und Stillzeit. Bei Schilddrüsenerkrankungen, Autoimmunerkrankungen oder der Einnahme von Beruhigungs- oder Schilddrüsenmedikamenten vorher ärztlich abklären — Ashwagandha kann in deren Wirkung eingreifen." },
 ];
+
+// Wechselwirkungen zwischen den Präparaten. Das Wissen stand bisher nur im Fließtext der
+// einzelnen Einträge — man liest es also genau dann nicht, wenn es zählt: beim Einnehmen.
+// Hier steht es strukturiert, damit die App auf die heute tatsächlich abgehakte Kombination
+// hinweisen kann. "gut" markiert Kombinationen, die sich gegenseitig helfen.
+const SUPP_INTERAKTIONEN = [
+  { ids:["s3","s9"], text:"Zink und Calcium konkurrieren um dieselben Aufnahmewege. Nimm sie mit mindestens 2 Stunden Abstand, sonst kommt von beidem weniger an." },
+  { ids:["s3","s8"], text:"Zink und Eisen konkurrieren um dieselben Aufnahmewege. Mindestens 2 Stunden Abstand halten." },
+  { ids:["s8","s9"], text:"Calcium hemmt die Eisenaufnahme deutlich. Mindestens 2 Stunden Abstand halten." },
+  { ids:["s8","s12"], text:"Kaffee und Koffein hemmen die Eisenaufnahme. Lass mindestens eine Stunde dazwischen." },
+  { ids:["s2","s8"], gut:true, text:"Gute Kombination: Vitamin C verbessert die Eisenaufnahme deutlich — am besten zusammen einnehmen." },
+  { ids:["s5","s9"], gut:true, text:"Gute Kombination: Vitamin D und K2 sorgen dafür, dass das Calcium in den Knochen ankommt und nicht in den Gefäßen." },
+  { ids:["s2","s15"], gut:true, text:"Gute Kombination: Ohne Vitamin C kann der Körper aus Kollagenpeptiden kein neues Kollagen bilden." },
+  { ids:["s1","s16"], gut:true, text:"Gute Kombination am Abend: Magnesium und Ashwagandha unterstützen beide einen ruhigen Schlaf." },
+];
+// Liefert alle Hinweise, die auf die heute abgehakten Präparate zutreffen.
+function suppInteraktionenHeute(){
+  const log = state.suppLog[todayKey()] || {};
+  return SUPP_INTERAKTIONEN.filter(function(w){
+    return w.ids.every(function(id){ return !!log[id]; });
+  });
+}
 
 let openSupplement = {};
 function toggleSupplement(id){ openSupplement[id] = !openSupplement[id]; renderSupplements(); }
+
+// --- Meine Auswahl ------------------------------------------------------------------------
+// Mit 16 Einträgen ist die Liste zu lang, um jeden Tag durchzuscrollen. Wer festlegt, was er
+// tatsächlich nimmt, sieht nur noch diese Karten. Solange nichts ausgewählt ist, ändert sich
+// nichts — Bestandsnutzer bekommen weiterhin genau die Liste, die sie kennen.
+let suppZeigeAlle = false;
+function suppIstAusgewaehlt(id){ return state.suppSelection.indexOf(id) !== -1; }
+function toggleSuppSelection(id, e){
+  if(e) e.stopPropagation();
+  const i = state.suppSelection.indexOf(id);
+  if(i === -1) state.suppSelection.push(id);
+  else state.suppSelection.splice(i, 1);
+  saveState();
+  renderSupplements();
+}
+// Welche Karten sind gerade zu zeigen? Ohne Auswahl immer alle.
+function sichtbareSupplements(){
+  if(!state.suppSelection.length || suppZeigeAlle) return SUPPLEMENTS;
+  return SUPPLEMENTS.filter(function(s){ return suppIstAusgewaehlt(s.id); });
+}
 function suppStreak(id){
   let streak = 0;
   let d = new Date();
@@ -7129,24 +7239,71 @@ function renderSupplements(){
   const list = document.getElementById("supplementList");
   list.innerHTML = "";
   const todayLog = state.suppLog[todayKey()] || {};
-  SUPPLEMENTS.forEach(function(s, idx){
+
+  // Hinweise zur heute abgehakten Kombination stehen ganz oben — dort, wo man gerade hingesehen
+  // hat. Warnungen zuerst, gute Kombinationen danach.
+  const hinweise = suppInteraktionenHeute();
+  if(hinweise.length){
+    const box = document.createElement("div");
+    box.className = "supp-interaktion";
+    box.innerHTML = '<h4>Zu deiner heutigen Kombination</h4>' +
+      hinweise
+        .slice()
+        .sort(function(a, b){ return (a.gut ? 1 : 0) - (b.gut ? 1 : 0); })
+        .map(function(w){
+          return '<p class="' + (w.gut ? 'supp-ia-gut' : 'supp-ia-warn') + '">' +
+            (w.gut ? '✓ ' : '⚠️ ') + w.text + '</p>';
+        }).join("");
+    list.appendChild(box);
+  }
+
+  // Umschalter nur zeigen, wenn es überhaupt eine Auswahl gibt — sonst wäre er eine
+  // Erklärung für etwas, das gar nicht existiert.
+  if(state.suppSelection.length){
+    const row = document.createElement("div");
+    row.className = "filter-row supp-filter-row";
+    [
+      { alle:false, label:"Meine Auswahl (" + state.suppSelection.length + ")" },
+      { alle:true, label:"Alle (" + SUPPLEMENTS.length + ")" },
+    ].forEach(function(opt){
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "filter-chip" + (suppZeigeAlle === opt.alle ? " active" : "");
+      chip.textContent = opt.label;
+      chip.onclick = function(){ suppZeigeAlle = opt.alle; renderSupplements(); };
+      row.appendChild(chip);
+    });
+    list.appendChild(row);
+  }
+
+  const sichtbar = sichtbareSupplements();
+  sichtbar.forEach(function(s, idx){
     const card = document.createElement("div");
     card.className = "supp-card pc-" + (idx % 3);
     const taken = !!todayLog[s.id];
     const streak = suppStreak(s.id);
+    const gemerkt = suppIstAusgewaehlt(s.id);
     card.innerHTML =
       '<div class="supp-top"><span class="supp-icon">' + s.icon + '</span><span class="supp-name">' + s.name + '</span>' +
-      '<div class="supp-check' + (taken ? ' checked' : '') + '" title="Heute genommen">' + (taken ? '✓' : '') + '</div></div>' +
+      '<span class="supp-fav" role="button" tabindex="0" title="' +
+      (gemerkt ? 'Aus meiner Auswahl entfernen' : 'Zu meiner Auswahl hinzufügen') + '" aria-label="' +
+      (gemerkt ? 'Aus meiner Auswahl entfernen' : 'Zu meiner Auswahl hinzufügen') + '">' +
+      (gemerkt ? '⭐' : '☆') + '</span>' +
+      '<div class="supp-check' + (taken ? ' checked' : '') + '" role="button" tabindex="0" ' +
+      'title="Heute genommen" aria-label="' + s.name + ' heute genommen">' + (taken ? '✓' : '') + '</div></div>' +
       '<div class="supp-tags"><span class="tag">' + s.category + '</span>' +
+      (s.warn ? '<span class="tag tag-warn">⚠️ Vorher lesen</span>' : '') +
       (streak > 0 ? ('<span class="tag">🔥 ' + streak + ' Tage in Folge</span>') : '') + '</div>';
     card.onclick = function(){ toggleSupplement(s.id); };
     card.querySelector(".supp-check").onclick = function(e){ toggleSuppTaken(s.id, e); };
+    card.querySelector(".supp-fav").onclick = function(e){ toggleSuppSelection(s.id, e); };
     list.appendChild(card);
 
     if(openSupplement[s.id]){
       const detail = document.createElement("div");
       detail.className = "supp-detail";
       detail.innerHTML =
+        (s.warn ? '<div class="supp-warn"><h4>Wichtig vor der Einnahme</h4><p>' + s.warn + '</p></div>' : '') +
         '<h4>Funktion im Körper</h4><p>' + s.fn + '</p>' +
         '<h4>Wann einnehmen</h4><p>' + s.when + '</p>' +
         '<h4>Wie einnehmen</h4><p>' + s.how + '</p>' +
@@ -7154,6 +7311,22 @@ function renderSupplements(){
       list.appendChild(detail);
     }
   });
+
+  if(!sichtbar.length){
+    const leer = document.createElement("p");
+    leer.className = "rank-hint";
+    leer.textContent = "Deine Auswahl ist leer. Tippe bei einem Präparat auf den Stern, um es hier zu behalten.";
+    list.appendChild(leer);
+  }
+
+  // Erklärt den Stern einmalig, solange noch nichts ausgewählt ist.
+  if(!state.suppSelection.length){
+    const tipp = document.createElement("p");
+    tipp.className = "rank-hint";
+    tipp.style.marginTop = "10px";
+    tipp.textContent = "Tipp: Tippe bei den Präparaten, die du wirklich nimmst, auf den Stern — dann siehst du nur noch diese und musst nicht durch die ganze Liste scrollen.";
+    list.appendChild(tipp);
+  }
 }
 
 const MOTIVATION_QUOTES = [
