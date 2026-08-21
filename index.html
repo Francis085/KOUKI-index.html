@@ -4112,16 +4112,6 @@ function addXP(amount){
   state.xp += amount;
   return amount;
 }
-function awardXP(amount, reason){
-  if(!amount) return;
-  const prevLevel = xpLevel(state.xp);
-  addXP(amount);
-  saveState();
-  const newLevel = xpLevel(state.xp);
-  if(newLevel > prevLevel) showToast("Level " + newLevel + " erreicht! +" + amount + " XP");
-  else showToast("+" + amount + " XP · " + reason);
-  renderXP();
-}
 function checkWeeklyXpBonus(){
   const monday = mondayOf(new Date());
   const weekKey = ymd(monday);
@@ -5185,15 +5175,6 @@ function buildExerciseCard(ex, dayColor, el){
       }
 }
 
-function spawnSparkle(x, y){
-  const s = document.createElement("div");
-  s.className = "sparkle-fx";
-  s.textContent = "✨";
-  s.style.left = x + "px";
-  s.style.top = y + "px";
-  document.getElementById("fxLayer").appendChild(s);
-  setTimeout(function(){ s.remove(); }, 900);
-}
 
 let celebrateTimeout = null;
 let lastCelebratePRs = null;
@@ -8496,13 +8477,24 @@ async function deleteCloudAccount(){
   const client = getSupabaseClient();
   if(!client){ showToast("Cloud-Funktion nicht verfügbar — bitte Internetverbindung prüfen"); return; }
   try{
-    await client.from("user_data").delete().eq("user_id", currentUserId);
-    await client.from("leaderboard_stats").delete().eq("user_id", currentUserId);
+    // Supabase wirft bei einem abgelehnten Schreibvorgang keine Ausnahme, sondern liefert das
+    // Problem in .error zurück. Das wurde hier nicht ausgewertet: Schlug das Löschen fehl
+    // (Rechte, Netzwerk), meldete die App trotzdem "Cloud-Daten gelöscht" — obwohl die Daten
+    // noch vorhanden waren. Bei einer Löschzusage ist eine falsche Erfolgsmeldung das
+    // Schlimmste, was passieren kann, deshalb wird jetzt jeder Schritt geprüft.
+    const r1 = await client.from("user_data").delete().eq("user_id", currentUserId);
+    if(r1 && r1.error) throw r1.error;
+    const r2 = await client.from("leaderboard_stats").delete().eq("user_id", currentUserId);
+    if(r2 && r2.error) throw r2.error;
     await client.auth.signOut();
     showToast("Cloud-Daten gelöscht und abgemeldet");
   }catch(e){
     console.error("Cloud-Daten konnten nicht vollständig gelöscht werden", e);
-    showToast("Löschen teilweise fehlgeschlagen — bitte erneut versuchen oder den Entwickler kontaktieren");
+    showToast("Löschen fehlgeschlagen — deine Cloud-Daten sind NICHT gelöscht. Bitte erneut versuchen.");
+    // Bewusst NICHT abmelden: Wer angemeldet bleibt, kann den Versuch sofort wiederholen.
+    // Ein Abmelden nach einem fehlgeschlagenen Löschen würde den Eindruck erwecken, es sei
+    // etwas passiert, und den zweiten Versuch unnötig erschweren.
+    return;
   }
   onAccountLoggedOut();
 }
@@ -8782,7 +8774,7 @@ async function pushLeaderboardStats(){
   if(!client || !currentUserId) return;
   try{
     const nickname = (state.leaderboardNickname || "").trim() || "Anonym";
-    await client.from("leaderboard_stats").upsert({
+    const res = await client.from("leaderboard_stats").upsert({
       user_id: currentUserId,
       display_name: nickname,
       week_streak: computeWeekStreak(),
@@ -8791,6 +8783,7 @@ async function pushLeaderboardStats(){
       total_xp: state.xp,
       updated_at: new Date().toISOString(),
     });
+    if(res && res.error) throw res.error;
   }catch(e){ console.error("Freunde-Vergleich-Update fehlgeschlagen", e); }
 }
 async function removeLeaderboardEntry(){
