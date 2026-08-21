@@ -813,6 +813,40 @@
   .supp-interaktion p:last-child{margin-bottom:0;}
   .supp-ia-warn{color:#b04a20;}
   .supp-filter-row{margin-bottom:10px;}
+  .supp-gruppe{
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13px;
+    color:var(--text-strong);margin:14px 0 8px;
+  }
+  .supp-gruppe:first-child{margin-top:0;}
+  .supp-tags .tag-blut-drin{background:rgba(90,150,80,.18);color:var(--pastel-text);font-weight:700;}
+  .supp-tags .tag-blut-unter, .supp-tags .tag-blut-ueber{background:rgba(200,140,40,.2);color:var(--pastel-text);font-weight:700;}
+  /* Blutwert-Bereich im aufgeklappten Detail */
+  .blut-block{border-top:1px solid var(--line);margin-top:14px;padding-top:12px;}
+  .blut-ziel{font-size:12px;color:var(--text-strong);font-weight:600;margin:0 0 8px !important;}
+  .blut-leer{font-size:12.5px;margin:0 !important;}
+  .blut-eingabe{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  /* 130px als Basis, damit auf schmalen Displays lieber der Knopf in die zweite Zeile
+     rutscht, als dass die Beschriftung im Zahlenfeld abgeschnitten wird. */
+  .blut-eingabe input{
+    flex:1 1 130px;min-width:0;border:1px solid var(--line);border-radius:10px;
+    padding:8px 10px;font-size:13px;background:var(--surface);color:var(--ink);
+    box-sizing:border-box;min-height:var(--tap-min,38px);
+  }
+  .blut-save{flex:0 0 auto;padding:8px 14px;font-size:13px;min-height:var(--tap-min,38px);}
+  .blut-liste{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+  .blut-zeile{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    background:var(--pastel-overlay);border-radius:12px;padding:7px 10px;font-size:12.5px;
+  }
+  .blut-datum{color:var(--ink-soft);flex:0 0 auto;}
+  .blut-wert{font-weight:700;color:var(--text-strong);flex:0 0 auto;}
+  .blut-lage{flex:1 1 auto;min-width:0;}
+  /* Auf sehr schmalen Displays rutscht das Löschen in die zweite Zeile — dort soll es am
+     rechten Rand stehen und nicht linksbündig unter dem Datum hängen. */
+  .blut-zeile .set-del{margin-left:auto;}
+  .blut-drin{color:#3f7a34;}
+  .blut-unter, .blut-ueber{color:#b04a20;}
+  .blut-hinweis{font-size:11.5px;color:var(--ink-soft);margin:10px 0 0 !important;line-height:1.55;}
 
   .cal-month{margin-bottom:20px;}
   .cal-month-title{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;color:var(--text-strong);margin:0 0 8px;}
@@ -2434,7 +2468,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2513,6 +2547,8 @@ function normalizeState(){
   if(!state.stepsLog) state.stepsLog = {};
   if(!state.suppLog) state.suppLog = {};
   if(!Array.isArray(state.suppSelection)) state.suppSelection = [];
+  if(!state.bloodValues || typeof state.bloodValues !== "object") state.bloodValues = {};
+  state.suppSortByTime = !!state.suppSortByTime;
   // Präparate, die es nicht mehr gibt, dürfen die Auswahl nicht als Karteileichen belasten.
   state.suppSelection = state.suppSelection.filter(function(id){
     return SUPPLEMENTS.some(function(s){ return s.id === id; });
@@ -7088,90 +7124,176 @@ function renderRecipes(){
 }
 
 const SUPPLEMENTS = [
-  { id:"s1", name:"Magnesium", icon:"⚡", category:"Mineralstoff",
+  { id:"s1", name:"Magnesium", icon:"⚡", category:"Mineralstoff", timing:"abends",
     fn:"Beteiligt an über 300 enzymatischen Prozessen im Körper — u. a. Muskel- und Nervenfunktion, Energiestoffwechsel (ATP-Produktion), Elektrolythaushalt und Unterstützung eines erholsamen Schlafs. Sportler haben durch Schwitzen einen erhöhten Bedarf.",
     when:"Idealerweise abends, da es entspannend wirken und die Schlafqualität unterstützen kann. An Trainingstagen bietet sich zusätzlich eine Einnahme nach dem Sport zur Regeneration an.",
     how:"Am besten zu einer Mahlzeit einnehmen — auf leeren Magen kann es den Darm reizen (abführende Wirkung). Magnesiumcitrat oder -bisglycinat gelten als gut bioverfügbare Formen.",
     blood:"Serum-Magnesium wird häufig im Bereich von 0,85–1,10 mmol/l als optimal angesehen (Referenzbereiche können je nach Labor leicht variieren)." },
-  { id:"s2", name:"Vitamin C", icon:"🍊", category:"Vitamin",
+  { id:"s2", name:"Vitamin C", icon:"🍊", category:"Vitamin", timing:"flexibel",
     fn:"Wichtiges Antioxidans, unterstützt das Immunsystem sowie die körpereigene Kollagenbildung (Haut, Sehnen, Bänder) und verbessert die Aufnahme von Eisen aus pflanzlicher Nahrung.",
     when:"Über den Tag verteilt, da wasserlöslich und nicht lange im Körper gespeichert — z. B. eine Portion morgens und eine mittags.",
     how:"Mit oder ohne Mahlzeit möglich. Hohe Einzeldosen werden schlechter aufgenommen, daher lieber auf 2 kleinere Portionen aufteilen als einmal viel.",
     blood:"Plasma-Vitamin-C wird häufig im Bereich von 50–90 µmol/l als ausreichend bis optimal betrachtet." },
-  { id:"s3", name:"Zink", icon:"🛡️", category:"Mineralstoff",
+  { id:"s3", name:"Zink", icon:"🛡️", category:"Mineralstoff", timing:"morgens",
     fn:"Wichtig für Immunsystem, Wundheilung, Hormonhaushalt (u. a. Testosteronproduktion), zahlreiche Enzymfunktionen und die Proteinsynthese.",
     when:"Am besten auf nüchternen Magen (z. B. morgens); bei empfindlichem Magen alternativ zu einer leichten Mahlzeit.",
     how:"Nicht zeitgleich mit Calcium oder Eisen einnehmen, da sie um dieselben Aufnahmewege konkurrieren — mindestens 2 Stunden Abstand halten, auch zu Kaffee/Tee.",
     blood:"Serum-Zink wird häufig im Bereich von 80–120 µg/dl als guter Bereich angegeben." },
-  { id:"s4", name:"Omega-3-Fettsäuren", icon:"🐟", category:"Fettsäure",
+  { id:"s4", name:"Omega-3-Fettsäuren", icon:"🐟", category:"Fettsäure", timing:"mahlzeit",
     fn:"Entzündungshemmende Wirkung, wichtig für die Herz-Kreislauf-Gesundheit, Gehirnfunktion und die Struktur von Zellmembranen. Die relevanten Fettsäuren EPA und DHA stammen aus Fisch- oder Algenöl.",
     when:"Der genaue Zeitpunkt spielt eine untergeordnete Rolle — wichtiger ist die regelmäßige, tägliche Einnahme.",
     how:"Immer zusammen mit einer fetthaltigen Mahlzeit einnehmen, das verbessert die Aufnahme deutlich. Kühl und lichtgeschützt lagern, da die Fettsäuren oxidationsempfindlich sind.",
     blood:"Der sogenannte Omega-3-Index (Anteil von EPA+DHA in den roten Blutkörperchen) gilt bei 8–11 % als optimaler Zielbereich." },
-  { id:"s5", name:"Vitamin D3 + K2", icon:"☀️", category:"Vitamin",
+  { id:"s5", name:"Vitamin D3 + K2", icon:"☀️", category:"Vitamin", timing:"mahlzeit",
     fn:"Vitamin D reguliert den Calciumhaushalt, ist zentral für Knochengesundheit, Immunsystem und Muskelfunktion. Vitamin K2 lenkt Calcium gezielt in die Knochen statt in Gefäße und Weichteile und ergänzt so die Wirkung von Vitamin D.",
     when:"Morgens oder mittags zusammen mit einer fetthaltigen Mahlzeit, da beide Vitamine fettlöslich sind.",
     how:"Immer mit etwas Fett einnehmen (z. B. Frühstück mit Nüssen oder Avocado). K2 (Form MK-7) wird meist ergänzend zu D3-Präparaten eingenommen.",
     blood:"Der 25(OH)D-Wert im Blut wird oft im Bereich von 40–60 ng/ml (100–150 nmol/l) als optimal angesehen; Werte unter 20 ng/ml gelten allgemein als Mangel." },
-  { id:"s6", name:"Creatin", icon:"💪", category:"Leistung",
+  { id:"s6", name:"Creatin", icon:"💪", category:"Leistung", timing:"flexibel",
     fn:"Unterstützt die schnelle Energiebereitstellung (ATP-Regeneration) in den Muskelzellen und kann so Kraft- und Leistungsfähigkeit beim Training verbessern — eines der am besten erforschten Sport-Supplemente.",
     when:"Der Zeitpunkt ist zweitrangig — entscheidend ist die tägliche, regelmäßige Einnahme, auch an trainingsfreien Tagen.",
     how:"Meist als Creatin-Monohydrat, üblicherweise 3–5 g täglich mit Wasser oder in einem Shake. Eine anfängliche 'Ladephase' ist nicht notwendig.",
     blood:"Für Creatin gibt es keinen klassischen 'optimalen' Blutwert zur Kontrolle — relevant ist die Sättigung der Muskulatur, nicht ein Bluttest." },
-  { id:"s7", name:"Vitamin B12", icon:"🔋", category:"Vitamin",
+  { id:"s7", name:"Vitamin B12", icon:"🔋", category:"Vitamin", timing:"morgens",
     fn:"Wichtig für die Bildung roter Blutkörperchen, das Nervensystem und den Energiestoffwechsel. Besonders relevant bei veganer oder vegetarischer Ernährung, da B12 hauptsächlich in tierischen Produkten vorkommt.",
     when:"Morgens, idealerweise auf nüchternen Magen für eine bessere Aufnahme.",
     how:"Als Methylcobalamin oder Cyanocobalamin erhältlich; sublingual (unter der Zunge zergehen lassen) oft etwas besser bioverfügbar als normale Kapseln.",
     blood:"Serum-B12 wird oft bei 300–600 pg/ml als guter Bereich angesehen; ergänzend können Holo-Transcobalamin oder Methylmalonsäure aussagekräftiger sein." },
-  { id:"s8", name:"Eisen", icon:"🩸", category:"Mineralstoff",
+  { id:"s8", name:"Eisen", icon:"🩸", category:"Mineralstoff", timing:"morgens",
     fn:"Zentraler Bestandteil des Hämoglobins und damit wichtig für den Sauerstofftransport im Blut, Energielevel und kognitive Funktion. Besonders relevant für Frauen und Ausdauersportler.",
     when:"Am besten auf nüchternen Magen für die beste Aufnahme; bei Magenproblemen alternativ zu einer leichten Mahlzeit.",
     how:"Mit Vitamin C kombinieren (verbessert die Aufnahme deutlich), nicht zusammen mit Calcium, Kaffee oder schwarzem/grünem Tee einnehmen, da diese die Aufnahme hemmen.",
     blood:"Ferritin (Eisenspeicher) wird häufig im Bereich von 30–100 ng/ml als guter Wert angesehen, bei Sportlern eher im oberen Bereich.",
     warn:"Eisen ist das einzige Supplement in dieser Liste, das man nicht vorsorglich nehmen sollte. Der Körper hat keinen Weg, überschüssiges Eisen wieder auszuscheiden — es lagert sich ein. Ohne nachgewiesenen Mangel bringt eine Einnahme nichts und kann auf Dauer schaden. Lass deinen Ferritin-Wert bestimmen, bevor du damit anfängst." },
-  { id:"s9", name:"Calcium", icon:"🦴", category:"Mineralstoff",
+  { id:"s9", name:"Calcium", icon:"🦴", category:"Mineralstoff", timing:"mahlzeit",
     fn:"Wichtigster Baustein für Knochen und Zähne, außerdem zentral für Muskelkontraktion, Nervenreizleitung und Blutgerinnung.",
     when:"Über den Tag verteilt in kleineren Portionen (max. ca. 500 mg auf einmal) für eine bessere Aufnahme, z. B. mittags und abends.",
     how:"Zusammen mit einer Mahlzeit einnehmen, nicht gleichzeitig mit Eisen oder Zink. Vitamin D und K2 unterstützen die sinnvolle Verwertung im Körper.",
     blood:"Gesamt-Calcium im Serum liegt im Normbereich meist bei 2,2–2,6 mmol/l." },
-  { id:"s10", name:"Probiotika", icon:"🦠", category:"Sonstiges",
+  { id:"s10", name:"Probiotika", icon:"🦠", category:"Sonstiges", timing:"morgens",
     fn:"Unterstützen eine gesunde Darmflora und können sich positiv auf Verdauung, Immunsystem und über die Darm-Hirn-Achse teils sogar auf das allgemeine Wohlbefinden auswirken.",
     when:"Idealerweise morgens auf nüchternen Magen, etwa 30 Minuten vor dem Frühstück.",
     how:"Mit einem Glas Wasser einnehmen; manche Präparate müssen gekühlt gelagert werden (Herstellerangabe beachten). Für einen spürbaren Effekt ist eine regelmäßige Einnahme über mehrere Wochen sinnvoll.",
     blood:"Es gibt keinen klassischen Blutwert zur Kontrolle — eine Stuhlanalyse kann bei Bedarf Aufschluss über die Zusammensetzung der Darmflora geben." },
-  { id:"s11", name:"Eiweißpulver", icon:"🥛", category:"Protein",
+  { id:"s11", name:"Eiweißpulver", icon:"🥛", category:"Protein", timing:"flexibel",
     fn:"Kein Wundermittel, sondern schlicht eine bequeme Eiweißquelle. Entscheidend für den Muskelaufbau ist die Gesamtmenge an Eiweiß über den Tag — ob die aus Quark, Hühnchen, Linsen oder einem Shake kommt, macht kaum einen Unterschied. Ein Pulver hilft vor allem dann, wenn du dein Tagesziel über normale Mahlzeiten nur schwer erreichst.",
     when:"Wann am Tag ist zweitrangig. Das früher viel beschworene 'anabole Fenster' direkt nach dem Training ist deutlich weiter als lange angenommen — wichtiger ist, das Eiweiß über den Tag auf etwa 3–5 Portionen zu verteilen.",
     how:"Üblich sind 20–40 g pro Portion. Molkenprotein (Whey) wird schnell aufgenommen, Casein langsamer und eignet sich daher eher abends. Bei Laktoseunverträglichkeit funktioniert Whey-Isolat oder ein pflanzliches Pulver aus Erbse und Reis, das kombiniert ein vollständiges Aminosäureprofil ergibt.",
     blood:"Es gibt keinen Blutwert dafür. Die passende Kontrolle ist dein Eiweißziel in dieser App: etwa 2,0 g pro Kilogramm Körpergewicht am Tag." },
-  { id:"s12", name:"Koffein", icon:"☕", category:"Leistung",
+  { id:"s12", name:"Koffein", icon:"☕", category:"Leistung", timing:"training",
     fn:"Nach Creatin das am besten untersuchte Mittel zur Leistungssteigerung. Senkt das empfundene Anstrengungsniveau, verbessert Konzentration und Reaktionsfähigkeit und kann Kraft- wie Ausdauerleistung messbar anheben.",
     when:"Etwa 30–60 Minuten vor dem Training. Die Halbwertszeit liegt bei rund 5 Stunden — wer abends trainiert, sollte das beim Schlaf mitdenken.",
     how:"Übliche Mengen liegen bei etwa 3–6 mg pro Kilogramm Körpergewicht; bei 80 kg sind das rund 240–480 mg, also grob zwei bis vier Tassen Kaffee. Mehr bringt nicht mehr, sondern meist nur Unruhe und Herzrasen. Bei täglicher Einnahme gewöhnt sich der Körper daran — eine Pause von ein bis zwei Wochen stellt die Wirkung wieder her.",
     blood:"Kein sinnvoller Blutwert. Die ehrlichste Rückmeldung ist dein Schlaf: Wer schlecht einschläft, hat zu spät oder zu viel genommen.",
     warn:"Koffein am Nachmittag kostet Schlaf, auch wenn du es nicht merkst — und Schlaf ist für den Muskelaufbau wichtiger als jedes Supplement. Bei Herzproblemen, Bluthochdruck, Angststörungen oder in der Schwangerschaft vorher ärztlich abklären." },
-  { id:"s13", name:"Beta-Alanin", icon:"🔥", category:"Leistung",
+  { id:"s13", name:"Beta-Alanin", icon:"🔥", category:"Leistung", timing:"flexibel",
     fn:"Erhöht den Carnosin-Gehalt im Muskel und puffert damit die Übersäuerung ab. Der Nutzen zeigt sich vor allem bei Belastungen von etwa 1 bis 4 Minuten — also bei hohen Wiederholungszahlen, kurzen Pausen und Intervallen, weniger bei schweren Dreier-Sätzen.",
     when:"Der Zeitpunkt ist unwichtig, weil die Wirkung über die Anreicherung im Muskel entsteht und nicht akut. Entscheidend ist die tägliche Einnahme über mehrere Wochen.",
     how:"Üblich sind 3–6 g täglich. Die Sättigung im Muskel braucht etwa 4 Wochen. Das typische Kribbeln auf der Haut ist harmlos und lässt sich durch Aufteilen in kleinere Portionen oder ein Präparat mit verzögerter Freisetzung vermeiden.",
     blood:"Kein üblicher Blutwert — relevant ist der Carnosin-Gehalt im Muskel, der sich im Alltag nicht messen lässt." },
-  { id:"s14", name:"Elektrolyte", icon:"🧂", category:"Mineralstoff",
+  { id:"s14", name:"Elektrolyte", icon:"🧂", category:"Mineralstoff", timing:"training",
     fn:"Natrium, Kalium und Magnesium steuern den Flüssigkeitshaushalt, die Nervenreizleitung und die Muskelkontraktion. Beim Schwitzen geht vor allem Natrium verloren — wer nur Wasser nachtrinkt, verdünnt den Rest zusätzlich.",
     when:"Bei langen oder sehr schweißtreibenden Einheiten währenddessen, sonst danach. An normalen Tagen mit gemischter Ernährung meist gar nicht nötig.",
     how:"Ein Getränk mit etwa 300–700 mg Natrium pro Liter deckt den üblichen Bedarf. Eine Prise Salz im Wasser tut es auch — teure Fertigmischungen sind selten nötig.",
     blood:"Serum-Natrium liegt im Normbereich meist bei 135–145 mmol/l, Kalium bei 3,5–5,0 mmol/l. Beides wird vom Körper eng geregelt und sagt wenig über die Zufuhr aus." },
-  { id:"s15", name:"Kollagen + Vitamin C", icon:"🦵", category:"Protein",
+  { id:"s15", name:"Kollagen + Vitamin C", icon:"🦵", category:"Protein", timing:"training",
     fn:"Liefert die Bausteine für Sehnen, Bänder, Knorpel und Bindegewebe. Die Studienlage ist ordentlich, aber nicht so eindeutig wie bei Creatin — Hinweise auf weniger Gelenkbeschwerden und bessere Sehnenbelastbarkeit gibt es, ein Wundermittel ist es nicht.",
     when:"Etwa 30–60 Minuten vor der Belastung, weil die Durchblutung von Sehnen und Bändern dann am höchsten ist und die Bausteine dort ankommen.",
     how:"Üblich sind 10–15 g Kollagenpeptide zusammen mit etwa 50 mg Vitamin C — ohne Vitamin C kann der Körper kein Kollagen aufbauen. Für den Muskelaufbau ist es als Eiweißquelle ungeeignet, weil ihm eine wichtige Aminosäure fehlt.",
     blood:"Kein Blutwert zur Kontrolle. Die Rückmeldung sind deine Gelenke über mehrere Wochen." },
-  { id:"s16", name:"Ashwagandha", icon:"🌿", category:"Sonstiges",
+  { id:"s16", name:"Ashwagandha", icon:"🌿", category:"Sonstiges", timing:"abends",
     fn:"Eine Heilpflanze aus der ayurvedischen Medizin. Mehrere Studien zeigen eine Senkung von Stressempfinden und Cortisolspiegel sowie eine bessere Schlafqualität; einzelne deuten auf leichte Vorteile bei Kraft und Regeneration hin. Die Studien sind meist klein, der Effekt gilt als moderat.",
     when:"Abends, da die beruhigende Wirkung dann am nützlichsten ist. Manche teilen die Menge auf morgens und abends auf.",
     how:"Üblich sind 300–600 mg eines standardisierten Extrakts täglich, über mindestens 4–8 Wochen — vorher ist kaum etwas zu spüren.",
     blood:"Kein direkter Blutwert. Wenn überhaupt, lässt sich der Cortisol-Tagesverlauf bestimmen, was aber selten nötig ist.",
     warn:"Nicht in Schwangerschaft und Stillzeit. Bei Schilddrüsenerkrankungen, Autoimmunerkrankungen oder der Einnahme von Beruhigungs- oder Schilddrüsenmedikamenten vorher ärztlich abklären — Ashwagandha kann in deren Wirkung eingreifen." },
 ];
+
+// Einnahmezeitpunkte als Sortier- und Gruppierungsraster. "Mineralstoff" beantwortet nicht die
+// Frage, die man morgens um sieben hat — "was nehme ich jetzt gerade" schon. Die Reihenfolge
+// hier ist die Reihenfolge des Tages.
+const SUPP_ZEITEN = [
+  { key:"morgens",  label:"Morgens nüchtern",   icon:"🌅" },
+  { key:"mahlzeit", label:"Zu einer Mahlzeit",  icon:"🍽️" },
+  { key:"training", label:"Rund ums Training",  icon:"🏋️" },
+  { key:"abends",   label:"Abends",             icon:"🌙" },
+  { key:"flexibel", label:"Zeitpunkt egal",     icon:"🕐" },
+];
+function suppZeit(key){
+  return SUPP_ZEITEN.find(function(z){ return z.key === key; }) || SUPP_ZEITEN[SUPP_ZEITEN.length - 1];
+}
+
+// Zielbereiche als Zahlen — der Fließtext im Feld "blood" beschreibt sie bereits, taugt aber
+// nicht zum Rechnen. Nur Präparate, bei denen ein Laborwert überhaupt sinnvoll ist: Für Creatin,
+// Eiweißpulver oder Probiotika gibt es keinen, und dort wird auch kein Eingabefeld angeboten.
+const SUPP_BLUTWERTE = {
+  s1:  { label:"Magnesium im Serum",     unit:"mmol/l", min:0.85, max:1.10 },
+  s2:  { label:"Vitamin C im Plasma",    unit:"µmol/l", min:50,   max:90 },
+  s3:  { label:"Zink im Serum",          unit:"µg/dl",  min:80,   max:120 },
+  s4:  { label:"Omega-3-Index",          unit:"%",      min:8,    max:11 },
+  s5:  { label:"25(OH)D",                unit:"ng/ml",  min:40,   max:60 },
+  s7:  { label:"Vitamin B12 im Serum",   unit:"pg/ml",  min:300,  max:600 },
+  s8:  { label:"Ferritin",               unit:"ng/ml",  min:30,   max:100 },
+  s9:  { label:"Calcium im Serum",       unit:"mmol/l", min:2.2,  max:2.6 },
+  s14: { label:"Natrium im Serum",       unit:"mmol/l", min:135,  max:145 },
+};
+// Ordnet einen gemessenen Wert dem Zielbereich zu. Bewusst nur beschreibend — die App stellt
+// keine Diagnose und gibt keine Dosierungsempfehlung, das steht auch im Hinweis über der Liste.
+function blutwertEinordnung(sid, wert){
+  const b = SUPP_BLUTWERTE[sid];
+  if(!b || typeof wert !== "number") return null;
+  if(wert < b.min) return { lage:"unter", text:"unter dem Zielbereich" };
+  if(wert > b.max) return { lage:"ueber", text:"über dem Zielbereich" };
+  return { lage:"drin", text:"im Zielbereich" };
+}
+// Blutwerte liegen oft Monate oder Jahre auseinander — anders als sonst in der App
+// gehört hier das Jahr mit ins Datum.
+function blutDatum(iso){
+  const t = String(iso).split("-");
+  return t.length === 3 ? (t[2] + "." + t[1] + "." + t[0]) : String(iso);
+}
+function blutwerteFuer(sid){
+  const liste = (state.bloodValues && state.bloodValues[sid]) || [];
+  return liste.slice().sort(function(a, b){ return String(b.date).localeCompare(String(a.date)); });
+}
+function letzterBlutwert(sid){
+  const l = blutwerteFuer(sid);
+  return l.length ? l[0] : null;
+}
+function saveBlutwert(sid){
+  const b = SUPP_BLUTWERTE[sid];
+  if(!b) return;
+  const feld = document.getElementById("bloodInput_" + sid);
+  const datumFeld = document.getElementById("bloodDate_" + sid);
+  // Großzügige Plausibilitätsgrenzen: ein Mangel liegt weit unter, eine Überladung weit über
+  // dem Zielbereich — abgefangen wird nur der Vertipper um Zehnerpotenzen.
+  const wert = pruefeZahl(feld.value, b.min / 20, b.max * 20, false);
+  if(wert === null){
+    showToast("Bitte einen plausiblen Wert in " + b.unit + " eintragen");
+    return;
+  }
+  const datum = (datumFeld && datumFeld.value) || todayKey();
+  if(!state.bloodValues[sid]) state.bloodValues[sid] = [];
+  // Pro Tag nur ein Wert — eine Korrektur soll den alten ersetzen, nicht danebenstehen.
+  const vorhanden = state.bloodValues[sid].findIndex(function(e){ return e.date === datum; });
+  const eintrag = { date: datum, value: wert };
+  if(vorhanden >= 0) state.bloodValues[sid][vorhanden] = eintrag;
+  else state.bloodValues[sid].push(eintrag);
+  if(state.bloodValues[sid].length > 30){
+    state.bloodValues[sid] = blutwerteFuer(sid).slice(0, 30);
+  }
+  feld.value = "";
+  saveState();
+  renderSupplements();
+  showToast("Blutwert gespeichert");
+}
+function removeBlutwert(sid, datum){
+  if(!state.bloodValues[sid]) return;
+  state.bloodValues[sid] = state.bloodValues[sid].filter(function(e){ return e.date !== datum; });
+  if(!state.bloodValues[sid].length) delete state.bloodValues[sid];
+  saveState();
+  renderSupplements();
+}
 
 // Wechselwirkungen zwischen den Präparaten. Das Wissen stand bisher nur im Fließtext der
 // einzelnen Einträge — man liest es also genau dann nicht, wenn es zählt: beim Einnehmen.
@@ -7235,6 +7357,52 @@ function toggleSuppTaken(id, e){
   saveState();
   renderSupplements();
 }
+// Der Zielbereich stand bisher nur als Text da — man konnte den eigenen Wert nirgends
+// festhalten und damit auch nicht einordnen. Der Block hängt direkt unter "Optimaler Blutwert",
+// also genau dort, wo man den Zielbereich gerade gelesen hat.
+function blutwertBlock(s){
+  const wrap = document.createElement("div");
+  wrap.className = "blut-block";
+  const b = SUPP_BLUTWERTE[s.id];
+  if(!b){
+    wrap.innerHTML = '<p class="blut-leer">Für dieses Präparat gibt es keinen Laborwert, den du sinnvoll verfolgen könntest.</p>';
+    return wrap;
+  }
+
+  const eintraege = blutwerteFuer(s.id);
+  let html = '<h4>Dein Wert</h4>' +
+    '<p class="blut-ziel">' + b.label + ' · Zielbereich ' + b.min + '–' + b.max + ' ' + b.unit + '</p>' +
+    '<div class="blut-eingabe">' +
+    '<input type="number" inputmode="decimal" step="any" id="bloodInput_' + s.id + '" ' +
+    'placeholder="Wert in ' + b.unit + '" aria-label="' + b.label + ' in ' + b.unit + '">' +
+    '<input type="date" id="bloodDate_' + s.id + '" value="' + todayKey() + '" ' +
+    'aria-label="Datum der Blutabnahme">' +
+    '<button type="button" class="btn blut-save" id="bloodSave_' + s.id + '">Speichern</button>' +
+    '</div>';
+
+  if(eintraege.length){
+    html += '<div class="blut-liste">' + eintraege.map(function(e){
+      const ein = blutwertEinordnung(s.id, e.value);
+      return '<div class="blut-zeile"><span class="blut-datum">' + blutDatum(e.date) + '</span>' +
+        '<span class="blut-wert">' + e.value + ' ' + b.unit + '</span>' +
+        '<span class="blut-lage blut-' + ein.lage + '">' + ein.text + '</span>' +
+        '<span class="set-del" data-blut-datum="' + e.date + '" role="button" tabindex="0" ' +
+        'title="Wert löschen" aria-label="Wert vom ' + blutDatum(e.date) + ' löschen">✕</span></div>';
+    }).join("") + '</div>' +
+    '<p class="blut-hinweis">Die Einordnung ist rein beschreibend und ersetzt keine ärztliche Beurteilung — ' +
+    'Referenzbereiche unterscheiden sich je nach Labor und persönlicher Situation.</p>';
+  } else {
+    html += '<p class="blut-hinweis">Noch kein Wert eingetragen. Wenn du deinen Laborbefund hast, kannst du ihn hier festhalten und über die Zeit verfolgen.</p>';
+  }
+
+  wrap.innerHTML = html;
+  wrap.querySelector("#bloodSave_" + s.id).onclick = function(){ saveBlutwert(s.id); };
+  wrap.querySelectorAll("[data-blut-datum]").forEach(function(btn){
+    btn.onclick = function(){ removeBlutwert(s.id, btn.getAttribute("data-blut-datum")); };
+  });
+  return wrap;
+}
+
 function renderSupplements(){
   const list = document.getElementById("supplementList");
   list.innerHTML = "";
@@ -7260,8 +7428,12 @@ function renderSupplements(){
   // Umschalter nur zeigen, wenn es überhaupt eine Auswahl gibt — sonst wäre er eine
   // Erklärung für etwas, das gar nicht existiert.
   if(state.suppSelection.length){
+    const label = document.createElement("div");
+    label.className = "filter-label";
+    label.textContent = "Ansicht";
+    list.appendChild(label);
     const row = document.createElement("div");
-    row.className = "filter-row supp-filter-row";
+    row.className = "filter-row supp-filter-row supp-view-row";
     [
       { alle:false, label:"Meine Auswahl (" + state.suppSelection.length + ")" },
       { alle:true, label:"Alle (" + SUPPLEMENTS.length + ")" },
@@ -7277,12 +7449,40 @@ function renderSupplements(){
   }
 
   const sichtbar = sichtbareSupplements();
-  sichtbar.forEach(function(s, idx){
+
+  if(sichtbar.length){
+    const sLabel = document.createElement("div");
+    sLabel.className = "filter-label";
+    sLabel.textContent = "Sortierung";
+    list.appendChild(sLabel);
+    const sRow = document.createElement("div");
+    sRow.className = "filter-row supp-filter-row supp-sort-row";
+    [
+      { zeit:false, label:"Nach Kategorie" },
+      { zeit:true, label:"🕐 Nach Einnahmezeit" },
+    ].forEach(function(opt){
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "filter-chip" + (state.suppSortByTime === opt.zeit ? " active" : "");
+      chip.textContent = opt.label;
+      chip.onclick = function(){ state.suppSortByTime = opt.zeit; saveState(); renderSupplements(); };
+      sRow.appendChild(chip);
+    });
+    list.appendChild(sRow);
+  }
+
+  // Eine Karte samt aufgeklapptem Detail. Der Farbindex läuft über die gesamte Liste weiter,
+  // damit auch in der Gruppenansicht keine zwei gleichfarbigen Karten aufeinanderfolgen.
+  let farbIndex = 0;
+  function karteBauen(s){
     const card = document.createElement("div");
-    card.className = "supp-card pc-" + (idx % 3);
+    card.className = "supp-card pc-" + (farbIndex++ % 3);
     const taken = !!todayLog[s.id];
     const streak = suppStreak(s.id);
     const gemerkt = suppIstAusgewaehlt(s.id);
+    const zeit = suppZeit(s.timing);
+    const letzter = letzterBlutwert(s.id);
+    const einordnung = letzter ? blutwertEinordnung(s.id, letzter.value) : null;
     card.innerHTML =
       '<div class="supp-top"><span class="supp-icon">' + s.icon + '</span><span class="supp-name">' + s.name + '</span>' +
       '<span class="supp-fav" role="button" tabindex="0" title="' +
@@ -7292,7 +7492,11 @@ function renderSupplements(){
       '<div class="supp-check' + (taken ? ' checked' : '') + '" role="button" tabindex="0" ' +
       'title="Heute genommen" aria-label="' + s.name + ' heute genommen">' + (taken ? '✓' : '') + '</div></div>' +
       '<div class="supp-tags"><span class="tag">' + s.category + '</span>' +
+      // In der Gruppenansicht sagt schon die Überschrift, wann eingenommen wird — dort wäre
+      // derselbe Hinweis auf jeder Karte nur Rauschen.
+      (state.suppSortByTime ? '' : '<span class="tag">' + zeit.icon + ' ' + zeit.label + '</span>') +
       (s.warn ? '<span class="tag tag-warn">⚠️ Vorher lesen</span>' : '') +
+      (einordnung ? '<span class="tag tag-blut-' + einordnung.lage + '">🩸 ' + einordnung.text + '</span>' : '') +
       (streak > 0 ? ('<span class="tag">🔥 ' + streak + ' Tage in Folge</span>') : '') + '</div>';
     card.onclick = function(){ toggleSupplement(s.id); };
     card.querySelector(".supp-check").onclick = function(e){ toggleSuppTaken(s.id, e); };
@@ -7305,12 +7509,29 @@ function renderSupplements(){
       detail.innerHTML =
         (s.warn ? '<div class="supp-warn"><h4>Wichtig vor der Einnahme</h4><p>' + s.warn + '</p></div>' : '') +
         '<h4>Funktion im Körper</h4><p>' + s.fn + '</p>' +
-        '<h4>Wann einnehmen</h4><p>' + s.when + '</p>' +
+        '<h4>Wann einnehmen</h4><p>' + zeit.icon + ' <strong>' + zeit.label + '</strong> — ' + s.when + '</p>' +
         '<h4>Wie einnehmen</h4><p>' + s.how + '</p>' +
         '<h4>Optimaler Blutwert</h4><p>' + s.blood + '</p>';
+      detail.appendChild(blutwertBlock(s));
+      // Klicks im Blutwert-Bereich dürfen die Karte nicht wieder zuklappen.
+      detail.onclick = function(e){ e.stopPropagation(); };
       list.appendChild(detail);
     }
-  });
+  }
+
+  if(state.suppSortByTime){
+    SUPP_ZEITEN.forEach(function(z){
+      const gruppe = sichtbar.filter(function(s){ return suppZeit(s.timing).key === z.key; });
+      if(!gruppe.length) return;
+      const kopf = document.createElement("div");
+      kopf.className = "supp-gruppe";
+      kopf.textContent = z.icon + " " + z.label;
+      list.appendChild(kopf);
+      gruppe.forEach(karteBauen);
+    });
+  } else {
+    sichtbar.forEach(karteBauen);
+  }
 
   if(!sichtbar.length){
     const leer = document.createElement("p");
