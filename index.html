@@ -4367,18 +4367,14 @@ function renderDeloadBanner(){
 // ansteht. Läuft komplett lokal auf den ohnehin schon getrackten Daten, kein Server, keine
 // laufenden Kosten. Nur Übungen des AKTUELL AKTIVEN Plans werden berücksichtigt (relevant für
 // "diese Woche", anders als das Deload-Signal, das bewusst plan-übergreifend schaut).
-function allExercisesOfPlan(plan){
-  const list = [];
-  plan.dayOrder.forEach(function(dKey){
-    plan.days[dKey].groups.forEach(function(g){
-      g.exercises.forEach(function(ex){ list.push(ex); });
-    });
-  });
-  return list;
-}
 function computeWeeklyPlanReview(){
-  const plan = getActivePlan();
-  const exs = allExercisesOfPlan(plan);
+  // Nur die Übungen des aktuell gewählten Trainingstags. Vorher lief das über
+  // allExercisesOfPlan(), also über ALLE Tage des Plans — dadurch stand am Montag auch
+  // "Bankdrücken: heute 2,5 kg mehr versuchen", obwohl Bankdrücken erst am Mittwoch ansteht.
+  // Ein Steigerungshinweis, den man heute gar nicht umsetzen kann, ist bestenfalls nutzlos und
+  // schlimmstenfalls irreführend. allExercisesOfActiveDay() lässt zudem für heute übersprungene
+  // Übungen weg — auch für die wäre ein Hinweis gegenstandslos.
+  const exs = allExercisesOfActiveDay();
   const items = [];
   exs.forEach(function(ex){
     const suggestion = getProgressionSuggestion(ex);
@@ -4427,14 +4423,21 @@ function renderWeeklyPlanReview(){
   const MAX_SHOWN = 5;
   const shown = review.items.slice(0, MAX_SHOWN);
   const restCount = review.items.length - shown.length;
-  const planLabel = getActivePlan().label || "deinem Plan";
+  // Bezeichnung des heutigen Trainingstags statt des Plannamens — die Empfehlungen beziehen
+  // sich jetzt ausschließlich auf diesen einen Tag.
+  const tag = activeDays()[currentDay];
+  const tagLabel = tag ? ((tag.label || "") + (tag.sub ? " · " + tag.sub : "")).trim() : "";
   let summary = [];
   if(review.deloadCount) summary.push(review.deloadCount + " Deload-Kandidat" + (review.deloadCount === 1 ? "" : "en"));
   if(review.downCount) summary.push(review.downCount + " rückläufig");
   if(review.upCount) summary.push(review.upCount + " bereit zu steigern");
   el.innerHTML = '<div class="deload-banner">' +
-    '<h4>📋 Dein Wochenplan-Update</h4>' +
-    '<p style="margin-bottom:10px;">' + escapeHtml(summary.join(" · ")) + ' — basierend auf deinem RIR- und Gewichtsverlauf in "' + escapeHtml(planLabel) + '".</p>' +
+    // Bewusst der Tagesname statt "heute": currentDay folgt dem im Trainingsplan gewählten
+    // Tag, nicht dem Kalendertag — eine automatische Zuordnung wäre auch gar nicht allgemein
+    // möglich, weil Pläne wie Push/Pull/Legs keine Wochentage haben. Der Tagesname macht ohne
+    // falsche Behauptung klar, worauf sich die Empfehlungen beziehen.
+    '<h4>📋 Empfehlungen für ' + escapeHtml(tagLabel || "dein Training") + '</h4>' +
+    '<p style="margin-bottom:10px;">' + escapeHtml(summary.join(" · ")) + ' — basierend auf deinem RIR- und Gewichtsverlauf. Berücksichtigt werden nur die Übungen dieses Trainingstags.</p>' +
     shown.map(function(item){
       const meta = WEEKLY_REVIEW_TYPE_META[item.type];
       return '<p style="font-size:12px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px;">' +
@@ -4443,7 +4446,7 @@ function renderWeeklyPlanReview(){
         escapeHtml(item.text) +
       '</p>';
     }).join("") +
-    (restCount > 0 ? ('<p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;">+' + restCount + ' weitere Übung' + (restCount === 1 ? "" : "en") + ' mit Empfehlung — offen einsehbar direkt bei der jeweiligen Übung im Trainingsplan.</p>') : "") +
+    (restCount > 0 ? ('<p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;">+' + restCount + ' weitere Übung' + (restCount === 1 ? "" : "en") + ' von heute mit Empfehlung — offen einsehbar direkt bei der jeweiligen Übung im Trainingsplan.</p>') : "") +
     '<button onclick="dismissWeeklyPlanReview()">Verstanden, für heute ausblenden</button>' +
   '</div>';
 }
