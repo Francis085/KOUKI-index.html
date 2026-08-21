@@ -2439,6 +2439,20 @@ function normalizeState(){
   if(!state.entries) state.entries = {};
   if(!state.history) state.history = {};
   if(!state.prs) state.prs = {};
+  // Frühere Fassung: state.prs[id] = {weight,date,reps,unit}. Jetzt eine Ebene tiefer nach
+  // Übungsname (siehe prFor/setPRFor). Bestandsrekorde werden dem Namen zugeordnet, der in der
+  // PLANVORLAGE steht — also der ursprünglichen Übung, nicht einer eventuell gerade aktiven
+  // Tausch-Übung. Genau dieselbe Regel gilt schon für Verlaufseinträge ohne Namen.
+  Object.keys(state.prs).forEach(function(id){
+    const v = state.prs[id];
+    if(v && typeof v === "object" && typeof v.weight !== "undefined"){
+      const def = (typeof findExerciseById === "function") ? findExerciseById(id) : null;
+      const name = (def && def.name) || id;
+      const neu = {};
+      neu[name] = v;
+      state.prs[id] = neu;
+    }
+  });
   if(!state.bodyweight) state.bodyweight = [];
   if(!state.customPlans) state.customPlans = [];
   if(!state.bmr) state.bmr = { height:"", age:"", sex:"m", activity:"1.55" };
@@ -3125,6 +3139,38 @@ function selectTodaysTrainingDay(plan){
   currentDay = key;
   currentExerciseIndex = 0;
   return true;
+}
+
+// --- Persönliche Rekorde pro tatsächlich ausgeführter Übung ---------------------------------
+// Rekorde lagen bisher nur unter der Übungs-ID (dem Plan-Slot). Tauscht man Hack Squat gegen
+// Beinpresse, ist das aber eine andere Übung: Ein dort aufgestellter Rekord gehört zur
+// Beinpresse, und der alte Hack-Squat-Rekord darf nicht plötzlich als Beinpressen-Rekord
+// erscheinen. Deshalb liegt unter der ID jetzt eine Ebene tiefer eine Zuordnung nach
+// Übungsname — so bleiben beide Rekorde erhalten, auch wenn man hin und her tauscht.
+//   state.prs["fri_hacksquat"] = { "Hack Squat": {...}, "Beinpresse": {...} }
+function prFor(ex){
+  const map = state.prs[ex.id];
+  if(!map) return null;
+  return map[exerciseNameById(ex.id) || ex.name] || null;
+}
+
+function setPRFor(ex, rec){
+  if(!state.prs[ex.id]) state.prs[ex.id] = {};
+  state.prs[ex.id][exerciseNameById(ex.id) || ex.name] = rec;
+}
+
+// Alle Rekorde flach mit ID und Übungsname — für Listen, Zählungen und den Kraft-Rang.
+function allPRs(){
+  const out = [];
+  Object.keys(state.prs).forEach(function(id){
+    const map = state.prs[id];
+    if(!map || typeof map !== "object") return;
+    Object.keys(map).forEach(function(name){
+      const rec = map[name];
+      if(rec && typeof rec.weight !== "undefined") out.push({ exId: id, name: name, pr: rec });
+    });
+  });
+  return out;
 }
 
 function getProgressionSuggestion(ex){
@@ -4218,9 +4264,8 @@ function weekRecapStats(){
     });
   });
   const newPRs = [];
-  Object.keys(state.prs).forEach(function(exId){
-    const pr = state.prs[exId];
-    if(pr && pr.date >= start && pr.date <= end) newPRs.push(exerciseNameById(exId) || exId);
+  allPRs().forEach(function(e){
+    if(e.pr.date >= start && e.pr.date <= end) newPRs.push(e.name);
   });
   return { sessions: sessions, totalWeight: Math.round(totalWeight), totalHoldSeconds: Math.round(totalHoldSeconds), newPRs: newPRs };
 }
@@ -4722,7 +4767,7 @@ function buildExerciseCard(ex, dayColor, el){
       const card = document.createElement("div");
       card.className = "exercise pc-" + dayColor + (done ? " done" : "");
 
-      const pr = state.prs[ex.id];
+      const pr = prFor(ex);
       const trend = trendFor(ex.id);
       const exGroupLabel = exerciseGroupName(ex);
       const hist = historyFor(ex);
@@ -5328,10 +5373,13 @@ async function finishSession(){
         });
       }
       if(bestWeight !== null){
-        const currentPR = state.prs[ex.id];
+        // prFor(): der Rekord der TATSÄCHLICH ausgeführten Übung. Wer heute spontan von
+        // Hack Squat auf Beinpresse wechselt, wird an seinem Hack-Squat-Rekord gemessen —
+        // und stellt seinen Beinpressen-Rekord auf, ohne den alten zu überschreiben.
+        const currentPR = prFor(ex);
         const unit = mode === "hold" ? "sek" : "kg";
         if(!currentPR || bestWeight > currentPR.weight){
-          state.prs[ex.id] = { weight: bestWeight, date: today, reps: bestReps, unit: unit };
+          setPRFor(ex, { weight: bestWeight, date: today, reps: bestReps, unit: unit });
           // exerciseNameById() statt rohem ex.name — sonst zeigten der "Neuer PR"-Toast und die
           // Teilen-Karte nach einem Übungstausch weiterhin den ursprünglichen Übungsnamen aus
           // der Planvorlage statt der tatsächlich trainierten (getauschten) Übung.
@@ -5868,9 +5916,10 @@ function bestPRForLift(matchFn){
     Object.keys(plan.days).forEach(function(dayKey){
       plan.days[dayKey].groups.forEach(function(g){
         g.exercises.forEach(function(ex){
-          if(matchFn(ex.name) && state.prs[ex.id]){
-            const w = state.prs[ex.id].weight;
-            if(best === null || w > best){ best = w; bestDate = state.prs[ex.id].date; }
+          const prHier = prFor(ex);
+          if(matchFn(exerciseNameById(ex.id) || ex.name) && prHier){
+            const w = prHier.weight;
+            if(best === null || w > best){ best = w; bestDate = prHier.date; }
           }
         });
       });
@@ -7863,7 +7912,7 @@ function renderHome(){
     '<div class="home-stat"><span class="h-num">🔥 ' + streak + '</span><span class="h-lbl">Wochen-Streak</span></div>' +
     '<div class="home-stat"><span class="h-num">' + (bw ? (bw.weight + ' kg') : '–') + '</span><span class="h-lbl">Körpergewicht</span></div>' +
     '<div class="home-stat"><span class="h-num">' + weekTrained + '/7</span><span class="h-lbl">Diese Woche trainiert</span></div>' +
-    '<div class="home-stat"><span class="h-num">' + Object.keys(state.prs).length + '</span><span class="h-lbl">Rekorde</span></div>';
+    '<div class="home-stat"><span class="h-num">' + allPRs().length + '</span><span class="h-lbl">Rekorde</span></div>';
 
   const idToName = {};
   getAllPlans().forEach(function(p){
@@ -7878,9 +7927,11 @@ function renderHome(){
   // falsch: eine 75-Sekunden-Plank würde als "75kg" angezeigt und ein 60-kg-Bankdrücken aus den
   // Top 5 verdrängen. Deshalb getrennt sortieren — Gewichts-Rekorde zuerst, Halte-Rekorde danach —
   // und jeden mit seiner eigenen Einheit ausgeben.
-  const prAll = Object.keys(state.prs).map(function(id){
-    const pr = state.prs[id];
-    return { name: idToName[id] || id, weight: pr.weight, unit: pr.unit === "sek" ? "sek" : "kg" };
+  // Der Name kommt jetzt direkt aus dem Rekord selbst (dort steht die Übung, mit der er
+  // aufgestellt wurde) statt über die Plan-Zuordnung der ID — sonst liefe ein Beinpressen-
+  // Rekord nach dem Zurücktauschen wieder unter "Hack Squat".
+  const prAll = allPRs().map(function(e){
+    return { name: e.name || idToName[e.exId] || e.exId, weight: e.pr.weight, unit: e.pr.unit === "sek" ? "sek" : "kg" };
   });
   const byValueDesc = function(a, b){ return b.weight - a.weight; };
   const prEntries = prAll.filter(function(p){ return p.unit === "kg"; }).sort(byValueDesc)
