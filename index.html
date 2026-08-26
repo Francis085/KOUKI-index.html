@@ -314,16 +314,39 @@
   }
   .muscle-group:first-of-type{margin-top:0;}
 
-  .step-nav{margin-bottom:8px;}
-  .step-progress-text{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13.5px;color:var(--text-strong);}
-  .step-dots{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;-webkit-overflow-scrolling:touch;}
-  .step-dot{
-    width:26px;height:26px;border-radius:50%;background:var(--surface);border:1.5px solid var(--line);
-    display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;
-    font-size:11px;font-weight:700;color:var(--ink-soft);flex-shrink:0;cursor:pointer;transition:all .15s;
+  /* Sitzungsübersicht: eine Zeile, die sich zur vollständigen Liste aufklappt. Ersetzt die
+     frühere Reihe nummerierter Punkte, die dasselbe zeigte wie der Fortschrittsring, aber
+     nicht verriet, welche Übung dahintersteckt. */
+  .session-overview-head{
+    width:100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md,16px);
+    padding:10px 14px;margin-bottom:10px;cursor:pointer;text-align:left;
+    font-family:'Inter',sans-serif;color:var(--ink);min-height:var(--tap-min,44px);
   }
-  .step-dot.done{background:var(--yellow-deep);border-color:var(--yellow-deep);color:var(--pastel-text);}
-  .step-dot.active{background:var(--olive);border-color:var(--olive);color:#fff;transform:scale(1.12);}
+  .so-pos{font-size:11.5px;color:var(--ink-soft);flex:0 0 auto;}
+  .so-name{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13.5px;color:var(--text-strong);
+    flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .so-count{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-soft);flex:0 0 auto;}
+  .so-chevron{font-size:12px;color:var(--ink-soft);flex:0 0 auto;transition:transform .18s;}
+  .session-overview-head.open .so-chevron{transform:rotate(180deg);}
+  .session-overview-list{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+  .so-row{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm,12px);
+    padding:9px 12px;cursor:pointer;font-family:'Inter',sans-serif;color:var(--ink);
+    min-height:var(--tap-min,44px);
+  }
+  .so-row.active{border-color:var(--olive);background:var(--pastel-overlay);}
+  .so-row.done .so-row-name{opacity:.55;text-decoration:line-through;}
+  .so-nr{
+    width:22px;height:22px;border-radius:50%;background:var(--pastel-overlay);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ink-soft);
+  }
+  .so-row.done .so-nr{background:var(--olive);color:#fff;}
+  .so-row.active .so-nr{background:var(--olive);color:#fff;}
+  .so-row-name{flex:1 1 auto;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .so-row-sets{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-soft);flex:0 0 auto;}
   .step-nav-btns{display:flex;gap:10px;margin-top:14px;}
   .step-nav-btns .btn{flex:1;}
   .step-nav-btns .btn:disabled{opacity:.4;}
@@ -363,7 +386,23 @@
   .tag.down{background:#f7dede;color:#a33b34;}
   .tag.flat{background:#faf0cf;color:#8a6d13;}
 
-  .ex-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+  .ex-actions{display:flex;flex-direction:row;gap:6px;flex-shrink:0;align-items:flex-start;}
+  /* "Mehr"-Menü der Übungskarte: Klartext statt Symbolraten. */
+  .ex-menu{display:flex;flex-direction:column;gap:4px;margin:10px 0 4px;}
+  .ex-menu-item{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm,12px);
+    padding:9px 12px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);
+    min-height:var(--tap-min,44px);
+  }
+  .ex-menu-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center;}
+  .ex-menu-text{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .ex-menu-hint{font-size:11px;color:var(--ink-soft);}
+  .icon-btn.active{background:var(--olive);color:#fff;}
+  /* Werte der letzten Einheit stehen als Vorschlag im leeren Feld — deutlich genug, um sie
+     lesen zu können, aber klar von einem echten Eintrag unterscheidbar. */
+  .set-row.hat-vorschlag .set-input::placeholder{color:var(--ink-soft);opacity:.75;font-weight:600;}
+  .set-legende{font-size:11px;color:var(--pastel-text-soft);margin:8px 0 2px;line-height:1.5;}
   .icon-btn{
     width:30px;height:30px;border-radius:50%;background:var(--pastel-overlay);
     border:none;display:flex;align-items:center;justify-content:center;
@@ -1084,7 +1123,8 @@
        aspect-ratio:1 — hält das Seitenverhältnis auch dann, wenn eine der beiden Größen doch
                         vom Layout bestimmt wird (Grid-Spalte, min-content, Zoom)
      Das ist bewusst eine Regel für alle statt einzelner Pixel-Korrekturen pro Element. */
-  .icon-btn, .step-dot, .set-check, .set-del, .supp-check, .supp-fav, .theme-toggle, .plan-delete,
+  .icon-btn, .set-check, .set-del, .supp-check, .supp-fav, .theme-toggle, .plan-delete,
+  .so-nr,
   .rest-close, .day-modal-close, .quote-fav, .cal-legend-dot, .session-list-dot,
   .product-nutri-badge, .nav-btn .nav-icon, .ring-wrap, .mystery-card{
     flex-shrink:0;
@@ -1252,9 +1292,18 @@
       <button class="btn btn-ghost" id="resetBtn">Haken zurücksetzen</button>
     </div>
 
-    <div class="notes">
-      <strong>Hinweise:</strong> Grundübungen mit 1–2 Wiederholungen im Tank (RIR 1–2) trainieren. Isolationsübungen nahe ans Muskelversagen. Gewicht steigern, sobald die obere Wiederholungszahl in allen Sätzen erreicht wird.<br><br>
-      <strong>RIR (Reps in Reserve)</strong> = wie viele Wiederholungen du an dem Satz theoretisch noch geschafft hättest. RIR 2 = noch 2 Wiederholungen möglich gewesen, RIR 0 = keine mehr. Trag den Wert im "@"-Feld neben den Wiederholungen ein — das hilft dir später, deine Trainingsintensität über die Zeit nachzuvollziehen.
+    <!-- Stand früher als dauerhaft ausgeklappter Textblock unter jeder Einheit. Man liest ihn
+         einmal und scrollt ihn danach hundertmal weg — deshalb jetzt zugeklappt wie der
+         wissenschaftliche Hintergrund direkt darunter. -->
+    <div class="science-card" id="notesCard">
+      <div class="science-head" id="notesToggle">
+        <span>❓ Hinweise & RIR erklärt</span>
+        <span class="science-chevron" id="notesChevron">▾</span>
+      </div>
+      <div class="science-body" id="notesBody" style="display:none;">
+        <p><strong>Grundübungen</strong> mit 1–2 Wiederholungen im Tank (RIR 1–2) trainieren. Isolationsübungen nahe ans Muskelversagen. Gewicht steigern, sobald die obere Wiederholungszahl in allen Sätzen erreicht wird.</p>
+        <p><strong>RIR (Reps in Reserve)</strong> = wie viele Wiederholungen du an dem Satz theoretisch noch geschafft hättest. RIR 2 = noch 2 Wiederholungen möglich gewesen, RIR 0 = keine mehr. Trag den Wert im "@"-Feld neben den Wiederholungen ein — das hilft dir später, deine Trainingsintensität über die Zeit nachzuvollziehen.</p>
+      </div>
     </div>
 
     <div class="science-card" id="scienceCard">
@@ -2480,6 +2529,8 @@ let openPlates = {};
 let plateWeightOverride = {};
 let openSuperset = {};
 let openSetNote = {};
+let openExMenu = {};      // "Mehr"-Menü je Übungskarte
+let uebersichtOffen = false;   // Sitzungsübersicht über der aktuellen Übung
 let swapSearch = {};
 let builderDraft = null;
 const RING_CIRC = 2 * Math.PI * 42;
@@ -2847,13 +2898,19 @@ function exportTrainingPDF(){
 }
 document.getElementById("exportPdfBtn").onclick = exportTrainingPDF;
 
-document.getElementById("scienceToggle").onclick = function(){
-  const body = document.getElementById("scienceBody");
-  const chevron = document.getElementById("scienceChevron");
-  const isOpen = body.style.display !== "none";
-  body.style.display = isOpen ? "none" : "block";
-  chevron.classList.toggle("open", !isOpen);
-};
+// Ein Aufklapper für beide Textkarten unter dem Trainingsplan, statt zweimal derselbe Code.
+[["scienceToggle", "scienceBody", "scienceChevron"],
+ ["notesToggle", "notesBody", "notesChevron"]].forEach(function(ids){
+  const kopf = document.getElementById(ids[0]);
+  if(!kopf) return;
+  kopf.onclick = function(){
+    const body = document.getElementById(ids[1]);
+    const chevron = document.getElementById(ids[2]);
+    const isOpen = body.style.display !== "none";
+    body.style.display = isOpen ? "none" : "block";
+    chevron.classList.toggle("open", !isOpen);
+  };
+});
 
 function getAllPlans(){ return [DEFAULT_PLAN, PPL_PLAN, UPPER_LOWER_PLAN, PPL_UL_PLAN, CALISTHENICS_PLAN].concat(state.customPlans); }
 function getPlanById(id){ return getAllPlans().find(function(p){ return p.id === id; }) || DEFAULT_PLAN; }
@@ -2865,10 +2922,20 @@ function activeDayOrder(){ return getActivePlan().dayOrder; }
 // der feste Plan bleibt unverändert, das nächste Mal sind wieder alle Übungen da. Beim
 // Abschließen der Einheit wird die Markierung für die Übungen dieses Tages automatisch
 // zurückgesetzt (siehe finishSession).
-function isSkippedToday(exId){ return !!(state.skippedExercises && state.skippedExercises[exId]); }
+// Der Knopf verspricht "für heute überspringen" — bisher wurde aber nur ein "true" gemerkt
+// und erst beim Abschließen der Einheit wieder entfernt. Wer eine Einheit nie abschloss, hatte
+// die Übung damit auf Dauer ausgeblendet. Jetzt steht das Datum drin und zählt nur für den Tag,
+// an dem übersprungen wurde. Altbestand mit "true" gilt weiterhin als übersprungen und wird
+// beim nächsten Abschließen aufgeräumt.
+function isSkippedToday(exId){
+  const wert = state.skippedExercises && state.skippedExercises[exId];
+  if(!wert) return false;
+  if(wert === true) return true;
+  return wert === todayKey();
+}
 function skipExerciseToday(id){
   if(!state.skippedExercises) state.skippedExercises = {};
-  state.skippedExercises[id] = true;
+  state.skippedExercises[id] = todayKey();
   saveState();
   renderAll();
   showToast("Übung für heute übersprungen");
@@ -3316,7 +3383,7 @@ function getProgressionSuggestionWeight(ex){
   const reps = topSets.map(function(s){ return parseInt(s.reps,10); }).filter(function(r){ return !isNaN(r); });
 
   if(!reps.length){
-    return { text: "Letztes Training: " + topWeight + "kg geloggt. Trag heute auch die Wiederholungen ein, damit ich dir eine Empfehlung geben kann.", type: "neutral" };
+    return { text: "Zuletzt: " + topWeight + "kg geloggt. Trag heute auch die Wiederholungen ein, damit ich dir eine Empfehlung geben kann.", type: "neutral" };
   }
 
   // RIR (Reps in Reserve) der Top-Sätze mitberücksichtigen: wer bei gleicher Leistung noch
@@ -3339,7 +3406,7 @@ function getProgressionSuggestionWeight(ex){
     }
     const nextWeight = Math.round((topWeight + increment) * 2) / 2;
     return {
-      text: "Letztes Training: " + topWeight + "kg × " + repsTxt + rirTxt + " — " + why + ". Versuche heute " + nextWeight + "kg.",
+      text: "Zuletzt: " + topWeight + "kg × " + repsTxt + rirTxt + " — " + why + ". Versuche heute " + nextWeight + "kg.",
       type: "up"
     };
   }
@@ -3348,7 +3415,7 @@ function getProgressionSuggestionWeight(ex){
   // das Gewicht steigen muss — erst die Wiederholungen ausschöpfen.
   if(avgRir !== null && avgRir >= 3){
     return {
-      text: "Letztes Training: " + topWeight + "kg × " + repsTxt + rirTxt + " — da war noch ordentlich Reserve. Bleib bei " + topWeight + "kg und geh näher ans Limit (Ziel " + range.min + "–" + range.max + " Wdh. bei RIR 1–2).",
+      text: "Zuletzt: " + topWeight + "kg × " + repsTxt + rirTxt + " — da war noch ordentlich Reserve. Bleib bei " + topWeight + "kg und geh näher ans Limit (Ziel " + range.min + "–" + range.max + " Wdh. bei RIR 1–2).",
       type: "up"
     };
   }
@@ -3370,14 +3437,14 @@ function getProgressionSuggestionWeight(ex){
         }
       }
       return {
-        text: "Letztes Training: " + topWeight + "kg × " + repsTxt + " (weniger als davor). Gewicht erstmal halten und Wiederholungen wieder steigern.",
+        text: "Zuletzt: " + topWeight + "kg × " + repsTxt + " (weniger als davor). Gewicht erstmal halten und Wiederholungen wieder steigern.",
         type: "down"
       };
     }
   }
 
   return {
-    text: "Letztes Training: " + topWeight + "kg × " + repsTxt + rirTxt + " (Ziel " + range.min + "–" + range.max + "). Versuche heute erneut " + topWeight + "kg mit mehr Wiederholungen.",
+    text: "Zuletzt: " + topWeight + "kg × " + repsTxt + rirTxt + " (Ziel " + range.min + "–" + range.max + "). Versuche heute erneut " + topWeight + "kg mit mehr Wiederholungen.",
     type: "neutral"
   };
 }
@@ -3406,18 +3473,18 @@ function getProgressionSuggestionBodyweight(ex){
     if(usesAddedWeight){
       const nextAdded = Math.round((topAdded + 2.5) * 2) / 2;
       return {
-        text: "Letztes Training: " + addedTxt + topReps + " Wdh. — oberes Ende (" + range.max + ") mit Zusatzgewicht erreicht. Versuche heute +" + nextAdded + "kg.",
+        text: "Zuletzt: " + addedTxt + topReps + " Wdh. — oberes Ende (" + range.max + ") mit Zusatzgewicht erreicht. Versuche heute +" + nextAdded + "kg.",
         type: "up"
       };
     }
     return {
-      text: "Letztes Training: " + topReps + " Wdh. — oberes Ende (" + range.max + ") ohne Zusatzgewicht erreicht. Zeit für den nächsten Schritt: ein leichtes Zusatzgewicht (z. B. +2,5kg) oder eine schwerere Variante.",
+      text: "Zuletzt: " + topReps + " Wdh. — oberes Ende (" + range.max + ") ohne Zusatzgewicht erreicht. Zeit für den nächsten Schritt: ein leichtes Zusatzgewicht (z. B. +2,5kg) oder eine schwerere Variante.",
       type: "up"
     };
   }
   if(topReps < range.min){
     return {
-      text: "Letztes Training: " + addedTxt + topReps + " Wdh. (Ziel " + range.min + "–" + range.max + ") — noch unter der Zielspanne. Beim nächsten Mal 1–2 Wiederholungen mehr anstreben, notfalls die Pause etwas verlängern.",
+      text: "Zuletzt: " + addedTxt + topReps + " Wdh. (Ziel " + range.min + "–" + range.max + ") — noch unter der Zielspanne. Beim nächsten Mal 1–2 Wiederholungen mehr anstreben, notfalls die Pause etwas verlängern.",
       type: "neutral"
     };
   }
@@ -3427,13 +3494,13 @@ function getProgressionSuggestionBodyweight(ex){
     const prevTop = prevReps.length ? Math.max.apply(null, prevReps) : null;
     if(prevTop !== null && topReps < prevTop && !usesAddedWeight){
       return {
-        text: "Letztes Training: " + topReps + " Wdh. (weniger als davor mit " + prevTop + "). Wiederholungen sind gesunken — evtl. mehr Erholung einplanen oder kurz eine leichtere Variante wählen.",
+        text: "Zuletzt: " + topReps + " Wdh. (weniger als davor mit " + prevTop + "). Wiederholungen sind gesunken — evtl. mehr Erholung einplanen oder kurz eine leichtere Variante wählen.",
         type: "down"
       };
     }
   }
   return {
-    text: "Letztes Training: " + addedTxt + topReps + " Wdh. (Ziel " + range.min + "–" + range.max + "). Versuche heute erneut, näher ans obere Ende zu kommen.",
+    text: "Zuletzt: " + addedTxt + topReps + " Wdh. (Ziel " + range.min + "–" + range.max + "). Versuche heute erneut, näher ans obere Ende zu kommen.",
     type: "neutral"
   };
 }
@@ -3452,7 +3519,7 @@ function getProgressionSuggestionHold(ex){
 
   if(topSeconds >= range.max){
     return {
-      text: "Letztes Training: " + topSeconds + " Sek. gehalten — oberes Ende (" + range.max + " Sek.) erreicht. Versuche heute 5 Sek. länger zu halten oder steig auf die nächste Progression um (z. B. Tuck → Advanced Tuck).",
+      text: "Zuletzt: " + topSeconds + " Sek. gehalten — oberes Ende (" + range.max + " Sek.) erreicht. Versuche heute 5 Sek. länger zu halten oder steig auf die nächste Progression um (z. B. Tuck → Advanced Tuck).",
       type: "up"
     };
   }
@@ -3462,13 +3529,13 @@ function getProgressionSuggestionHold(ex){
     const prevTop = prevSecs.length ? Math.max.apply(null, prevSecs) : null;
     if(prevTop !== null && topSeconds < prevTop){
       return {
-        text: "Letztes Training: " + topSeconds + " Sek. (weniger als davor mit " + prevTop + " Sek.). Evtl. mehr Erholung zwischen den Einheiten einplanen.",
+        text: "Zuletzt: " + topSeconds + " Sek. (weniger als davor mit " + prevTop + " Sek.). Evtl. mehr Erholung zwischen den Einheiten einplanen.",
         type: "down"
       };
     }
   }
   return {
-    text: "Letztes Training: " + topSeconds + " Sek. gehalten (Ziel " + range.min + "–" + range.max + " Sek.). Versuche heute erneut, etwas länger zu halten.",
+    text: "Zuletzt: " + topSeconds + " Sek. gehalten (Ziel " + range.min + "–" + range.max + " Sek.). Versuche heute erneut, etwas länger zu halten.",
     type: "neutral"
   };
 }
@@ -4823,24 +4890,45 @@ function renderContent(){
   const dayColor = dayColorIndex();
   const current = list[currentExerciseIndex];
 
-  const stepNav = document.createElement("div");
-  stepNav.className = "step-nav";
-  stepNav.innerHTML = '<span class="step-progress-text">Übung ' + (currentExerciseIndex+1) + ' von ' + list.length +
-    (current.groupName !== "Übungen" ? (' · ' + current.groupName) : "") + '</span>';
-  el.appendChild(stepNav);
+  // Früher standen hier zehn nummerierte Punkte. Sie zeigten dasselbe wie der Fortschrittsring
+  // darüber, verrieten aber nicht, welche Übung sich hinter welcher Nummer verbirgt. Jetzt
+  // steht dort eine Zeile, die sich zur vollständigen Liste mit Namen aufklappen lässt —
+  // eingeklappt weniger Elemente als vorher, aufgeklappt deutlich mehr Übersicht.
+  const fertig = list.filter(function(item){ return isEntryDone(item.ex); }).length;
+  const uebersicht = document.createElement("button");
+  uebersicht.type = "button";
+  uebersicht.className = "session-overview-head" + (uebersichtOffen ? " open" : "");
+  uebersicht.setAttribute("aria-expanded", uebersichtOffen ? "true" : "false");
+  uebersicht.innerHTML =
+    '<span class="so-pos">Übung ' + (currentExerciseIndex + 1) + ' von ' + list.length + '</span>' +
+    '<span class="so-name">' + escapeHtml(exerciseNameById(current.ex.id) || current.ex.name) + '</span>' +
+    '<span class="so-count">' + fertig + '/' + list.length + ' ✓</span>' +
+    '<span class="so-chevron">▾</span>';
+  uebersicht.onclick = function(){ uebersichtOffen = !uebersichtOffen; renderContent(); };
+  el.appendChild(uebersicht);
 
-  const stepDots = document.createElement("div");
-  stepDots.className = "step-dots";
-  list.forEach(function(item, i){
-    const dot = document.createElement("div");
-    const isDone = isEntryDone(item.ex);
-    dot.className = "step-dot" + (i === currentExerciseIndex ? " active" : "") + (isDone ? " done" : "");
-    dot.textContent = String(i+1);
-    dot.title = item.ex.name;
-    dot.onclick = function(){ currentExerciseIndex = i; renderContent(); scrollToCurrentExercise(); };
-    stepDots.appendChild(dot);
-  });
-  el.appendChild(stepDots);
+  if(uebersichtOffen){
+    const liste = document.createElement("div");
+    liste.className = "session-overview-list";
+    list.forEach(function(item, i){
+      const isDone = isEntryDone(item.ex);
+      const zeile = document.createElement("button");
+      zeile.type = "button";
+      zeile.className = "so-row" + (i === currentExerciseIndex ? " active" : "") + (isDone ? " done" : "");
+      zeile.innerHTML =
+        '<span class="so-nr">' + (isDone ? "✓" : (i + 1)) + '</span>' +
+        '<span class="so-row-name">' + escapeHtml(exerciseNameById(item.ex.id) || item.ex.name) + '</span>' +
+        '<span class="so-row-sets">' + escapeHtml(item.ex.sets || "") + '</span>';
+      zeile.onclick = function(){
+        currentExerciseIndex = i;
+        uebersichtOffen = false;
+        renderContent();
+        scrollToCurrentExercise();
+      };
+      liste.appendChild(zeile);
+    });
+    el.appendChild(liste);
+  }
 
   buildExerciseCard(current.ex, dayColor, el);
 
@@ -4902,66 +4990,73 @@ function buildExerciseCard(ex, dayColor, el){
           (trend ? ('<span class="tag ' + trend.cls + '">' + trend.symbol + '</span>') : "") +
           (supersetPartner ? ('<span class="tag">🔗 ' + escapeHtml(supersetPartner) + '</span>') : "") +
         '</div>' +
-        (lastSession ? ('<p class="ex-last">Letztes Training: ' + formatSetsForList(lastSession, ex) + '</p>') : '<p class="ex-last ex-last-empty">Noch keine Einheit geloggt — leg direkt los.</p>');
+        // Die Werte der letzten Einheit standen hier früher als eine lange Zeile — und
+        // gleich darunter im Progressionsvorschlag ein zweites Mal. Sie stehen jetzt
+        // satzweise als grauer Vorschlag direkt in den Feldern, wo man sie beim Eintragen
+        // tatsächlich braucht. Hier bleibt nur der Fall "noch nie gemacht".
+        (lastSession ? "" : '<p class="ex-last ex-last-empty">Noch keine Einheit geloggt — leg direkt los.</p>');
 
+      // Bis hierher standen acht unbeschriftete Symbole senkrecht am rechten Rand. Sie haben
+      // der Übungskarte die halbe Breite genommen, und was 🔗 oder 🔥 tun, weiß niemand
+      // auswendig. Sichtbar bleiben deshalb nur die zwei, die man mitten im Satz braucht;
+      // alles andere steckt hinter "Mehr" — dort dafür mit Klartext statt nur mit Symbol.
       const actions = document.createElement("div");
       actions.className = "ex-actions";
       const restBtn = document.createElement("div");
       restBtn.className = "icon-btn";
       restBtn.textContent = "⏱";
       restBtn.title = "Pausentimer starten";
+      restBtn.setAttribute("role", "button");
+      restBtn.setAttribute("aria-label", "Pausentimer starten");
       restBtn.onclick = function(){ startRestTimer(getDefaultRestSeconds(ex), ex.id); };
       const histBtn = document.createElement("div");
       histBtn.className = "icon-btn";
       histBtn.textContent = "📈";
       histBtn.title = "Verlauf anzeigen";
+      histBtn.setAttribute("role", "button");
+      histBtn.setAttribute("aria-label", "Verlauf anzeigen");
       histBtn.onclick = function(){ toggleHistory(ex.id); };
-      const infoBtn = document.createElement("div");
-      infoBtn.className = "icon-btn";
-      infoBtn.textContent = "💪";
-      infoBtn.title = "Muskel & Video anzeigen";
-      infoBtn.onclick = function(){ toggleInfo(ex.id); };
-      const warmupBtn = document.createElement("div");
-      warmupBtn.className = "icon-btn";
-      warmupBtn.textContent = "🔥";
-      warmupBtn.title = "Aufwärmsätze berechnen";
-      warmupBtn.onclick = function(){ toggleWarmup(ex.id); };
-      const swapBtn = document.createElement("div");
-      swapBtn.className = "icon-btn";
-      swapBtn.textContent = "🔄";
-      swapBtn.title = "Übung austauschen";
-      swapBtn.onclick = function(){ toggleSwap(ex.id); };
-      const platesBtn = document.createElement("div");
-      platesBtn.className = "icon-btn";
-      platesBtn.textContent = "🏋";
-      platesBtn.title = "Hantelscheiben berechnen";
-      platesBtn.onclick = function(){ togglePlates(ex.id); };
-      const supersetBtn = document.createElement("div");
-      supersetBtn.className = "icon-btn";
-      supersetBtn.textContent = "🔗";
-      supersetBtn.title = "Supersatz verknüpfen";
-      supersetBtn.onclick = function(){ toggleSuperset(ex.id); };
-      const skipBtn = document.createElement("div");
-      skipBtn.className = "icon-btn";
-      skipBtn.textContent = "⏭";
-      skipBtn.title = "Für heute überspringen (Plan bleibt unverändert)";
-      skipBtn.onclick = function(){ skipExerciseToday(ex.id); };
+      const moreBtn = document.createElement("div");
+      moreBtn.className = "icon-btn" + (openExMenu[ex.id] ? " active" : "");
+      moreBtn.textContent = "⋯";
+      moreBtn.title = "Weitere Funktionen";
+      moreBtn.setAttribute("role", "button");
+      moreBtn.setAttribute("aria-label", "Weitere Funktionen zu " + ex.name);
+      moreBtn.setAttribute("aria-expanded", openExMenu[ex.id] ? "true" : "false");
+      moreBtn.onclick = function(){ openExMenu[ex.id] = !openExMenu[ex.id]; renderContent(); };
       actions.appendChild(restBtn);
       actions.appendChild(histBtn);
-      actions.appendChild(infoBtn);
-      // Aufwärmsätze (auf Basis eines kg-Arbeitsgewichts) ergeben bei Halte-Übungen keinen
-      // Sinn — bei Körpergewichtsübungen weiterhin sinnvoll (Basis ist dann die effektive Last).
-      if(exerciseMode(ex) !== "hold") actions.appendChild(warmupBtn);
-      actions.appendChild(swapBtn);
-      // Hantelscheiben-Rechner nur bei echten Gewichtsübungen — bei Körpergewicht/Halten
-      // gibt es keine Langhantel zu beladen.
-      if(exerciseMode(ex) === "weight") actions.appendChild(platesBtn);
-      actions.appendChild(supersetBtn);
-      actions.appendChild(skipBtn);
+      actions.appendChild(moreBtn);
 
       top.appendChild(info);
       top.appendChild(actions);
       card.appendChild(top);
+
+      if(openExMenu[ex.id]){
+        const menu = document.createElement("div");
+        menu.className = "ex-menu";
+        const eintraege = [
+          { icon:"💪", label:"Muskel & Video", fn:function(){ toggleInfo(ex.id); } },
+          // Aufwärmsätze rechnen mit einem kg-Arbeitsgewicht — bei Halte-Übungen gibt es das
+          // nicht. Bei Körpergewichtsübungen schon (Basis ist dann die effektive Last).
+          exMode !== "hold" ? { icon:"🔥", label:"Aufwärmsätze berechnen", fn:function(){ toggleWarmup(ex.id); } } : null,
+          { icon:"🔄", label:"Übung austauschen", fn:function(){ toggleSwap(ex.id); } },
+          // Scheibenrechner nur bei echten Gewichtsübungen — sonst gibt es keine Hantel.
+          exMode === "weight" ? { icon:"🏋", label:"Hantelscheiben berechnen", fn:function(){ togglePlates(ex.id); } } : null,
+          { icon:"🔗", label:"Supersatz verknüpfen", fn:function(){ toggleSuperset(ex.id); } },
+          { icon:"⏭", label:"Für heute überspringen", hint:"Der Plan bleibt unverändert", fn:function(){ skipExerciseToday(ex.id); } },
+        ].filter(Boolean);
+        eintraege.forEach(function(e){
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "ex-menu-item";
+          b.innerHTML = '<span class="ex-menu-icon">' + e.icon + '</span><span class="ex-menu-text">' +
+            escapeHtml(e.label) + (e.hint ? ('<span class="ex-menu-hint">' + escapeHtml(e.hint) + '</span>') : "") + '</span>';
+          b.onclick = function(){ openExMenu[ex.id] = false; e.fn(); };
+          menu.appendChild(b);
+        });
+        card.appendChild(menu);
+      }
 
       if(lastSession){
         const hasEmptySet = entry.sets.some(function(s){ return !setHasData(ex, s); });
@@ -5001,6 +5096,15 @@ function buildExerciseCard(ex, dayColor, el){
         card.appendChild(weakTip);
       }
 
+      // Die Erklärung der grauen Zahlen steht nur an der ersten Übung — dort schaut man beim
+      // Start der Einheit hin. An jeder der zehn Karten wäre sie eine Wiederholung zu viel.
+      if(lastSession && currentExerciseIndex === 0){
+        const legende = document.createElement("p");
+        legende.className = "set-legende";
+        legende.textContent = "Grau = deine Werte vom letzten Mal. Tipp einfach drüber.";
+        card.appendChild(legende);
+      }
+
       const setRows = document.createElement("div");
       setRows.className = "set-rows";
       // Beschriftungen der Satz-Zeile richten sich nach dem Übungs-Modus (exMode, oben
@@ -5011,6 +5115,13 @@ function buildExerciseCard(ex, dayColor, el){
       entry.sets.forEach(function(s, sIdx){
         const row = document.createElement("div");
         row.className = "set-row" + (s.done ? " checked" : "");
+
+        // Der gleich nummerierte Satz aus der letzten Einheit dient als Vorschlag: Er steht
+        // grau im leeren Feld, sodass man beim Eintragen direkt sieht, was zu schlagen ist,
+        // statt es sich merken oder oben nachlesen zu müssen. Sobald etwas eingetippt ist,
+        // verschwindet der Vorschlag von selbst — Platzhalter sind nie gespeicherte Werte.
+        const vorher = (lastSession && lastSession.sets && lastSession.sets[sIdx]) || null;
+        if(vorher) row.classList.add("hat-vorschlag");
 
         // Satz-Nummer doppelt als Notiz-Schalter — hält die enge Satz-Zeile frei von
         // einem weiteren Knopf. Ein Punkt zeigt, dass zu diesem Satz eine Notiz existiert.
@@ -5026,7 +5137,7 @@ function buildExerciseCard(ex, dayColor, el){
         weightInput.type = "number";
         weightInput.inputMode = "decimal";
         weightInput.className = "set-input";
-        weightInput.placeholder = exMode === "weight" ? "–" : "+0";
+        weightInput.placeholder = (vorher && vorher.weight) || (exMode === "weight" ? "–" : "+0");
         weightInput.title = exMode === "weight" ? "" : "Zusatzgewicht (0 = nur Körpergewicht, negativ = Bandunterstützung)";
         weightInput.value = s.weight || "";
         weightInput.oninput = function(){ setSetWeight(ex, sIdx, weightInput.value); };
@@ -5050,7 +5161,7 @@ function buildExerciseCard(ex, dayColor, el){
         repsInput.type = "number";
         repsInput.inputMode = "numeric";
         repsInput.className = "set-input reps-input";
-        repsInput.placeholder = entry.repsHint || (exMode === "hold" ? "Sek." : "–");
+        repsInput.placeholder = (vorher && vorher.reps) || entry.repsHint || (exMode === "hold" ? "Sek." : "–");
         repsInput.value = s.reps || "";
         repsInput.oninput = function(){ setSetReps(ex, sIdx, repsInput.value); };
         repsInput.onblur = function(){ if(maybeAutoCheckSet(ex, sIdx)){ renderContent(); renderProgressRing(); } };
@@ -5069,7 +5180,7 @@ function buildExerciseCard(ex, dayColor, el){
           rirInput.min = "0";
           rirInput.max = "10";
           rirInput.className = "set-input rir-input";
-          rirInput.placeholder = "RIR";
+          rirInput.placeholder = (vorher && vorher.rir) || "RIR";
           rirInput.title = "RIR = Reps in Reserve (noch mögliche Wiederholungen)";
           rirInput.value = s.rir || "";
           rirInput.oninput = function(){ setSetRir(ex, sIdx, rirInput.value); };
@@ -8418,7 +8529,7 @@ const NAV_GROUPS = {
 // diesen Bereich dauerhaft weg (kein nerviges Wiederauftauchen).
 const FRAME_HINTS = {
   "frame-home": "Dein Tagesüberblick: Fortschritts-Ring, Wochen-Statistiken und deine letzten Rekorde auf einen Blick.",
-  "frame-plan": "Wähle oben deinen Trainingsplan, hake Sätze ab und tippe auf eine Übung für Verlauf, Muskel-Info und Video-Anleitung. Übungen tauschen oder für heute überspringen geht über die kleinen Symbole an jeder Übung.",
+  "frame-plan": "Trag deine Sätze ein — die grauen Zahlen zeigen, was du beim letzten Mal geschafft hast. Über \"Übung 1 von …\" siehst du die ganze Einheit auf einen Blick, über \"⋯\" an der Übung findest du Muskel-Info, Aufwärmsätze, Übungstausch und mehr.",
   "frame-progress-overview": "Dein Volumen-Verlauf über Zeit sowie Fortschritt bei den großen Grundübungen im Blick behalten.",
   "frame-calendar": "Dein Trainingskalender — tippe auf einen Tag für Details, Notizen und was du an dem Tag trainiert hast.",
   "frame-progress": "Dein Kraft-Rang je Grundübung im Vergleich zu deinem Körpergewicht, plus Körpermaße-Verlauf.",
