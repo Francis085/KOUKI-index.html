@@ -956,6 +956,16 @@
     font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;min-height:var(--tap-min,44px);
   }
   .xp-chevron{font-size:15px;display:flex;transition:transform .18s;flex-shrink:0;}
+  /* Umschalter für Inhalte, die man selten braucht: Einzelwerte unter einem Verlauf,
+     das manuelle Eintragen einer Mahlzeit. */
+  .werte-toggle{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    margin-top:10px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm,12px);
+    background:var(--pastel-overlay);color:var(--ink);cursor:pointer;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;min-height:var(--tap-min,44px);
+  }
+  .werte-chevron{font-size:15px;display:flex;transition:transform .18s;flex-shrink:0;}
+  .werte-chevron.open{transform:rotate(180deg);}
   .xp-chevron.open{transform:rotate(180deg);}
   .xp-quellen{display:flex;flex-direction:column;gap:3px;margin-top:8px;}
   .xp-quellen-gruppe{
@@ -1449,8 +1459,12 @@
         <p class="measure-label">Nochmal eintragen — ein Tipp genügt</p>
         <div class="filter-row" id="recentFoodsRow" style="margin-bottom:0;"></div>
       </div>
-      <div class="measure-group" style="margin-top:12px;">
-        <p class="measure-label">Manuell hinzufügen</p>
+      <!-- Drei Felder standen hier dauerhaft offen, obwohl direkt darüber die Schnellauswahl
+           liegt: Wer etwas schon einmal gegessen hat, tippt einen Chip an und ist fertig.
+           Das Formular ist deshalb zugeklappt und einen Tipp entfernt. -->
+      <button type="button" class="werte-toggle" id="manuellToggle" aria-expanded="false"
+              style="margin-top:12px;">Etwas anderes eintragen<span class="werte-chevron" data-icon="pfeilRunter"></span></button>
+      <div class="measure-group" id="manuellGroup" style="margin-top:8px;display:none;">
         <div class="measure-input-row" style="margin-bottom:8px;">
           <input type="text" id="manualFoodName" placeholder="z. B. Apfel">
         </div>
@@ -2602,6 +2616,8 @@ let openSuperset = {};
 let openSetNote = {};
 let openExMenu = {};      // "Mehr"-Menü je Übungskarte
 let uebersichtOffen = false;   // Sitzungsübersicht über der aktuellen Übung
+let bwWerteOffen = false;      // Einzelwerte unter dem Gewichtsverlauf
+let manuellOffen = false;      // Formular "Mahlzeit manuell hinzufügen"
 let swapSearch = {};
 let builderDraft = null;
 const RING_CIRC = 2 * Math.PI * 42;
@@ -3799,23 +3815,42 @@ function getProgressionSuggestionHold(ex){
     type: "neutral"
   };
 }
-function sparklineSVG(points, color){
+/* Verlaufslinie mit Beschriftung an beiden Enden.
+   Zwei Dinge waren hier vorher nicht in Ordnung:
+   1. Die Linie war eine nackte Kurve ohne eine einzige Zahl — man sah "es geht hoch", aber
+      nicht von wo nach wo. Jetzt stehen Start- und Endwert an den Enden.
+   2. preserveAspectRatio="none" hat den Inhalt ungleichmäßig gestreckt: Der Endpunkt wurde
+      dadurch zur Ellipse, und eine Beschriftung wäre in die Breite gezogen worden. Jetzt
+      skaliert die Zeichnung gleichmäßig; die Linie füllt die Breite über eine an die
+      Kartenbreite angelehnte viewBox. */
+function sparklineSVG(points, color, einheit){
   const vals = points.map(function(v){ return parseFloat(v); }).filter(function(v){ return !isNaN(v); });
   if(vals.length < 2) return null;
-  const w = 260, h = 60, pad = 6;
+  const w = 300, h = 72, padL = 4, padR = 4, padT = 20, padB = 20;
   const min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
   const range = (max - min) || 1;
-  const stepX = (w - pad*2) / (vals.length - 1);
-  const coords = vals.map(function(v,i){
-    const x = pad + i*stepX;
-    const y = h - pad - ((v-min)/range) * (h - pad*2);
-    return [x,y];
+  const stepX = (w - padL - padR) / (vals.length - 1);
+  const coords = vals.map(function(v, i){
+    return [padL + i * stepX, h - padB - ((v - min) / range) * (h - padT - padB)];
   });
-  const path = coords.map(function(c,i){ return (i===0?"M":"L") + c[0].toFixed(1) + "," + c[1].toFixed(1); }).join(" ");
-  const last = coords[coords.length-1];
-  return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none">' +
+  const path = coords.map(function(c, i){ return (i === 0 ? "M" : "L") + c[0].toFixed(1) + "," + c[1].toFixed(1); }).join(" ");
+  const ersteC = coords[0], letzteC = coords[coords.length - 1];
+  const ersterWert = vals[0], letzterWert = vals[vals.length - 1];
+  const e = einheit || "";
+  // Beschriftungen weichen der Linie aus: steigt sie, steht der Startwert darunter und der
+  // Endwert darüber — sonst umgekehrt. So überdeckt keine Zahl die Kurve.
+  const steigt = letzterWert >= ersterWert;
+  const yStart = steigt ? (ersteC[1] + 15) : (ersteC[1] - 8);
+  const yEnde  = steigt ? (letzteC[1] - 9) : (letzteC[1] + 16);
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" role="img" ' +
+      'aria-label="Verlauf von ' + ersterWert + e + ' auf ' + letzterWert + e + '">' +
     '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-    '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="4" fill="' + color + '"/>' +
+    '<circle cx="' + ersteC[0].toFixed(1) + '" cy="' + ersteC[1].toFixed(1) + '" r="3" fill="' + color + '" opacity=".45"/>' +
+    '<circle cx="' + letzteC[0].toFixed(1) + '" cy="' + letzteC[1].toFixed(1) + '" r="4.5" fill="' + color + '"/>' +
+    '<text x="' + ersteC[0].toFixed(1) + '" y="' + yStart.toFixed(1) + '" text-anchor="start" ' +
+      'font-size="10.5" fill="var(--ink-soft)">' + ersterWert + e + '</text>' +
+    '<text x="' + letzteC[0].toFixed(1) + '" y="' + yEnde.toFixed(1) + '" text-anchor="end" ' +
+      'font-size="11.5" font-weight="700" fill="' + color + '">' + letzterWert + e + '</text>' +
     '</svg>';
 }
 
@@ -3823,7 +3858,7 @@ function sparklineSVG(points, color){
 // für den Kalorien-Trend im Ernährungsbereich.
 function trendChartSVG(vals, goalValue, color){
   if(vals.length < 2) return null;
-  const w = 300, h = 110, padL = 8, padR = 8, padT = 22, padB = 10;
+  const w = 300, h = 118, padL = 8, padR = 8, padT = 22, padB = 18;
   const allVals = (goalValue !== null && goalValue !== undefined) ? vals.concat([goalValue]) : vals;
   const min = Math.min.apply(null, allVals), max = Math.max.apply(null, allVals);
   const range = (max - min) || 1;
@@ -3832,7 +3867,9 @@ function trendChartSVG(vals, goalValue, color){
   const coords = vals.map(function(v, i){ return [padL + i * stepX, yFor(v)]; });
   const path = coords.map(function(c, i){ return (i === 0 ? "M" : "L") + c[0].toFixed(1) + "," + c[1].toFixed(1); }).join(" ");
   const last = coords[coords.length - 1];
-  let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none">';
+  // Ohne preserveAspectRatio="none": sonst würde der Endpunkt zur Ellipse und die
+  // Beschriftung in die Breite gezogen.
+  let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '">';
   if(goalValue !== null && goalValue !== undefined){
     const gy = yFor(goalValue);
     svg += '<line x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (w - padR) + '" y2="' + gy.toFixed(1) + '" stroke="var(--ink-soft)" stroke-width="1.2" stroke-dasharray="4,4"/>';
@@ -3840,7 +3877,12 @@ function trendChartSVG(vals, goalValue, color){
   }
   svg += '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   svg += '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="4" fill="' + color + '"/>';
-  svg += '<text x="' + last[0].toFixed(1) + '" y="' + (last[1] - 9).toFixed(1) + '" text-anchor="end" font-size="10" font-weight="700" fill="' + color + '">' + Math.round(vals[vals.length - 1]) + '</text>';
+  // Der Endwert weicht der Linie aus: Kommt sie von oben, steht die Zahl darunter, sonst
+  // darüber. Ohne das lag sie bei einem fallenden letzten Abschnitt mitten auf der Kurve.
+  const vorletzte = coords[coords.length - 2];
+  const faellt = vorletzte && vorletzte[1] < last[1];
+  const yWert = faellt ? Math.min(h - 2, last[1] + 14) : Math.max(9, last[1] - 9);
+  svg += '<text x="' + last[0].toFixed(1) + '" y="' + yWert.toFixed(1) + '" text-anchor="end" font-size="10.5" font-weight="700" fill="' + color + '">' + Math.round(vals[vals.length - 1]) + '</text>';
   svg += '</svg>';
   return svg;
 }
@@ -5686,7 +5728,7 @@ function buildExerciseCard(ex, dayColor, el){
         let inner = "";
         inner += pr ? ('<p class="hist-pr">🏆 PR: ' + pr.weight + (pr.unit === "sek" ? ' Sek.' : 'kg') + ' am ' + formatDate(pr.date) + '</p>') : '<p class="hist-pr">Noch kein PR — schließe eine Einheit mit Wiederholungen/Sekunden &amp; Haken ab.</p>';
         if(hist.length >= 2){
-          const svg = sparklineSVG(hist.map(function(h){ return dayBestWeight(h, ex); }), "#38351f");
+          const svg = sparklineSVG(hist.map(function(h){ return dayBestWeight(h, ex); }), "var(--olive)", "kg");
           if(svg) inner += '<div class="hist-chart">' + svg + '</div>';
         }
         if(hist.length){
@@ -6270,13 +6312,23 @@ function renderBodyweight(){
   }
   const area = document.getElementById("bwChartArea");
   const pts = state.bodyweight.map(function(b){ return b.weight; });
-  const svg = pts.length >= 2 ? sparklineSVG(pts, "#38351f") : null;
+  const svg = pts.length >= 2 ? sparklineSVG(pts, "var(--olive)", " kg") : null;
   let html = svg ? ('<div class="bw-chart">' + svg + '</div>') : '<p class="bw-empty">Trage mindestens 2 Werte ein, um einen Verlauf zu sehen.</p>';
+  // Die Einzelwerte wiederholen als Rohdaten, was die Linie darüber schon zeigt. Sie bleiben
+  // erreichbar — aber eingeklappt, statt zwölf Zeilen Platz zu belegen.
   if(state.bodyweight.length){
-    const chips = state.bodyweight.slice().reverse().slice(0,12).map(function(b){ return '<span>' + formatDate(b.date) + ': ' + b.weight + 'kg</span>'; }).join("");
-    html += '<div class="hist-list" style="margin-top:10px;">' + chips + '</div>';
+    const chips = state.bodyweight.slice().reverse().slice(0, 12).map(function(b){
+      return '<span>' + formatDate(b.date) + ': ' + b.weight + 'kg</span>';
+    }).join("");
+    html += '<button type="button" class="werte-toggle" id="bwWerteToggle" aria-expanded="' +
+      (bwWerteOffen ? 'true' : 'false') + '">' +
+      (bwWerteOffen ? 'Einzelwerte ausblenden' : 'Einzelwerte anzeigen (' + state.bodyweight.length + ')') +
+      '<span class="werte-chevron' + (bwWerteOffen ? ' open' : '') + '">' + icon("pfeilRunter") + '</span></button>';
+    if(bwWerteOffen) html += '<div class="hist-list" style="margin-top:8px;">' + chips + '</div>';
   }
   area.innerHTML = html;
+  const wt = document.getElementById("bwWerteToggle");
+  if(wt) wt.onclick = function(){ bwWerteOffen = !bwWerteOffen; renderBodyweight(); };
 }
 document.getElementById("bwSave").onclick = async function(){
   const input = document.getElementById("bwInput");
@@ -6484,7 +6536,7 @@ function renderProgressOverview(){
   const bwInRange = state.bodyweight.filter(function(b){ return b.date >= start && b.date <= end; });
   const bwArea = document.getElementById("progressBwArea");
   if(bwInRange.length >= 2){
-    const svg = sparklineSVG(bwInRange.map(function(b){ return b.weight; }), "#38351f");
+    const svg = sparklineSVG(bwInRange.map(function(b){ return b.weight; }), "var(--olive)", " kg");
     const first = bwInRange[0].weight, last = bwInRange[bwInRange.length - 1].weight;
     const diff = Math.round((last - first) * 10) / 10;
     bwArea.innerHTML = (svg ? ('<div class="bw-chart">' + svg + '</div>') : "") +
@@ -6550,7 +6602,7 @@ function renderMeasureCharts(){
     const list = state.measurements[k] || [];
     if(list.length < 2) return "";
     const vals = list.map(function(m){ return m.value; });
-    const svg = sparklineSVG(vals, "var(--olive)");
+    const svg = sparklineSVG(vals, "var(--olive)", " cm");
     if(!svg) return "";
     const first = vals[0], last = vals[vals.length - 1];
     const diff = Math.round((last - first) * 10) / 10;
@@ -6842,6 +6894,16 @@ function renderNutritionLog(){
   renderRecentFoods();
   renderNutritionTrend();
 }
+document.getElementById("manuellToggle").onclick = function(){
+  manuellOffen = !manuellOffen;
+  const gruppe = document.getElementById("manuellGroup");
+  const knopf = document.getElementById("manuellToggle");
+  gruppe.style.display = manuellOffen ? "block" : "none";
+  knopf.setAttribute("aria-expanded", manuellOffen ? "true" : "false");
+  knopf.querySelector(".werte-chevron").classList.toggle("open", manuellOffen);
+  knopf.childNodes[0].nodeValue = manuellOffen ? "Eingabe schließen" : "Etwas anderes eintragen";
+  if(manuellOffen) document.getElementById("manualFoodName").focus();
+};
 document.getElementById("manualFoodAddBtn").onclick = function(){
   const nameEl = document.getElementById("manualFoodName");
   const kcalEl = document.getElementById("manualFoodKcal");
@@ -7167,7 +7229,7 @@ function renderBmr(){
 
   const histArea = document.getElementById("bmrHistoryArea");
   if(state.bmrHistory.length >= 2){
-    const svg = sparklineSVG(state.bmrHistory.map(function(h){ return h.tdee; }), "#38351f");
+    const svg = sparklineSVG(state.bmrHistory.map(function(h){ return h.tdee; }), "var(--olive)", " kcal");
     const chips = state.bmrHistory.slice().reverse().slice(0,12).map(function(h){
       return '<span>' + formatDate(h.date) + ': ' + h.tdee + ' kcal</span>';
     }).join("");
