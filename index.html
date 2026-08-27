@@ -979,6 +979,63 @@
   .xp-total{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;color:var(--ink-soft);}
   .xp-head{flex-wrap:wrap;gap:6px;}
   .xp-rang-text{font-size:12px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5;font-style:italic;}
+
+  /* --- Kouki-Karten: Sammelkarten des Maskottchens, eine je Rang --------------------- */
+  .kouki-figur{display:block;width:100%;height:auto;}
+  .kk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:10px;}
+  .kk-karte{
+    position:relative;border:2px solid var(--line);border-radius:16px;padding:6px 6px 8px;
+    background:var(--surface);cursor:pointer;text-align:center;overflow:hidden;
+    font-family:'Inter',sans-serif;width:100%;
+  }
+  .kk-karte.frei{border-color:var(--olive);}
+  .kk-karte.aktiv{border-color:var(--olive);box-shadow:0 0 0 2px var(--olive) inset;}
+  .kk-bild{border-radius:11px;overflow:hidden;background:var(--kk-ton,#dfe6ea);}
+  .kk-name{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:12px;color:var(--text-strong);margin-top:5px;line-height:1.2;}
+  .kk-stufe{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-soft);margin-top:1px;}
+  .kk-schloss{
+    position:absolute;top:9px;right:9px;width:22px;height:22px;border-radius:50%;
+    background:var(--ink-soft);color:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;
+  }
+  .kk-jetzt{
+    position:absolute;top:9px;left:9px;background:var(--olive);color:#fff;border-radius:8px;
+    padding:2px 6px;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  }
+  /* Detailansicht einer Karte */
+  .kk-overlay{
+    position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
+    background:rgba(10,12,18,.72);padding:calc(var(--safe-top,0px) + 16px) 16px calc(var(--safe-bottom,0px) + 16px);
+  }
+  .kk-overlay.show{display:flex;}
+  .kk-dialog{
+    width:100%;max-width:330px;max-height:100%;overflow-y:auto;background:var(--surface);
+    border-radius:24px;padding:16px;text-align:center;box-shadow:var(--shadow-lg,0 18px 50px rgba(0,0,0,.35));
+  }
+  .kk-dialog-bild{border-radius:18px;overflow:hidden;background:var(--kk-ton,#dfe6ea);border:2px solid var(--line);}
+  .kk-dialog-name{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:22px;color:var(--text-strong);margin:12px 0 0;}
+  .kk-dialog-stufe{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--olive);font-weight:700;margin-top:2px;}
+  .kk-zeile{
+    display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);
+    padding:9px 2px 0;margin-top:10px;font-size:12.5px;color:var(--ink-soft);text-align:left;
+  }
+  .kk-zeile b{color:var(--text-strong);font-weight:700;text-align:right;}
+  .kk-spruch{font-size:12.5px;color:var(--ink-soft);font-style:italic;line-height:1.55;margin:12px 0 0;}
+  .kk-fortschritt{font-size:12px;color:var(--ink-soft);margin:10px 0 0;}
+  /* In der Aufstiegsfeier darf die Figur nicht die volle Breite fluten */
+  .kouki-feier{
+    width:210px;max-width:62vw;margin:0 auto;padding:8px;box-sizing:border-box;
+    background:var(--kk-ton,#dfe6ea);border:3px solid var(--surface);border-radius:22px;
+    box-shadow:0 14px 34px rgba(0,0,0,.28);
+    animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  /* Kouki im XP-Block der Startseite: der aktuelle Stand als tägliches Bild */
+  .xp-kouki{
+    flex:0 0 auto;width:58px;border-radius:14px;overflow:hidden;
+    background:var(--kk-ton,#dfe6ea);border:2px solid var(--line);cursor:pointer;padding:0;
+  }
+  .xp-oben{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .xp-oben .xp-head{flex:1 1 auto;min-width:0;margin-bottom:0;}
+
   .xp-quellen-toggle{
     display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
     margin-top:10px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm,12px);
@@ -1672,6 +1729,12 @@
       <div id="weekRecapArea"></div>
     </div>
 
+    <div class="rank-card" id="koukiKartenCard" style="margin-top:14px;">
+      <div class="rank-head"><span class="rank-title"><span class="ti-icon" data-icon="pokal"></span>Kouki-Karten</span></div>
+      <p class="rank-hint">Für jeden Rang gibt es eine Karte. Kouki wird von Stufe zu Stufe stärker und macht eine andere Übung — zum Antippen für die Details.</p>
+      <div class="kk-grid" id="koukiKartenGrid"></div>
+    </div>
+
     <div class="rank-card" id="rankCard" style="margin-top:14px;">
       <div class="rank-head">
         <span class="rank-title">Kraft-Rang</span>
@@ -1921,6 +1984,19 @@
   <div class="confetti-field" id="confettiField"></div>
   <button class="btn btn-primary" id="celebrateShareBtn" style="display:none;margin-top:16px;pointer-events:auto;">📤 Als Bild teilen</button>
   <button class="btn btn-ghost" id="celebrateCloseBtn" style="display:none;margin-top:8px;pointer-events:auto;">Schließen</button>
+</div>
+
+<!-- Detailansicht einer Kouki-Karte -->
+<div class="kk-overlay" id="koukiKarteOverlay" role="dialog" aria-modal="true" aria-labelledby="kkDialogName">
+  <div class="kk-dialog" id="koukiKarteDialog">
+    <div class="kk-dialog-bild" id="kkDialogBild"></div>
+    <h3 class="kk-dialog-name" id="kkDialogName">–</h3>
+    <p class="kk-dialog-stufe" id="kkDialogStufe">–</p>
+    <div id="kkDialogZeilen"></div>
+    <p class="kk-spruch" id="kkDialogSpruch"></p>
+    <p class="kk-fortschritt" id="kkDialogFortschritt"></p>
+    <button class="btn btn-ghost" id="kkDialogCloseBtn" style="width:100%;margin-top:14px;">Schließen</button>
+  </div>
 </div>
 
 <!-- Start-Bildschirm für frische Installationen: zeigt Logo + Markenname, bietet Registrierung
@@ -2839,6 +2915,9 @@ const ICON_PFADE = {
   kreuz:
     '<path d="M6.6 6.6 17.4 17.4"/>' +
     '<path d="M17.4 6.6 6.6 17.4"/>',
+  schloss:
+    '<rect class="ki-fill" x="4.4" y="10.4" width="15.2" height="10.4" rx="2.6"/>' +
+    '<path d="M8.2 10.4V7.6a3.8 3.8 0 0 1 7.6 0v2.8"/>',
 
 };
 // name: Schlüssel aus ICON_PFADE. zusatz: zusätzliche CSS-Klasse (z. B. für Größe oder Farbe).
@@ -4706,6 +4785,287 @@ function xpRang(level){
   return treffer;
 }
 
+/* ===== Kouki-Karten: das Maskottchen als Belohnung pro Rang ==============================
+   Für jeden der acht Ränge gibt es eine Sammelkarte. Der Keks aus dem Logo wird darauf von
+   Stufe zu Stufe muskulöser und macht eine andere Übung — sichtbarer Fortschritt, der nichts
+   mit Zahlen zu tun hat.
+   Die Figur ist gezeichnet (SVG), nicht als Bild eingebettet: Sie bleibt damit auf jedem
+   Display scharf, kostet praktisch keine Dateigröße und lässt sich für jede Stufe aus
+   denselben Bausteinen mit anderen Werten aufbauen, statt acht Bilder zu pflegen.
+   Palette direkt aus dem Logo abgetastet. */
+const KK = {
+  keks:"#f6ad6c", keksDunkel:"#e08f57", chip:"#814736", chipDunkel:"#442523",
+  linie:"#152134", trikot:"#e47340", hose:"#3d9996", schuh:"#f1f5f7",
+  metall:"#7d8894", metallD:"#4a5260", rot:"#ce4539", gold:"#f2c14b", weiss:"#ffffff",
+};
+// Grundmaße: Kopf (100,56) r33 · Schultern y104 · Torso 96..134 · Shorts bis 154 · Beine bis 184
+
+function kkGlied(p, dicke, farbe, extra){
+  return '<path d="' + p + '" fill="none" stroke="' + farbe + '" stroke-width="' + (dicke + (extra || 0)) +
+    '" stroke-linecap="round" stroke-linejoin="round"/>';
+}
+/* Gliedmaßen entstehen in zwei Durchgängen: erst alle Konturen, dann alle Füllungen. Nur so
+   verschmilzt der Bizepsbauch mit dem Arm — zeichnet man ihn samt eigener Kontur obendrauf,
+   sieht er aus wie ein aufgeklebter Ball statt wie ein Muskel. */
+function kkArm(s, e, h, dicke, bizR, faustR){
+  const p = "M" + s[0] + " " + s[1] + "L" + e[0] + " " + e[1] + "L" + h[0] + " " + h[1];
+  const bx = (s[0] + e[0]) / 2, by = (s[1] + e[1]) / 2;
+  const bw = (Math.atan2(e[1] - s[1], e[0] - s[0]) * 180 / Math.PI).toFixed(1);
+  const rx = (bizR * 1.2).toFixed(1);
+  const dreh = ' transform="rotate(' + bw + ' ' + bx + ' ' + by + ')"';
+  let out = kkGlied(p, dicke, KK.linie, 7) +
+    '<circle cx="' + h[0] + '" cy="' + h[1] + '" r="' + (faustR + 3.5) + '" fill="' + KK.linie + '"/>';
+  if(bizR > 0) out += '<ellipse cx="' + bx + '" cy="' + by + '" rx="' + (Number(rx) + 3.5) + '" ry="' + (bizR + 3.5) + '"' + dreh + ' fill="' + KK.linie + '"/>';
+  out += kkGlied(p, dicke, KK.keks) +
+    '<circle cx="' + h[0] + '" cy="' + h[1] + '" r="' + faustR + '" fill="' + KK.keks + '"/>';
+  if(bizR > 0){
+    out += '<ellipse cx="' + bx + '" cy="' + by + '" rx="' + rx + '" ry="' + bizR + '"' + dreh + ' fill="' + KK.keks + '"/>';
+    out += '<g' + dreh + '><path d="M' + (bx - bizR * 0.55).toFixed(1) + ' ' + (by + 1.5).toFixed(1) +
+      'q' + (bizR * 0.55).toFixed(1) + ' -' + (bizR * 0.8).toFixed(1) + ' ' + (bizR * 1.1).toFixed(1) +
+      ' -1" fill="none" stroke="' + KK.keksDunkel + '" stroke-width="2.8" stroke-linecap="round"/></g>';
+  }
+  out += '<path d="M' + (h[0] - faustR * 0.6).toFixed(1) + ' ' + (h[1] - faustR * 0.2).toFixed(1) +
+    'q' + (faustR * 0.6).toFixed(1) + ' ' + (faustR * 0.55).toFixed(1) + ' ' + (faustR * 1.2).toFixed(1) +
+    ' 0" fill="none" stroke="' + KK.keksDunkel + '" stroke-width="2.5" stroke-linecap="round"/>';
+  return out;
+}
+function kkSchuh(x, y, r){
+  const d = r > 0
+    ? "M" + (x - 9) + " " + (y - 10) + "h9q11 0 14 8q2 6-5 6h-18q-4 0-4-4z"
+    : "M" + (x + 9) + " " + (y - 10) + "h-9q-11 0-14 8q-2 6 5 6h18q4 0 4-4z";
+  return '<path d="' + d + '" fill="' + KK.schuh + '" stroke="' + KK.linie + '" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M' + (x - 8 * r) + ' ' + (y - 1) + 'h' + (16 * r) + '" stroke="' + KK.trikot + '" stroke-width="3.5" stroke-linecap="round"/>';
+}
+const KK_BEINE = {
+  stehen: { p:["M88 148L85 180", "M112 148L115 180"], s:[[83,186,-1],[117,186,1]] },
+  breit:  { p:["M88 148L74 180", "M112 148L126 180"], s:[[72,186,-1],[128,186,1]] },
+  beuge:  { p:["M88 148L64 164L80 182", "M112 148L136 164L120 182"], s:[[78,188,-1],[122,188,1]] },
+  sprung: { p:["M88 148L78 168L92 176", "M112 148L122 168L108 176"], s:[[90,180,-1],[110,180,1]] },
+};
+function kkBeine(art, dicke){
+  const b = KK_BEINE[art] || KK_BEINE.stehen;
+  let s = "";
+  b.p.forEach(function(p){ s += kkGlied(p, dicke, KK.linie, 7); });
+  b.p.forEach(function(p){ s += kkGlied(p, dicke, KK.keks); });
+  b.s.forEach(function(x){ s += kkSchuh(x[0], x[1], x[2]); });
+  return s;
+}
+const KK_CHIPS = [[80,32,5],[120,31,4.5],[73,60,4.5],[127,64,5],[100,26,4],[85,82,4],[114,84,4.5],[72,44,3.5],[127,44,4]];
+function kkKopf(){
+  let s = '<circle cx="100" cy="56" r="33" fill="' + KK.keks + '" stroke="' + KK.linie + '" stroke-width="5"/>';
+  s += '<path d="M67.5 62a33 33 0 0 0 65 0z" fill="' + KK.keksDunkel + '" opacity=".33"/>';
+  KK_CHIPS.forEach(function(c){
+    s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="' + c[2] + '" fill="' + KK.chip + '" stroke="' + KK.chipDunkel + '" stroke-width="2"/>';
+  });
+  return s;
+}
+function kkGesicht(stufe){
+  let s = "";
+  [[88,52,-1],[112,52,1]].forEach(function(a){
+    s += '<ellipse cx="' + a[0] + '" cy="' + a[1] + '" rx="8" ry="9.5" fill="' + KK.weiss + '" stroke="' + KK.linie + '" stroke-width="3"/>';
+    s += '<circle cx="' + (a[0] + a[2] * 1.5) + '" cy="' + (a[1] + 1.5) + '" r="4.2" fill="' + KK.linie + '"/>';
+    s += '<circle cx="' + (a[0] + a[2] * 3) + '" cy="' + (a[1] - 1.5) + '" r="1.7" fill="' + KK.weiss + '"/>';
+  });
+  if(stufe >= 5){
+    // Ab der zweiten Hälfte schaut der Keks entschlossener statt nur fröhlich
+    s += '<path d="M79 39q9-5 17-1" stroke="' + KK.linie + '" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    s += '<path d="M121 39q-9-5-17-1" stroke="' + KK.linie + '" stroke-width="4" fill="none" stroke-linecap="round"/>';
+  }
+  s += '<path d="M84 68a16.5 12.5 0 0 0 32 0z" fill="' + KK.linie + '" stroke="' + KK.linie + '" stroke-width="3" stroke-linejoin="round"/>';
+  s += '<path d="M85.5 68h29v3.5h-29z" fill="' + KK.weiss + '"/>';
+  s += '<path d="M93 76a8 6 0 0 0 14 0z" fill="' + KK.rot + '"/>';
+  return s;
+}
+function kkTorso(breite){
+  const x = 100 - breite / 2;
+  return '<path d="M' + x + ' 96h' + breite + 'v30q0 8-8 8h' + (-breite + 16) + 'q-8 0-8-8z" fill="' + KK.trikot + '" stroke="' + KK.linie + '" stroke-width="4.5" stroke-linejoin="round"/>' +
+    '<text x="100" y="122" text-anchor="middle" font-family="Baloo 2, Verdana, sans-serif" font-weight="700" font-size="18" fill="' + KK.weiss + '">K</text>' +
+    '<path d="M84 132h32v16q0 6-6 6h-20q-6 0-6-6z" fill="' + KK.hose + '" stroke="' + KK.linie + '" stroke-width="4.5" stroke-linejoin="round"/>';
+}
+// --- Trainingsgeräte ---
+function kkKurzhantel(x, y, r, w){
+  return '<g transform="rotate(' + (w || 0) + ' ' + x + ' ' + y + ')">' +
+    '<rect x="' + (x - r * 1.25) + '" y="' + (y - 3.5) + '" width="' + (r * 2.5) + '" height="7" rx="3.5" fill="' + KK.metall + '" stroke="' + KK.linie + '" stroke-width="3"/>' +
+    '<rect x="' + (x - r * 1.8) + '" y="' + (y - r * 0.9) + '" width="' + (r * 0.75) + '" height="' + (r * 1.8) + '" rx="4" fill="' + KK.metallD + '" stroke="' + KK.linie + '" stroke-width="3.5"/>' +
+    '<rect x="' + (x + r * 1.05) + '" y="' + (y - r * 0.9) + '" width="' + (r * 0.75) + '" height="' + (r * 1.8) + '" rx="4" fill="' + KK.metallD + '" stroke="' + KK.linie + '" stroke-width="3.5"/></g>';
+}
+function kkLanghantel(y, scheibe){
+  return '<rect x="26" y="' + (y - 4.5) + '" width="148" height="9" rx="4.5" fill="' + KK.metall + '" stroke="' + KK.linie + '" stroke-width="3.5"/>' +
+    '<rect x="16" y="' + (y - scheibe) + '" width="17" height="' + (scheibe * 2) + '" rx="5" fill="' + KK.metallD + '" stroke="' + KK.linie + '" stroke-width="4"/>' +
+    '<rect x="167" y="' + (y - scheibe) + '" width="17" height="' + (scheibe * 2) + '" rx="5" fill="' + KK.metallD + '" stroke="' + KK.linie + '" stroke-width="4"/>';
+}
+function kkKettlebell(x, y){
+  return '<path d="M' + (x - 10) + ' ' + (y - 10) + 'a10 10 0 0 1 20 0" fill="none" stroke="' + KK.linie + '" stroke-width="11" stroke-linecap="round"/>' +
+    '<path d="M' + (x - 10) + ' ' + (y - 10) + 'a10 10 0 0 1 20 0" fill="none" stroke="' + KK.metall + '" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="M' + (x - 18) + ' ' + (y + 21) + 'q0-23 18-23q18 0 18 23z" fill="' + KK.metallD + '" stroke="' + KK.linie + '" stroke-width="4" stroke-linejoin="round"/>';
+}
+function kkFlasche(x, y){
+  return '<rect x="' + (x - 7) + '" y="' + (y - 12) + '" width="14" height="26" rx="5" fill="' + KK.hose + '" stroke="' + KK.linie + '" stroke-width="3.5"/>' +
+    '<rect x="' + (x - 4.5) + '" y="' + (y - 18) + '" width="9" height="7" rx="2.5" fill="' + KK.metallD + '" stroke="' + KK.linie + '" stroke-width="3"/>' +
+    '<path d="M' + (x - 3) + ' ' + (y - 5) + 'v9" stroke="' + KK.weiss + '" stroke-width="3" stroke-linecap="round" opacity=".65"/>';
+}
+// Der Scheitel einer Quadratik liegt bei (Start + 2·Kontrolle + Ende)/4 — der Kontrollpunkt
+// muss deshalb weit über den Bildrand hinaus, damit das Seil über dem Kopf schwingt.
+function kkSeil(){ return '<path d="M56 150q44 -270 88 0" fill="none" stroke="' + KK.linie + '" stroke-width="5" stroke-linecap="round"/>'; }
+function kkStirnband(farbe){
+  return '<path d="M69 36q31 -17 62 0q-3 8-6 11q-25 -14-50 0z" fill="' + farbe + '" stroke="' + KK.linie + '" stroke-width="4" stroke-linejoin="round"/>';
+}
+function kkBrille(){
+  return '<path d="M78 49h44" stroke="' + KK.linie + '" stroke-width="5"/>' +
+    '<rect x="75" y="43" width="22" height="15" rx="6" fill="' + KK.linie + '"/>' +
+    '<rect x="103" y="43" width="22" height="15" rx="6" fill="' + KK.linie + '"/>' +
+    '<path d="M79 47h6" stroke="' + KK.weiss + '" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>';
+}
+function kkMedaille(){
+  return '<path d="M88 96l12 22l12 -22" fill="none" stroke="' + KK.rot + '" stroke-width="5"/>' +
+    '<circle cx="100" cy="126" r="12" fill="' + KK.gold + '" stroke="' + KK.linie + '" stroke-width="4"/>' +
+    '<path d="M100 119l2.4 5l5.4.8l-3.9 3.8l.9 5.4l-4.8-2.6l-4.8 2.6l.9-5.4l-3.9-3.8l5.4-.8z" fill="' + KK.linie + '"/>';
+}
+
+/* Eine Karte je Rang. arme: [[Schulter, Ellbogen, Hand], …] — die Geräte werden an die
+   Handpunkte gesetzt, damit Pose und Gerät nicht auseinanderlaufen können. */
+const KOUKI_KARTEN = [
+  { rang:0, uebung:"Aufwärmen", spruch:"Aufgewärmt, Flasche gefüllt, los geht's.",
+    dicke:10, biz:0, faust:8, torso:44, beine:"stehen", ton:"#8fb8c9",
+    arme:[[[74,104],[62,128],[58,152]],[[126,104],[144,88],[152,64]]], vorn:"flasche" },
+  { rang:1, uebung:"Seilspringen", spruch:"Kommt jede Woche wieder — und springt sich warm.",
+    dicke:11.5, biz:4.5, faust:8.5, torso:46, beine:"sprung", ton:"#9ec9a6",
+    arme:[[[75,104],[58,122],[56,146]],[[125,104],[142,122],[144,146]]], hinten:"seil" },
+  { rang:2, uebung:"Bizeps-Curl", spruch:"Der erste Muskel, den man wirklich sieht.",
+    dicke:13, biz:7, faust:9, torso:48, beine:"stehen", ton:"#c9bd8f",
+    arme:[[[76,104],[56,126],[66,100]],[[124,104],[138,128],[142,152]]], vorn:"curl" },
+  { rang:3, uebung:"Kettlebell", spruch:"Eisen ist kein Fremdwort mehr.",
+    dicke:14.5, biz:9, faust:9.5, torso:50, beine:"breit", ton:"#c99e8f",
+    arme:[[[77,104],[58,126],[92,148]],[[123,104],[142,126],[108,148]]], vorn:"kettlebell", band:KK.hose },
+  { rang:4, uebung:"Seitheben", spruch:"Die Schultern sind breiter als beim Start.",
+    dicke:16.5, biz:10.5, faust:10.5, torso:53, beine:"stehen", ton:"#a89ccc",
+    arme:[[[73,104],[48,98],[24,92]],[[127,104],[152,98],[176,92]]], vorn:"seitheben", band:KK.hose },
+  { rang:5, uebung:"Kniebeuge", spruch:"Steht auch dann noch, wenn es schwer wird.",
+    dicke:18.5, biz:12, faust:11, torso:56, beine:"beuge", ton:"#cc9cb4",
+    arme:[[[71,104],[48,96],[28,86]],[[129,104],[152,96],[172,86]]], hinten:"nacken", band:KK.hose },
+  { rang:6, uebung:"Schulterdrücken", spruch:"Zwei Hanteln über Kopf, ohne mit der Wimper zu zucken.",
+    dicke:20.5, biz:13, faust:11.5, torso:60, beine:"breit", ton:"#d8a05e",
+    arme:[[[69,104],[50,118],[42,84]],[[131,104],[150,118],[158,84]]], vorn:"druecken", band:KK.rot },
+  { rang:7, uebung:"Doppelbizeps", spruch:"Angekommen. Und immer noch dabei.",
+    dicke:22, biz:14.5, faust:12, torso:64, beine:"breit", ton:"#e0c05a",
+    arme:[[[67,106],[36,118],[62,88]],[[133,106],[164,118],[138,88]]], vorn:"medaille", band:KK.rot, brille:true },
+];
+
+// zusatz: zusätzliche CSS-Klasse. grau: zeichnet die Figur als Silhouette (noch nicht erspielt).
+function koukiFigurSVG(idx, zusatz, grau){
+  const s = KOUKI_KARTEN[Math.max(0, Math.min(KOUKI_KARTEN.length - 1, idx))];
+  const hL = s.arme[0][2], hR = s.arme[1][2];
+  const stufe = s.rang + 1;
+  let inhalt = '<ellipse cx="100" cy="191" rx="46" ry="6" fill="' + KK.linie + '" opacity=".16"/>';
+  if(s.hinten === "seil") inhalt += kkSeil();
+  if(s.hinten === "nacken") inhalt += kkLanghantel(86, 25);
+  inhalt += kkArm(s.arme[0][0], s.arme[0][1], hL, s.dicke, s.biz, s.faust);
+  inhalt += kkBeine(s.beine, s.dicke + 2);
+  inhalt += kkTorso(s.torso);
+  inhalt += kkKopf() + kkGesicht(stufe);
+  if(s.band) inhalt += kkStirnband(s.band);
+  if(s.brille) inhalt += kkBrille();
+  inhalt += kkArm(s.arme[1][0], s.arme[1][1], hR, s.dicke, s.biz, s.faust);
+  if(s.vorn === "flasche") inhalt += kkFlasche(hL[0], hL[1]);
+  if(s.vorn === "curl") inhalt += kkKurzhantel(hL[0], hL[1], 12, -60);
+  if(s.vorn === "kettlebell") inhalt += kkKettlebell((hL[0] + hR[0]) / 2, hL[1] + 8);
+  if(s.vorn === "seitheben") inhalt += kkKurzhantel(hL[0], hL[1], 11, 90) + kkKurzhantel(hR[0], hR[1], 11, 90);
+  if(s.vorn === "druecken") inhalt += kkKurzhantel(hL[0], hL[1], 12, 90) + kkKurzhantel(hR[0], hR[1], 12, 90);
+  if(s.vorn === "medaille") inhalt += kkMedaille();
+  return '<svg class="kouki-figur' + (zusatz ? " " + zusatz : "") + '" viewBox="0 0 200 200" ' +
+    'role="img" aria-label="Kouki bei der Übung ' + KOUKI_KARTEN[idx].uebung + '"' +
+    (grau ? ' style="filter:grayscale(1) brightness(.28);opacity:.42;"' : '') + '>' + inhalt + '</svg>';
+}
+
+// Figur samt Kartenrahmen in der Farbe ihrer Stufe — so sieht die Aufstiegsfeier nach einer
+// freigeschalteten Karte aus und nicht nach einer freischwebenden Zeichnung.
+function koukiKarteBildHTML(idx, klasse, grau){
+  return '<div class="' + (klasse || "kk-rahmen") + '" style="--kk-ton:' + KOUKI_KARTEN[idx].ton + ';">' +
+    koukiFigurSVG(idx, null, grau) + '</div>';
+}
+
+// Welche Karte gehört zum aktuellen Level? Dieselbe Schwelle wie beim Rang, damit Karte und
+// Rangname nie auseinanderlaufen.
+function koukiKarteFuerLevel(level){
+  let idx = 0;
+  XP_RAENGE.forEach(function(r, i){ if(level >= r.ab) idx = i; });
+  return idx;
+}
+
+function renderKoukiKarten(){
+  const grid = document.getElementById("koukiKartenGrid");
+  if(!grid) return;
+  const level = xpLevel(state.xp);
+  const aktiv = koukiKarteFuerLevel(level);
+  grid.innerHTML = "";
+  KOUKI_KARTEN.forEach(function(k, i){
+    const rang = XP_RAENGE[i];
+    const frei = level >= rang.ab;
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "kk-karte" + (frei ? " frei" : "") + (i === aktiv ? " aktiv" : "");
+    el.style.setProperty("--kk-ton", k.ton);
+    el.setAttribute("data-kk", String(i));
+    el.setAttribute("aria-label", (frei ? "Karte " : "Noch nicht freigeschaltet: ") + rang.name +
+      ", ab Level " + rang.ab);
+    el.innerHTML =
+      '<div class="kk-bild">' + koukiFigurSVG(i, null, !frei) + '</div>' +
+      '<div class="kk-name">' + escapeHtml(rang.name) + '</div>' +
+      '<div class="kk-stufe">' + (frei ? ("Lvl " + rang.ab) : ("ab Lvl " + rang.ab)) + '</div>' +
+      (frei ? "" : '<span class="kk-schloss" aria-hidden="true">' + icon("schloss") + '</span>') +
+      (i === aktiv ? '<span class="kk-jetzt">Aktuell</span>' : "");
+    el.onclick = function(){ oeffneKoukiKarte(i); };
+    grid.appendChild(el);
+  });
+}
+
+function oeffneKoukiKarte(idx){
+  const k = KOUKI_KARTEN[idx];
+  const rang = XP_RAENGE[idx];
+  if(!k || !rang) return;
+  const level = xpLevel(state.xp);
+  const frei = level >= rang.ab;
+  const bild = document.getElementById("kkDialogBild");
+  bild.style.setProperty("--kk-ton", k.ton);
+  bild.innerHTML = koukiFigurSVG(idx, null, !frei);
+  document.getElementById("kkDialogName").textContent = rang.name;
+  document.getElementById("kkDialogStufe").textContent = frei ? ("Lvl " + rang.ab) : ("Ab Level " + rang.ab);
+  document.getElementById("kkDialogZeilen").innerHTML =
+    '<div class="kk-zeile"><span>Übung</span><b>' + escapeHtml(k.uebung) + '</b></div>' +
+    '<div class="kk-zeile"><span>Karte</span><b>' + (idx + 1) + ' von ' + KOUKI_KARTEN.length + '</b></div>' +
+    '<div class="kk-zeile"><span>Status</span><b>' + (frei ? "Freigeschaltet" : "Noch verschlossen") + '</b></div>';
+  // Der Rangtext gehört dem Rang, der Kartenspruch der Karte — beide zeigen, dafür ist Platz.
+  document.getElementById("kkDialogSpruch").textContent = frei ? ('„' + k.spruch + '"') : rang.text;
+  const fort = document.getElementById("kkDialogFortschritt");
+  if(frei){
+    fort.textContent = "";
+    fort.style.display = "none";
+  } else {
+    fort.textContent = "Noch " + (rang.ab - level) + (rang.ab - level === 1 ? " Level" : " Level") + " bis zu dieser Karte.";
+    fort.style.display = "";
+  }
+  const ov = document.getElementById("koukiKarteOverlay");
+  ov.classList.add("show");
+  const zu = document.getElementById("kkDialogCloseBtn");
+  if(zu) zu.focus();
+}
+function schliesseKoukiKarte(){
+  const ov = document.getElementById("koukiKarteOverlay");
+  if(ov) ov.classList.remove("show");
+}
+(function(){
+  const ov = document.getElementById("koukiKarteOverlay");
+  if(!ov) return;
+  const zu = document.getElementById("kkDialogCloseBtn");
+  if(zu) zu.onclick = schliesseKoukiKarte;
+  // Tipp neben den Dialog schließt ebenfalls — sonst wirkt die Ansicht auf dem Handy wie
+  // eine Sackgasse, wenn der Knopf unter dem Bildschirmrand liegt.
+  ov.addEventListener("click", function(e){ if(e.target === ov) schliesseKoukiKarte(); });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && ov.classList.contains("show")) schliesseKoukiKarte();
+  });
+})();
+
 /* Alle Punktequellen an einer Stelle. Jede trägt einen Tagesdeckel, damit sich Punkte nicht
    durch mehrfaches Eintragen desselben Werts sammeln lassen — sonst wäre das Level kein Maß
    für Dranbleiben mehr, sondern fürs Herumtippen. proTag ist die Anzahl der Vergaben pro Tag,
@@ -4777,7 +5137,16 @@ function vergibXP(quelle, options){
 
 function feiereLevel(level){
   const rang = xpRang(level);
-  celebrate(icon("funkeVoll"), "Level " + level + " erreicht — " + rang.name + "!", true);
+  // Bringt das Level einen neuen Rang, wird die frisch freigeschaltete Kouki-Karte gezeigt —
+  // das ist die eigentliche Belohnung. Levels innerhalb eines Rangs feiern wie bisher.
+  const neueKarte = XP_RAENGE.some(function(r){ return r.ab === level; });
+  if(neueKarte){
+    const idx = koukiKarteFuerLevel(level);
+    celebrate(koukiKarteBildHTML(idx, "kouki-feier"), "Neue Karte: " + rang.name + " (Level " + level + ")", true);
+  } else {
+    celebrate(icon("funkeVoll"), "Level " + level + " erreicht — " + rang.name + "!", true);
+  }
+  renderKoukiKarten();
 }
 
 // Nach einem Block mehrerer Vergaben: einmal prüfen, ob dabei ein Level dazugekommen ist.
@@ -4809,10 +5178,16 @@ function renderXP(){
   const rang = xpRang(level);
   const naechsterRang = XP_RAENGE.find(function(r){ return r.ab > level; });
 
+  const karteIdx = koukiKarteFuerLevel(level);
+
   let html =
-    '<div class="xp-head">' +
-      '<span class="xp-level">Level ' + level + ' · ' + rang.name + '</span>' +
-      '<span class="xp-total">' + state.xp + ' XP</span>' +
+    '<div class="xp-oben">' +
+      '<button type="button" class="xp-kouki" id="xpKoukiBtn" style="--kk-ton:' + KOUKI_KARTEN[karteIdx].ton +
+        ';" aria-label="Kouki-Karte ' + escapeHtml(rang.name) + ' ansehen">' + koukiFigurSVG(karteIdx) + '</button>' +
+      '<div class="xp-head">' +
+        '<span class="xp-level">Level ' + level + ' · ' + rang.name + '</span>' +
+        '<span class="xp-total">' + state.xp + ' XP</span>' +
+      '</div>' +
     '</div>' +
     '<div class="vol-bar-track"><div class="vol-bar-fill" style="width:' + pct + '%;"></div></div>' +
     '<p class="rank-hint" style="margin:6px 0 0;">' + into + ' / ' + noetig + ' XP bis Level ' + (level + 1) +
@@ -4854,6 +5229,8 @@ function renderXP(){
   el.innerHTML = html;
   const toggle = document.getElementById("xpQuellenToggle");
   if(toggle) toggle.onclick = toggleXpQuellen;
+  const koukiBtn = document.getElementById("xpKoukiBtn");
+  if(koukiBtn) koukiBtn.onclick = function(){ oeffneKoukiKarte(koukiKarteFuerLevel(xpLevel(state.xp))); };
 }
 
 // --- Trainingsdauer-Timer (pro Einheit) ---
@@ -9051,6 +9428,7 @@ function renderAll(){
   renderBodyweight();
   renderBmr();
   renderRankCard();
+  renderKoukiKarten();
   renderWeeklyVolume();
   renderVolumeTrend();
   renderWeekRecap();
