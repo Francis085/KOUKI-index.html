@@ -980,6 +980,10 @@
   .home-stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;}
   .home-stat .h-num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;color:var(--text-strong);display:block;}
   .home-stat .h-lbl{font-size:11px;color:var(--ink-soft);}
+  /* Die Tageswerte-Kachel läuft über beide Spalten: Kalorien und Eiweiß gehören zusammen
+     gelesen, und beide Zahlen brauchen Platz. */
+  .home-stat-weit{grid-column:1 / -1;}
+  .home-stat .h-num-ziel{font-size:14px;color:var(--ink-soft);font-weight:400;}
   .home-pr-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);padding:7px 0;border-bottom:1px solid var(--line);}
   .home-pr-row:last-child{border-bottom:none;}
   .home-pr-row strong{color:var(--text-strong);}
@@ -1460,11 +1464,16 @@
 
     <div class="bw-card" id="nutritionTrendCard">
       <div class="bw-head">
-        <span class="bw-title">📊 Kalorien-Trend</span>
+        <span class="bw-title"><span class="ti-icon" data-icon="verlauf"></span>Kalorien-Trend</span>
       </div>
       <div id="nutritionTrendArea"></div>
     </div>
 
+  </div>
+
+  <!-- Körperdaten lagen bisher im Ernährungsbereich, ihr Verlauf dagegen unter Fortschritt.
+       Eintragen und Ansehen waren damit auf zwei Bereiche verteilt. Hier stehen sie zusammen. -->
+  <div id="frame-body" style="display:none;">
     <div class="bw-card" id="bwCard">
       <div class="bw-head">
         <span class="bw-title">Körpergewicht</span>
@@ -1479,7 +1488,7 @@
 
     <div class="bw-card" id="waterCard">
       <div class="bw-head">
-        <span class="bw-title">💧 Wasser heute</span>
+        <span class="bw-title"><span class="ti-icon" data-icon="tropfen"></span>Wasser heute</span>
         <span class="bw-current" id="waterCurrent">0/8</span>
       </div>
       <div class="water-btn-row">
@@ -1554,7 +1563,7 @@
 
   <div id="frame-scanner" style="display:none;">
     <div class="rank-card">
-      <div class="rank-head"><span class="rank-title">📷 Lebensmittel scannen</span></div>
+      <div class="rank-head"><span class="rank-title"><span class="ti-icon" data-icon="scheibe"></span>Lebensmittel scannen</span></div>
       <p class="rank-hint">Scanne den Barcode einer Verpackung (EAN-13, EAN-8, UPC-A, UPC-E) — die Nährwerte werden automatisch über Open Food Facts abgerufen und lassen sich direkt in dein Ernährungstagebuch übernehmen.</p>
       <button class="btn btn-primary" id="openScannerBtn" style="width:100%;">📷 Barcode scannen</button>
       <p class="rank-hint" id="scannerPermissionHint" style="margin-top:10px;"></p>
@@ -1642,7 +1651,7 @@
     </div>
 
     <div class="legal-card">
-      <h2>⏱ Training</h2>
+      <h2><span class="ti-icon" data-icon="stoppuhr"></span>Training</h2>
       <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Pausentimer automatisch starten, sobald du einen Satz abhakst — mit der für die Übung hinterlegten Pausenlänge. Bei verknüpften Supersätzen startet er absichtlich nicht, dort geht es ohne Pause zur Partnerübung.</p>
       <div class="filter-row" id="autoRestRow"></div>
     </div>
@@ -1660,36 +1669,6 @@
         <div class="filter-row" id="reminderGapRow"></div>
         <p class="rank-hint" style="margin-top:10px;">Hinweis: Solange die App geöffnet ist (auch im Hintergrund-Tab), werden die Erinnerungen zuverlässig geprüft. Bei installierter App (Zum Home-Bildschirm hinzufügen) versucht KOUKI zusätzlich, dich auch bei geschlossener App zu erinnern — das hängt aber vom Betriebssystem ab und ist auf Android/Chrome deutlich zuverlässiger als auf iPhone/Safari, wo Apple das aktuell einschränkt.</p>
       </div>
-    </div>
-
-    <div class="legal-medbox">
-      <p>⚕️ <strong>Wichtiger Hinweis:</strong> Alle Inhalte dieser App — Trainingspläne, Kalorien- und Makroberechnungen, Rezepte, der Kraft-Rang sowie sämtliche weiteren Angaben — sind unverbindliche, allgemeine Empfehlungen. Sie ersetzen keine ärztliche, ernährungsmedizinische oder physiotherapeutische Beratung. <strong>Bei akuten gesundheitlichen Beschwerden, Schmerzen, Verletzungen oder Unsicherheiten wende dich bitte umgehend an eine Ärztin, einen Arzt oder im Notfall an den Rettungsdienst (112).</strong></p>
-    </div>
-
-    <div class="legal-card" id="legalImpressumCard">
-      <h2>Impressum</h2>
-      <p>Angaben gemäß § 5 TMG:</p>
-      <p><strong>Phillip-Francis Koukiotou</strong><br>37085 Göttingen<br>Deutschland</p>
-      <p>E-Mail: <a href="mailto:Phillip.koukiotou@yahoo.com">Phillip.koukiotou@yahoo.com</a></p>
-      <h3>Urheberrecht</h3>
-      <p>Diese App (KOUKI), einschließlich Konzept, Design, Quelltext und aller Inhalte, ist ein privates, sich in Entwicklung befindendes Projekt. Alle Rechte daran liegen ausschließlich bei Phillip-Francis Koukiotou. Eine Vervielfältigung, Weiterverbreitung oder kommerzielle Nutzung ohne ausdrückliche Zustimmung ist nicht gestattet.</p>
-      <h3>Status des Projekts</h3>
-      <p>KOUKI ist derzeit ein kostenloses, privates Projekt in aktiver Entwicklung. Perspektivisch ist geplant, kostenpflichtige Premium-Funktionen anzubieten. Über konkrete Änderungen wird an dieser Stelle rechtzeitig informiert.</p>
-    </div>
-
-    <div class="legal-card">
-      <h2>Datenschutzerklärung</h2>
-      <p>Diese App wurde bewusst lokal-first entwickelt: ganz ohne Anmeldung funktioniert sie vollständig ohne eigenen Server. Meldest du dich freiwillig für die optionale Cloud-Synchronisierung an, kommt zusätzlich unser Datenbank-Anbieter Supabase ins Spiel (Details siehe unten). Es gilt:</p>
-      <ul>
-        <li>Alle Eingaben — Trainingsdaten, Sätze und Gewichte, Körpergewicht, Ernährungs- und Grundumsatz-Angaben, Kalender, Favoriten usw. — werden ausschließlich lokal im <strong>localStorage</strong> deines Browsers auf deinem eigenen Gerät gespeichert.</li>
-        <li>Ohne Anmeldung findet keine Übertragung deiner Daten an den Entwickler, an Server oder an Dritte statt. Der Entwickler hat ohne Anmeldung keinerlei Zugriff auf deine eingegebenen Daten.</li>
-        <li>Es werden keine Cookies zu Analyse- oder Trackingzwecken gesetzt und keine externen Analyse- oder Werbedienste eingebunden.</li>
-        <li>In die Rezepte eingebundene Fotos sind direkt als Bilddaten in die Datei eingebettet und werden nicht von externen Servern nachgeladen.</li>
-        <li>Löschst du die Browserdaten dieser Seite oder deinen Browser-Cache, werden alle nur lokal gespeicherten Angaben unwiderruflich gelöscht. Ein Zurücksetzen kann der Entwickler nicht rückgängig machen, da er ohne Anmeldung keinen Zugriff auf diese Daten hat.</li>
-        <li>Da die App als statische Datei gehostet wird, kann der jeweilige Hosting-Anbieter beim Abruf der Seite technisch bedingt Zugriffsdaten erfassen (z. B. IP-Adresse, Zeitpunkt des Zugriffs), wie es bei jedem Webserver üblich ist. Details hierzu entnimmst du bitte der Datenschutzerklärung des jeweiligen Hosters.</li>
-        <li><strong>Optionale Cloud-Synchronisierung:</strong> Meldest du dich freiwillig über "Konto & Cloud-Sync" mit deiner E-Mail-Adresse an, werden deine Trainingsdaten zusätzlich verschlüsselt bei unserem Datenbank-Anbieter Supabase Inc. gespeichert, um sie geräteübergreifend verfügbar zu machen. Ohne Anmeldung bleibt es bei der rein lokalen Speicherung wie oben beschrieben — die Cloud-Funktion ist keine Voraussetzung für die Nutzung der App.</li>
-        <li><strong>Löschung bei Cloud-Nutzung:</strong> Über "Konto & Cloud-Sync löschen" im Profil-Bereich kannst du deine dort gespeicherten Trainings- und Ernährungsdaten jederzeit selbst unwiderruflich entfernen. Für die vollständige Löschung des Anmelde-Datensatzes selbst (deine E-Mail-Adresse bei unserem Auth-Anbieter) genügt eine kurze E-Mail an den Entwickler (Kontakt siehe Impressum) — das kann aus Sicherheitsgründen nicht automatisiert direkt aus dem Browser heraus erfolgen, da dafür erhöhte Server-Rechte nötig sind, die niemals im öffentlichen Quelltext dieser Seite liegen dürfen.</li>
-      </ul>
     </div>
 
     <div class="legal-card">
@@ -1773,7 +1752,7 @@
     </div>
 
     <div class="legal-card">
-      <h2>🏆 Freunde-Vergleich</h2>
+      <h2><span class="ti-icon" data-icon="pokal"></span>Freunde-Vergleich</h2>
       <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Optional und nur mit Anmeldung: vergleiche XP und Wochen-Streak mit anderen KOUKI-Nutzern, die sich ebenfalls dafür entschieden haben. Ohne Teilnahme sieht niemand deine Werte, und du siehst keine Rangliste — reiner Opt-in.</p>
       <div class="filter-row" id="leaderboardOptInRow"></div>
       <div class="measure-group" id="leaderboardNicknameGroup" style="display:none;margin-top:10px;">
@@ -1798,6 +1777,46 @@
       <p>Öffnet eine übersichtliche Druckansicht deiner Einheiten der letzten 4 Wochen — Übungen, Gewichte, Wiederholungen, Sätze, Dauer und Notizen. Über das Teilen-/Drucken-Menü deines Browsers kannst du daraus direkt eine PDF-Datei speichern, ganz ohne dass Daten dein Gerät verlassen.</p>
       <div class="backup-btn-row">
         <button class="backup-btn" id="exportPdfBtn">📄 Bericht öffnen</button>
+      </div>
+    </div>
+
+    <div class="legal-medbox">
+      <p>⚕️ <strong>Wichtiger Hinweis:</strong> Alle Inhalte dieser App — Trainingspläne, Kalorien- und Makroberechnungen, Rezepte, der Kraft-Rang sowie sämtliche weiteren Angaben — sind unverbindliche, allgemeine Empfehlungen. Sie ersetzen keine ärztliche, ernährungsmedizinische oder physiotherapeutische Beratung. <strong>Bei akuten gesundheitlichen Beschwerden, Schmerzen, Verletzungen oder Unsicherheiten wende dich bitte umgehend an eine Ärztin, einen Arzt oder im Notfall an den Rettungsdienst (112).</strong></p>
+    </div>
+
+    <div class="science-card" id="legalImpressumCard">
+      <div class="science-head" id="impressumToggle">
+        <span class="sc-head-text"><span class="sc-head-icon" data-icon="info"></span>Impressum</span>
+        <span class="science-chevron" id="impressumBodyChevron" data-icon="pfeilRunter"></span>
+      </div>
+      <div class="science-body" id="impressumBody" style="display:none;">
+      <p>Angaben gemäß § 5 TMG:</p>
+      <p><strong>Phillip-Francis Koukiotou</strong><br>37085 Göttingen<br>Deutschland</p>
+      <p>E-Mail: <a href="mailto:Phillip.koukiotou@yahoo.com">Phillip.koukiotou@yahoo.com</a></p>
+      <h3>Urheberrecht</h3>
+      <p>Diese App (KOUKI), einschließlich Konzept, Design, Quelltext und aller Inhalte, ist ein privates, sich in Entwicklung befindendes Projekt. Alle Rechte daran liegen ausschließlich bei Phillip-Francis Koukiotou. Eine Vervielfältigung, Weiterverbreitung oder kommerzielle Nutzung ohne ausdrückliche Zustimmung ist nicht gestattet.</p>
+      <h3>Status des Projekts</h3>
+      <p>KOUKI ist derzeit ein kostenloses, privates Projekt in aktiver Entwicklung. Perspektivisch ist geplant, kostenpflichtige Premium-Funktionen anzubieten. Über konkrete Änderungen wird an dieser Stelle rechtzeitig informiert.</p>
+      </div>
+    </div>
+
+    <div class="science-card">
+      <div class="science-head" id="datenschutzToggle">
+        <span class="sc-head-text"><span class="sc-head-icon" data-icon="buch"></span>Datenschutzerklärung</span>
+        <span class="science-chevron" id="datenschutzBodyChevron" data-icon="pfeilRunter"></span>
+      </div>
+      <div class="science-body" id="datenschutzBody" style="display:none;">
+      <p>Diese App wurde bewusst lokal-first entwickelt: ganz ohne Anmeldung funktioniert sie vollständig ohne eigenen Server. Meldest du dich freiwillig für die optionale Cloud-Synchronisierung an, kommt zusätzlich unser Datenbank-Anbieter Supabase ins Spiel (Details siehe unten). Es gilt:</p>
+      <ul>
+        <li>Alle Eingaben — Trainingsdaten, Sätze und Gewichte, Körpergewicht, Ernährungs- und Grundumsatz-Angaben, Kalender, Favoriten usw. — werden ausschließlich lokal im <strong>localStorage</strong> deines Browsers auf deinem eigenen Gerät gespeichert.</li>
+        <li>Ohne Anmeldung findet keine Übertragung deiner Daten an den Entwickler, an Server oder an Dritte statt. Der Entwickler hat ohne Anmeldung keinerlei Zugriff auf deine eingegebenen Daten.</li>
+        <li>Es werden keine Cookies zu Analyse- oder Trackingzwecken gesetzt und keine externen Analyse- oder Werbedienste eingebunden.</li>
+        <li>In die Rezepte eingebundene Fotos sind direkt als Bilddaten in die Datei eingebettet und werden nicht von externen Servern nachgeladen.</li>
+        <li>Löschst du die Browserdaten dieser Seite oder deinen Browser-Cache, werden alle nur lokal gespeicherten Angaben unwiderruflich gelöscht. Ein Zurücksetzen kann der Entwickler nicht rückgängig machen, da er ohne Anmeldung keinen Zugriff auf diese Daten hat.</li>
+        <li>Da die App als statische Datei gehostet wird, kann der jeweilige Hosting-Anbieter beim Abruf der Seite technisch bedingt Zugriffsdaten erfassen (z. B. IP-Adresse, Zeitpunkt des Zugriffs), wie es bei jedem Webserver üblich ist. Details hierzu entnimmst du bitte der Datenschutzerklärung des jeweiligen Hosters.</li>
+        <li><strong>Optionale Cloud-Synchronisierung:</strong> Meldest du dich freiwillig über "Konto & Cloud-Sync" mit deiner E-Mail-Adresse an, werden deine Trainingsdaten zusätzlich verschlüsselt bei unserem Datenbank-Anbieter Supabase Inc. gespeichert, um sie geräteübergreifend verfügbar zu machen. Ohne Anmeldung bleibt es bei der rein lokalen Speicherung wie oben beschrieben — die Cloud-Funktion ist keine Voraussetzung für die Nutzung der App.</li>
+        <li><strong>Löschung bei Cloud-Nutzung:</strong> Über "Konto & Cloud-Sync löschen" im Profil-Bereich kannst du deine dort gespeicherten Trainings- und Ernährungsdaten jederzeit selbst unwiderruflich entfernen. Für die vollständige Löschung des Anmelde-Datensatzes selbst (deine E-Mail-Adresse bei unserem Auth-Anbieter) genügt eine kurze E-Mail an den Entwickler (Kontakt siehe Impressum) — das kann aus Sicherheitsgründen nicht automatisiert direkt aus dem Browser heraus erfolgen, da dafür erhöhte Server-Rechte nötig sind, die niemals im öffentlichen Quelltext dieser Seite liegen dürfen.</li>
+      </ul>
       </div>
     </div>
 
@@ -2974,9 +2993,13 @@ function renderBackupHint(){
   const el = document.getElementById("backupHintHome");
   if(!el) return;
   const hint = backupHintState();
-  if(!hint){ el.innerHTML = ""; return; }
+  // Zwei Banner übereinander sind einer zu viel: Solange der Bereichshinweis noch steht,
+  // bleibt die Backup-Erinnerung zurück. Sie ist nicht dringend genug, um sich vorzudrängen,
+  // und kommt beim nächsten Öffnen wieder.
+  const bereichshinweisSteht = !!(document.getElementById("frameHintBanner") || {}).innerHTML;
+  if(!hint || bereichshinweisSteht){ el.innerHTML = ""; return; }
   el.innerHTML = '<div class="progression-tip tip-deload" style="margin-bottom:14px;">' +
-    '<span class="tip-icon">💾</span>' +
+    '<span class="tip-icon">' + icon("notiz") + '</span>' +
     '<span>' + hint.text + ' <span id="backupHintGoBtn" style="text-decoration:underline;cursor:pointer;font-weight:700;">Jetzt sichern</span></span>' +
     '<span class="set-del" id="backupHintDismissBtn" title="Heute nicht mehr">✕</span>' +
   '</div>';
@@ -3135,7 +3158,9 @@ document.getElementById("exportPdfBtn").onclick = exportTrainingPDF;
 
 // Ein Aufklapper für beide Textkarten unter dem Trainingsplan, statt zweimal derselbe Code.
 [["scienceToggle", "scienceBody", "scienceChevron"],
- ["notesToggle", "notesBody", "notesChevron"]].forEach(function(ids){
+ ["notesToggle", "notesBody", "notesChevron"],
+ ["impressumToggle", "impressumBody", "impressumBodyChevron"],
+ ["datenschutzToggle", "datenschutzBody", "datenschutzBodyChevron"]].forEach(function(ids){
   const kopf = document.getElementById(ids[0]);
   if(!kopf) return;
   kopf.onclick = function(){
@@ -8914,7 +8939,21 @@ function renderHome(){
   const streak = computeWeekStreak();
   const bw = latestBodyweight();
   const weekTrained = weekTrainedCount(mondayOf(new Date()));
+  // Der Tagesstand bei Kalorien und Eiweiß ist die Zahl, die man mehrmals am Tag sehen will —
+  // sie lag bisher zwei Tipps entfernt im Ernährungsbereich. Auf der Startseite steht sie nur,
+  // wenn ein Tagesziel überhaupt berechenbar ist; sonst wäre die Kachel eine leere Hülle.
+  const energie = computeDailyEnergy(state.activeGoal);
+  const heuteGegessen = (state.nutritionLog[todayKey()] || []).reduce(function(acc, it){
+    acc.kcal += it.kcal || 0; acc.p += it.p || 0; return acc;
+  }, { kcal:0, p:0 });
+
   document.getElementById("homeStatGrid").innerHTML =
+    (energie
+      ? ('<div class="home-stat home-stat-weit"><span class="h-num">' + Math.round(heuteGegessen.kcal) +
+         ' <span class="h-num-ziel">/ ' + Math.round(energie.targetKcal) + ' kcal</span></span>' +
+         '<span class="h-lbl">Heute gegessen · ' + Math.round(heuteGegessen.p) + ' von ' +
+         energie.targetProtein + ' g Eiweiß</span></div>')
+      : '') +
     '<div class="home-stat"><span class="h-num">' + icon("flamme", "ki-inline") + ' ' + streak + '</span><span class="h-lbl">Wochen-Streak</span></div>' +
     '<div class="home-stat"><span class="h-num">' + (bw ? (bw.weight + ' kg') : '–') + '</span><span class="h-lbl">Körpergewicht</span></div>' +
     '<div class="home-stat"><span class="h-num">' + weekTrained + '/7</span><span class="h-lbl">Diese Woche trainiert</span></div>' +
@@ -8963,6 +9002,9 @@ const NAV_GROUPS = {
   navTraining: { label: "Trainingsplan", subtabs: [ { label: "Training", frameId: "frame-plan" } ] },
   navProgressGroup: { label: "Fortschritt", subtabs: [
     { label: "Übersicht", frameId: "frame-progress-overview" },
+    // Körperdaten lagen früher unter "Ernährung" — eintragen dort, Verlauf hier. Jetzt
+    // stehen Eingabe und Verlauf im selben Bereich.
+    { label: "Körper", frameId: "frame-body" },
     { label: "Kalender", frameId: "frame-calendar" },
     { label: "Rang", frameId: "frame-progress" }
   ]},
@@ -8988,7 +9030,8 @@ const FRAME_HINTS = {
   "frame-progress-overview": "Dein Volumen-Verlauf über Zeit sowie Fortschritt bei den großen Grundübungen im Blick behalten.",
   "frame-calendar": "Dein Trainingskalender — tippe auf einen Tag für Details, Notizen und was du an dem Tag trainiert hast.",
   "frame-progress": "Dein Kraft-Rang je Grundübung im Vergleich zu deinem Körpergewicht, plus Körpermaße-Verlauf.",
-  "frame-nutrition": "Kalorien & Makros für heute loggen, deinen Grundumsatz berechnen und dein Ziel festlegen.",
+  "frame-nutrition": "Trag hier ein, was du gegessen hast — Kalorien und Eiweiß gegen dein Tagesziel. Körpergewicht, Schritte und Grundumsatz findest du unter Fortschritt · Körper.",
+  "frame-body": "Körpergewicht, Trinkmenge, Schritte, Umfänge und Grundumsatz — hier eintragen und direkt den Verlauf sehen.",
   "frame-scanner": "Barcode scannen oder ein Lebensmittel suchen, um es direkt in dein Tageslog einzutragen.",
   "frame-recipes": "Rezepte mit Einkaufsliste und ausführlicher Kochanleitung — plane deine Woche direkt im Essensplaner.",
   "frame-supplements": "Infos zu gängigen Supplementen: Einnahmezeitpunkt, Dosierung und wofür sie gut sind.",
@@ -8998,7 +9041,13 @@ function renderFrameHint(frameId){
   const el = document.getElementById("frameHintBanner");
   if(!el) return;
   const text = FRAME_HINTS[frameId];
-  if(!text || (state.frameHintsSeen && state.frameHintsSeen[frameId])){ el.innerHTML = ""; return; }
+  if(!text || (state.frameHintsSeen && state.frameHintsSeen[frameId])){
+    el.innerHTML = "";
+    // Auch hier nachziehen: Wer den Bereichshinweis wegtippt, macht den Platz frei, den die
+    // Backup-Erinnerung bis dahin nicht belegen durfte.
+    try{ renderBackupHint(); }catch(e){ console.error("Backup-Hinweis konnte nicht aktualisiert werden", e); }
+    return;
+  }
   el.innerHTML = '<div class="progression-tip tip-info">' +
     '<span class="tip-icon">' + icon("gluehbirne") + '</span>' +
     '<span>' + escapeHtml(text) + '</span>' +
@@ -9010,6 +9059,9 @@ function renderFrameHint(frameId){
     saveState();
     renderFrameHint(frameId);
   };
+  // Die Backup-Erinnerung richtet sich danach, ob hier gerade etwas steht — also erst
+  // entscheiden, wenn dieser Banner feststeht. renderBackupHint() ruft nicht zurück.
+  try{ renderBackupHint(); }catch(e){ console.error("Backup-Hinweis konnte nicht aktualisiert werden", e); }
 }
 function allFrameIds(){
   const ids = [];
@@ -9122,6 +9174,15 @@ document.getElementById("legalBtn").onclick = function(){
   // beide Einstiege zu unterschiedlichen, sinnvollen Stellen derselben Seite.
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
+      // Die Rechtstexte stehen eingeklappt, damit sie nicht 1800px des Profils belegen.
+      // Wer über diesen Knopf kommt, will sie aber lesen — also aufklappen statt nur
+      // hinspringen.
+      ["impressumBody", "datenschutzBody"].forEach(function(id){
+        const body = document.getElementById(id);
+        const chevron = document.getElementById(id + "Chevron");
+        if(body) body.style.display = "block";
+        if(chevron) chevron.classList.add("open");
+      });
       const el = document.getElementById("legalImpressumCard");
       if(el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     });
