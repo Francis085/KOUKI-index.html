@@ -796,6 +796,36 @@
   .filter-chip.excl.active{background:var(--warn);border-color:var(--warn);}
   .filter-label{font-size:10.5px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px 2px;}
 
+  .rezept-suche{
+    position:relative;display:flex;align-items:center;gap:8px;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:0 10px 0 12px;margin-bottom:4px;
+  }
+  .rezept-suche:focus-within{border-color:var(--olive);}
+  .rezept-suche-lupe{color:var(--ink-soft);font-size:17px;flex:0 0 auto;display:block;}
+  .rezept-suche:focus-within .rezept-suche-lupe{color:var(--olive);}
+  .rezept-suche-feld{
+    flex:1 1 auto;min-width:0;border:none;background:none;outline:none;
+    font-family:'Inter',sans-serif;font-size:15px;color:var(--ink);
+    padding:12px 0;
+  }
+  .rezept-suche-feld::placeholder{color:var(--ink-soft);}
+  /* Feld und Leiste sind optisch ein Element — sonst lägen zwei Ringe ineinander.
+     Der Fokusring wandert deshalb auf die Leiste. Kennt ein Browser :has() nicht,
+     bleibt die Fokus-Anzeige über den Rahmen oben erhalten. */
+  .rezept-suche-feld:focus-visible{outline:none;}
+  .rezept-suche:has(.rezept-suche-feld:focus-visible){outline:2.5px solid var(--olive);outline-offset:2px;}
+  .rezept-suche-x{
+    flex:0 0 auto;width:30px;height:30px;border:none;border-radius:50%;
+    background:var(--bg);color:var(--ink-soft);font-size:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .rezept-treffer{font-size:11.5px;color:var(--ink-soft);margin:8px 0 8px 2px;}
+  .recipe-hit{
+    display:flex;align-items:center;gap:5px;margin-top:8px;
+    font-size:11.5px;color:var(--pastel-text-soft);
+  }
+
   .recipe-card{
     border-radius:20px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:opacity .15s;
   }
@@ -1235,6 +1265,11 @@
   .day-modal-close::after, .rest-close::after, .plan-delete::after, .quote-fav::after{
     content:""; position:absolute; inset:-6px;
   }
+  /* Das Löschen-Kreuz im Rezept-Suchfeld ist 30px groß und steht in einer ~48px hohen Leiste
+     mit 10px Innenabstand rechts — 7px Zuwachs ringsum ergeben 44px und bleiben innerhalb
+     der Leiste, ohne das Textfeld daneben zu überdecken (dessen Fläche endet 8px davor). */
+  .rezept-suche-x{ position:relative; }
+  .rezept-suche-x::after{ content:""; position:absolute; inset:-7px; }
 
   /* --- Zentrale Fokus-Sichtbarkeit für Tastatur-/Switch-Bedienung -------------------------
      :focus-visible sorgt dafür, dass der Ring nur bei Tastatur-/Assistive-Tech-Fokus
@@ -1586,6 +1621,16 @@
   </div>
 
   <div id="frame-recipes" style="display:none;">
+    <div class="rezept-suche">
+      <span class="rezept-suche-lupe" data-icon="lupe" aria-hidden="true"></span>
+      <input type="text" id="recipeSearchInput" class="rezept-suche-feld" autocomplete="off" enterkeyhint="search"
+             placeholder="Rezept oder Zutat suchen …" aria-label="Rezepte nach Name oder Zutat durchsuchen">
+      <button type="button" class="rezept-suche-x" id="recipeSearchClear" aria-label="Suche löschen" style="display:none;"><span data-icon="kreuz" aria-hidden="true"></span></button>
+    </div>
+    <button type="button" class="werte-toggle" id="recipeFilterToggle" aria-expanded="false" aria-controls="recipeFilterBlock" style="display:none;">
+      <span id="recipeFilterToggleText">Filter</span>
+      <span class="werte-chevron" id="recipeFilterChevron" data-icon="pfeilRunter" aria-hidden="true"></span>
+    </button>
     <div class="rank-card" id="mealPlanCard">
       <div class="rank-head"><span class="rank-title">🗓️ Wochenplaner</span></div>
       <p class="rank-hint">Rezepte für die Woche vorplanen und alle Zutaten auf einen Schlag in die Einkaufsliste übernehmen.</p>
@@ -1599,16 +1644,19 @@
       <div id="shoppingListArea"></div>
       <button class="backup-btn" id="clearShoppingListBtn" style="margin-top:8px;">Liste leeren</button>
     </div>
-    <div class="filter-label">Mahlzeit</div>
-    <div class="filter-row" id="mealTypeFilterRow"></div>
-    <div class="filter-label">Kategorie</div>
-    <div class="filter-row" id="goalTagFilterRow"></div>
-    <div class="filter-label">Ernährungsform</div>
-    <div class="filter-row" id="dietFilterRow"></div>
-    <div class="filter-label">Ausschließen (Allergene)</div>
-    <div class="filter-row" id="allergenFilterRow"></div>
-    <div class="filter-label">Dein Ziel für Empfehlungen</div>
-    <div class="filter-row" id="goalFilterRow"></div>
+    <div id="recipeFilterBlock">
+      <div class="filter-label">Mahlzeit</div>
+      <div class="filter-row" id="mealTypeFilterRow"></div>
+      <div class="filter-label">Kategorie</div>
+      <div class="filter-row" id="goalTagFilterRow"></div>
+      <div class="filter-label">Ernährungsform</div>
+      <div class="filter-row" id="dietFilterRow"></div>
+      <div class="filter-label">Ausschließen (Allergene)</div>
+      <div class="filter-row" id="allergenFilterRow"></div>
+      <div class="filter-label">Dein Ziel für Empfehlungen</div>
+      <div class="filter-row" id="goalFilterRow"></div>
+    </div>
+    <p class="rezept-treffer" id="recipeSearchInfo" style="display:none;" role="status" aria-live="polite"></p>
     <div id="recipeList"></div>
   </div>
 
@@ -2781,6 +2829,16 @@ const ICON_PFADE = {
     '<path d="M14.4 3.6V9h5.4"/>' +
     '<path class="ki-fill" d="M8 12.4h8v1.9H8z"/>' +
     '<path class="ki-fill" d="M8 16h5.2v1.9H8z"/>',
+  // Linse mit Lichtreflex und Griff mit Knauf am Ende — bewusst nicht der nackte
+  // Kreis-mit-Strich, den jede Systemleiste zeigt.
+  lupe:
+    '<circle cx="10.4" cy="10.4" r="6.7"/>' +
+    '<path d="M7.6 9.3a3.6 3.6 0 0 1 2.6-2.5" opacity=".55"/>' +
+    '<path d="M15.4 15.4 20.4 20.4"/>' +
+    '<circle class="ki-fill" cx="20.9" cy="20.9" r="1.5"/>',
+  kreuz:
+    '<path d="M6.6 6.6 17.4 17.4"/>' +
+    '<path d="M17.4 6.6 6.6 17.4"/>',
 
 };
 // name: Schlüssel aus ICON_PFADE. zusatz: zusätzliche CSS-Klasse (z. B. für Größe oder Farbe).
@@ -7531,6 +7589,107 @@ function getMealTargetKcal(){
 }
 function toggleRecipe(id){ openRecipe[id] = !openRecipe[id]; renderRecipes(); }
 
+// --- Rezeptsuche -------------------------------------------------------------------------
+// Gesucht wird in Namen, Zutaten sowie in Mahlzeit- und Kategorie-Angaben. Mehrere Wörter
+// werden als UND verknüpft ("hähnchen reis" verlangt beides), damit sich die Trefferliste
+// mit jedem weiteren Wort verkleinert statt zu wachsen.
+let recipeSearchTerm = "";
+let recipeFilterOffen = false;
+
+function rezeptSuchbegriffe(query){
+  const teile = String(query || "").trim().split(/\s+/);
+  const tokens = [];
+  teile.forEach(function(teil){
+    // normalizeSearchText macht die Suche umlaut- und schreibweisentolerant:
+    // "huhnchen" findet "Hähnchen", "vollkorn-toast" findet "Vollkorntoast".
+    const t = normalizeSearchText(teil);
+    if(t) tokens.push(t);
+  });
+  return tokens;
+}
+
+// Liefert für ein Rezept, ob es passt und woher der Treffer stammt. Die Herkunft wird für
+// die Sortierung (Namenstreffer zuerst) und für den Hinweis auf der Karte gebraucht.
+function rezeptTreffer(r, tokens){
+  if(!tokens.length) return { treffer:true, imNamen:true, zutat:null };
+  const name = normalizeSearchText(r.name);
+  const tags = normalizeSearchText((r.goalTags || []).join(" ") + " " + (r.mealType || []).join(" "));
+  let imNamen = true;
+  let zutat = null;
+  for(let i=0;i<tokens.length;i++){
+    const t = tokens[i];
+    if(name.indexOf(t) !== -1) continue;
+    imNamen = false;
+    if(tags.indexOf(t) !== -1) continue;
+    let gefunden = null;
+    const zutaten = r.ingredients || [];
+    for(let j=0;j<zutaten.length;j++){
+      if(normalizeSearchText(zutaten[j]).indexOf(t) !== -1){ gefunden = zutaten[j]; break; }
+    }
+    if(!gefunden) return { treffer:false };
+    if(!zutat) zutat = gefunden;
+  }
+  return { treffer:true, imNamen:imNamen, zutat:zutat };
+}
+
+// Zählt für die Leermeldung, wie viele Rezepte der Suchbegriff ohne die weichen Filter
+// (Mahlzeit, Kategorie, Ernährungsform) fände — und wie viele davon allein an den
+// Allergen-Filtern scheitern. Allergene werden nie automatisch zurückgesetzt: sie sind eine
+// gesundheitliche Angabe und dürfen nur bewusst vom Nutzer selbst gelöst werden.
+function rezeptTrefferOhneFilter(tokens){
+  let ohneFilter = 0, nurAllergen = 0;
+  RECIPES.forEach(function(r){
+    if(!rezeptTreffer(r, tokens).treffer) return;
+    let blockiert = false;
+    for(let i=0;i<r.allergens.length;i++){ if(excludedAllergens[r.allergens[i]]) blockiert = true; }
+    if(blockiert) nurAllergen++; else ohneFilter++;
+  });
+  return { ohneFilter: ohneFilter, nurAllergen: nurAllergen };
+}
+
+function setzeRezeptSuche(wert){
+  recipeSearchTerm = String(wert || "");
+  if(!recipeSearchTerm) recipeFilterOffen = false;
+  const feld = document.getElementById("recipeSearchInput");
+  if(feld && feld.value !== recipeSearchTerm) feld.value = recipeSearchTerm;
+  renderRecipes();
+}
+
+// Beschreibt in einer Zeile, welche Filter gerade greifen. Während einer Suche sind die
+// Filterreihen eingeklappt — ohne diese Zeile wüsste man sonst nicht, warum ein Rezept fehlt.
+function rezeptFilterZusammenfassung(){
+  const teile = [];
+  if(mealTypeFilter) teile.push(mealTypeFilter);
+  if(goalTagFilter) teile.push(goalTagFilter);
+  if(dietFilter === "vegan") teile.push("Vegan");
+  else if(dietFilter === "vegetarian") teile.push("Vegetarisch");
+  const ohne = [];
+  Object.keys(ALLERGEN_LABELS).forEach(function(key){
+    if(excludedAllergens[key]) ohne.push(ALLERGEN_LABELS[key]);
+  });
+  if(ohne.length) teile.push("ohne " + ohne.join(", "));
+  return teile.length ? ("Filter: " + teile.join(" · ")) : "Filter";
+}
+
+// Während einer Suche treten Wochenplaner und Filterreihen zurück, damit die Treffer direkt
+// unter dem Suchfeld stehen und man nicht doch wieder scrollen muss. Ohne Suchbegriff sieht
+// der Bereich exakt aus wie vorher.
+function rezeptSuchmodusAnzeigen(aktiv){
+  const planer = document.getElementById("mealPlanCard");
+  if(planer) planer.style.display = aktiv ? "none" : "";
+  const block = document.getElementById("recipeFilterBlock");
+  if(block) block.style.display = (aktiv && !recipeFilterOffen) ? "none" : "";
+  const knopf = document.getElementById("recipeFilterToggle");
+  if(knopf){
+    knopf.style.display = aktiv ? "flex" : "none";
+    knopf.setAttribute("aria-expanded", (aktiv && recipeFilterOffen) ? "true" : "false");
+    const text = document.getElementById("recipeFilterToggleText");
+    if(text) text.textContent = rezeptFilterZusammenfassung();
+    const chevron = document.getElementById("recipeFilterChevron");
+    if(chevron) chevron.classList.toggle("open", aktiv && recipeFilterOffen);
+  }
+}
+
 // --- Einkaufsliste ---
 function addRecipeToShoppingList(r){
   let added = 0;
@@ -7592,6 +7751,31 @@ function renderShoppingList(){
   });
 }
 document.getElementById("clearShoppingListBtn").onclick = clearShoppingList;
+
+// Das Suchfeld steht im festen HTML und wird von renderRecipes() nicht angefasst — sonst
+// verlöre es bei jedem Zeichen den Fokus und der Cursor spränge ans Ende.
+(function(){
+  const feld = document.getElementById("recipeSearchInput");
+  const loeschen = document.getElementById("recipeSearchClear");
+  if(!feld) return;
+  feld.oninput = function(){ setzeRezeptSuche(feld.value); };
+  feld.onkeydown = function(e){
+    if(e.key === "Escape" && feld.value){
+      // Escape leert das Feld, statt (auf dem Desktop) nur die Tastatur zu schließen.
+      e.preventDefault();
+      setzeRezeptSuche("");
+    }
+  };
+  if(loeschen) loeschen.onclick = function(){
+    setzeRezeptSuche("");
+    feld.focus();
+  };
+  const filterKnopf = document.getElementById("recipeFilterToggle");
+  if(filterKnopf) filterKnopf.onclick = function(){
+    recipeFilterOffen = !recipeFilterOffen;
+    renderRecipes();
+  };
+})();
 
 // --- Wochen-Essensplaner ---
 const MEAL_PLAN_DAYS = [
@@ -7712,12 +7896,21 @@ function renderRecipes(){
   const list = document.getElementById("recipeList");
   list.innerHTML = "";
   const mealTarget = getMealTargetKcal();
+  const tokens = rezeptSuchbegriffe(recipeSearchTerm);
+  const trefferInfos = {};
+
+  const loeschKnopf = document.getElementById("recipeSearchClear");
+  if(loeschKnopf) loeschKnopf.style.display = recipeSearchTerm ? "flex" : "none";
+  rezeptSuchmodusAnzeigen(tokens.length > 0);
 
   let filtered = RECIPES.filter(function(r){
     if(DIET_LEVEL[r.diet] > DIET_LEVEL[dietFilter]) return false;
     for(let i=0;i<r.allergens.length;i++){ if(excludedAllergens[r.allergens[i]]) return false; }
     if(mealTypeFilter && (!r.mealType || r.mealType.indexOf(mealTypeFilter) === -1)) return false;
     if(goalTagFilter && (!r.goalTags || r.goalTags.indexOf(goalTagFilter) === -1)) return false;
+    const t = rezeptTreffer(r, tokens);
+    if(!t.treffer) return false;
+    trefferInfos[r.id] = t;
     return true;
   });
 
@@ -7726,9 +7919,54 @@ function renderRecipes(){
       return Math.abs(a.kcal - mealTarget) - Math.abs(b.kcal - mealTarget);
     });
   }
+  if(tokens.length){
+    // Namenstreffer nach oben. Array.sort ist stabil, die Sortierung nach Zielkalorien
+    // darüber bleibt innerhalb der beiden Gruppen also erhalten.
+    filtered = filtered.slice().sort(function(a,b){
+      return (trefferInfos[a.id].imNamen ? 0 : 1) - (trefferInfos[b.id].imNamen ? 0 : 1);
+    });
+  }
+
+  const infoEl = document.getElementById("recipeSearchInfo");
+  if(infoEl){
+    if(tokens.length && filtered.length){
+      infoEl.textContent = filtered.length === 1
+        ? '1 Treffer für „' + recipeSearchTerm.trim() + '"'
+        : filtered.length + ' Treffer für „' + recipeSearchTerm.trim() + '"';
+      infoEl.style.display = "";
+    } else {
+      infoEl.textContent = "";
+      infoEl.style.display = "none";
+    }
+  }
 
   if(!filtered.length){
-    list.innerHTML = '<p class="no-recipes">Keine Rezepte passen zu dieser Kombination aus Filtern. Versuch, ein Allergen-Filter zu entfernen.</p>';
+    if(tokens.length){
+      const zaehler = rezeptTrefferOhneFilter(tokens);
+      let html = '<p class="no-recipes">Kein Rezept gefunden für „' + escapeHtml(recipeSearchTerm.trim()) + '".</p>';
+      if(zaehler.ohneFilter > 0){
+        html += '<button class="quickfill-btn" id="recipeFilterResetBtn" style="margin-top:10px;">Filter zurücksetzen (' +
+          zaehler.ohneFilter + ' Treffer)</button>';
+      }
+      if(zaehler.nurAllergen > 0){
+        html += '<p class="no-recipes" style="margin-top:10px;">' + zaehler.nurAllergen +
+          (zaehler.nurAllergen === 1 ? ' weiterer Treffer ist' : ' weitere Treffer sind') +
+          ' durch deine Allergen-Filter ausgeblendet.</p>';
+      }
+      if(!zaehler.ohneFilter && !zaehler.nurAllergen){
+        html += '<p class="no-recipes" style="margin-top:10px;">Gesucht wird in Rezeptnamen und Zutaten — versuch einen kürzeren Begriff, z. B. nur „Reis".</p>';
+      }
+      list.innerHTML = html;
+      const resetBtn = document.getElementById("recipeFilterResetBtn");
+      if(resetBtn) resetBtn.onclick = function(){
+        mealTypeFilter = null;
+        goalTagFilter = null;
+        dietFilter = "omni";
+        renderRecipes();
+      };
+    } else {
+      list.innerHTML = '<p class="no-recipes">Keine Rezepte passen zu dieser Kombination aus Filtern. Versuch, ein Allergen-Filter zu entfernen.</p>';
+    }
     return;
   }
 
@@ -7745,7 +7983,12 @@ function renderRecipes(){
         (isMatch ? '<span class="tag match">✓ Passt zu deinem Ziel</span>' : '') +
         r.allergens.map(function(a){ return '<span class="tag">' + ALLERGEN_LABELS[a] + '</span>'; }).join("") +
       '</div>' +
-      '<div class="recipe-macros-row"><span>P ' + r.p + 'g</span><span>F ' + r.f + 'g</span><span>KH ' + r.c + 'g</span></div>';
+      '<div class="recipe-macros-row"><span>P ' + r.p + 'g</span><span>F ' + r.f + 'g</span><span>KH ' + r.c + 'g</span></div>' +
+      // Bei einem Zutaten-Treffer steht der Grund auf der Karte — sonst wäre nicht
+      // ersichtlich, warum "Ei" das Rezept "Protein-Pancakes" findet.
+      ((trefferInfos[r.id] && trefferInfos[r.id].zutat)
+        ? '<div class="recipe-hit">' + icon("lupe", "ki-inline") + '<span>Zutat: ' + escapeHtml(trefferInfos[r.id].zutat) + '</span></div>'
+        : '');
     card.onclick = function(){ toggleRecipe(r.id); };
     list.appendChild(card);
 
