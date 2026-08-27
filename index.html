@@ -947,6 +947,35 @@
   .xp-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
   .xp-level{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15px;color:var(--text-strong);}
   .xp-total{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;color:var(--ink-soft);}
+  .xp-head{flex-wrap:wrap;gap:6px;}
+  .xp-rang-text{font-size:12px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5;font-style:italic;}
+  .xp-quellen-toggle{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    margin-top:10px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm,12px);
+    background:var(--pastel-overlay);color:var(--ink);cursor:pointer;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;min-height:var(--tap-min,44px);
+  }
+  .xp-chevron{font-size:15px;display:flex;transition:transform .18s;flex-shrink:0;}
+  .xp-chevron.open{transform:rotate(180deg);}
+  .xp-quellen{display:flex;flex-direction:column;gap:3px;margin-top:8px;}
+  .xp-quellen-gruppe{
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:12px;color:var(--text-strong);
+    margin:8px 0 2px;
+  }
+  .xp-quellen-gruppe:first-child{margin-top:0;}
+  .xp-quelle{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-size:12px;padding:5px 2px;border-bottom:1px solid var(--line);
+  }
+  .xp-quelle:last-child{border-bottom:none;}
+  .xp-quelle-name{min-width:0;color:var(--ink);}
+  /* Was heute schon geholt ist, tritt zurück — der Blick soll auf dem landen, was noch geht. */
+  .xp-quelle.erledigt .xp-quelle-name{opacity:.5;text-decoration:line-through;}
+  .xp-quelle-wert{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);
+    flex-shrink:0;white-space:nowrap;
+  }
+  .xp-quelle.erledigt .xp-quelle-wert{opacity:.5;}
   .home-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
   .home-stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;}
   .home-stat .h-num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;color:var(--text-strong);display:block;}
@@ -2540,7 +2569,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpLog:{}, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -2812,6 +2841,11 @@ function normalizeState(){
   if(!state.nutritionLog) state.nutritionLog = {};
   if(!state.activeGoal) state.activeGoal = "maintain";
   if(typeof state.xp !== "number") state.xp = 0;
+  if(!state.xpLog || typeof state.xpLog !== "object") state.xpLog = {};
+  // Nur die letzten Tage aufbewahren — das Protokoll dient allein dem Tagesdeckel.
+  Object.keys(state.xpLog).forEach(function(tag){
+    if(tag < ymd(new Date(Date.now() - 7 * 86400000))) delete state.xpLog[tag];
+  });
   if(!state.xpWeekBonusGiven) state.xpWeekBonusGiven = [];
   if(!state.foodCache) state.foodCache = {};
   if(!state.barcodeHistory) state.barcodeHistory = [];
@@ -2898,7 +2932,7 @@ function exportBackup(){
     state.backupHintDismissedDate = "";
     saveState();
     renderBackupHint();
-    showToast("Backup gespeichert");
+    if(!vergibXP("backup")) showToast("Backup gespeichert");
   }catch(e){
     console.error("Backup-Export fehlgeschlagen", e);
     alert("Backup konnte nicht erstellt werden.");
@@ -4495,13 +4529,139 @@ function renderStreak(){
 }
 
 // --- XP & Level ---
-function xpLevel(xp){ return Math.floor(xp / 500) + 1; }
-function xpIntoLevel(xp){ return xp % 500; }
-function addXP(amount){
-  if(!amount) return 0;
-  state.xp += amount;
-  return amount;
+/* --- Level und Erfahrungspunkte ------------------------------------------------------------
+   Bisher gab es Punkte ausschließlich fürs Abschließen einer Trainingseinheit — wer die App
+   für Ernährung, Gewicht oder Supplemente nutzte, sah am Level nichts davon. Und jedes Level
+   kostete stur 500 Punkte, die ersten Stufen fühlten sich dadurch zäh an.
+
+   Die Kurve ist jetzt am Anfang deutlich schneller und steigt dann bis zu einem festen Schritt
+   von 500 an. Wichtig dabei: Sie ist an JEDER Stelle günstiger als die alte Formel — der
+   Vorsprung beträgt konstant 800 Punkte ab Level 6. Niemand verliert durch die Umstellung ein
+   Level, viele steigen sogar auf. Eine Rückstufung wäre das Gegenteil von belohnend. */
+const XP_STUFE_MAX = 500;
+function xpKostenFuerLevel(level){
+  if(level <= 1) return 0;
+  return Math.min(XP_STUFE_MAX, 150 + (level - 2) * 100);
 }
+// Gesamtpunkte, die bis zum Erreichen dieses Levels nötig sind.
+function xpSchwelle(level){
+  if(level <= 1) return 0;
+  let summe = 0;
+  for(let i = 2; i <= level; i++) summe += xpKostenFuerLevel(i);
+  return summe;
+}
+function xpLevel(xp){
+  const punkte = Math.max(0, Number(xp) || 0);
+  let level = 1, schwelle = 0;
+  // Bewusst als Schleife statt als Umkehrformel: Die Kurve hat einen Knick (erst steigend,
+  // dann konstant), eine geschlossene Formel wäre hier schwerer nachvollziehbar als richtig.
+  while(schwelle + xpKostenFuerLevel(level + 1) <= punkte && level < 999){
+    schwelle += xpKostenFuerLevel(level + 1);
+    level++;
+  }
+  return level;
+}
+function xpIntoLevel(xp){ return Math.max(0, (Number(xp) || 0) - xpSchwelle(xpLevel(xp))); }
+function xpFuerNaechstesLevel(xp){ return xpKostenFuerLevel(xpLevel(xp) + 1); }
+
+// Ränge geben dem Level einen Namen. "Level 12" sagt nichts, "Stammgast" schon.
+const XP_RAENGE = [
+  { ab:1,  name:"Startklar",    text:"Du hast angefangen — das ist der schwerste Teil." },
+  { ab:5,  name:"Dranbleiber",  text:"Aus Vorsätzen wird langsam Gewohnheit." },
+  { ab:10, name:"Stammgast",    text:"Du tauchst regelmäßig auf. Genau darauf kommt es an." },
+  { ab:16, name:"Eisenfreund",  text:"Training gehört zu deiner Woche wie Zähneputzen." },
+  { ab:24, name:"Kraftpaket",   text:"Deine Beständigkeit zahlt sich sichtbar aus." },
+  { ab:34, name:"Standhaft",    text:"Auch schlechte Tage halten dich nicht mehr auf." },
+  { ab:46, name:"Unermüdlich",  text:"Du ziehst das seit Monaten durch." },
+  { ab:60, name:"Vorbild",      text:"Wer wissen will, wie Dranbleiben geht, schaut auf dich." },
+];
+function xpRang(level){
+  let treffer = XP_RAENGE[0];
+  XP_RAENGE.forEach(function(r){ if(level >= r.ab) treffer = r; });
+  return treffer;
+}
+
+/* Alle Punktequellen an einer Stelle. Jede trägt einen Tagesdeckel, damit sich Punkte nicht
+   durch mehrfaches Eintragen desselben Werts sammeln lassen — sonst wäre das Level kein Maß
+   für Dranbleiben mehr, sondern fürs Herumtippen. proTag ist die Anzahl der Vergaben pro Tag,
+   nicht die Punktzahl. */
+const XP_QUELLEN = {
+  // Training
+  einheitTeil:      { xp:50,  proTag:1, label:"Einheit abgeschlossen",        bereich:"Training" },
+  einheitKomplett:  { xp:100, proTag:1, label:"Alle Übungen abgehakt",        bereich:"Training" },
+  rekord:           { xp:50,  proTag:20, label:"Neuer Rekord",                bereich:"Training" },
+  wochenziel:       { xp:150, proTag:1, label:"4 Einheiten in einer Woche",   bereich:"Training" },
+  streakRekord:     { xp:0,   proTag:1, label:"Neuer Streak-Rekord",          bereich:"Training" },
+  einheitNotiz:     { xp:15,  proTag:1, label:"Notiz zur Einheit",            bereich:"Training" },
+  // Ernährung
+  mahlzeit:         { xp:5,   proTag:5, label:"Mahlzeit eingetragen",         bereich:"Ernährung" },
+  eiweissZiel:      { xp:30,  proTag:1, label:"Eiweißziel erreicht",          bereich:"Ernährung" },
+  kalorienZiel:     { xp:30,  proTag:1, label:"Kalorienziel getroffen",       bereich:"Ernährung" },
+  // Körper und Alltag
+  koerpergewicht:   { xp:10,  proTag:1, label:"Körpergewicht eingetragen",    bereich:"Körper" },
+  koerpermasse:     { xp:20,  proTag:1, label:"Körpermaße eingetragen",       bereich:"Körper" },
+  schritte:         { xp:10,  proTag:1, label:"Schritte eingetragen",         bereich:"Körper" },
+  schrittZiel:      { xp:20,  proTag:1, label:"10.000 Schritte geschafft",    bereich:"Körper" },
+  wasser:           { xp:10,  proTag:1, label:"Trinkziel erreicht",           bereich:"Körper" },
+  supplement:       { xp:3,   proTag:6, label:"Supplement abgehakt",          bereich:"Körper" },
+  blutwert:         { xp:25,  proTag:2, label:"Blutwert eingetragen",         bereich:"Körper" },
+  // Dranbleiben
+  backup:           { xp:20,  proTag:1, label:"Backup gesichert",             bereich:"Sonstiges" },
+};
+
+function xpHeute(){
+  const tag = todayKey();
+  if(!state.xpLog[tag]) state.xpLog[tag] = {};
+  return state.xpLog[tag];
+}
+// Wie oft wurde diese Quelle heute schon vergeben?
+function xpVergabenHeute(quelle){ return xpHeute()[quelle] || 0; }
+function xpQuelleOffen(quelle){
+  const q = XP_QUELLEN[quelle];
+  if(!q) return false;
+  return xpVergabenHeute(quelle) < q.proTag;
+}
+
+/* Zentrale Vergabe. Liefert die tatsächlich vergebenen Punkte (0, wenn der Tagesdeckel
+   erreicht ist). "still" unterdrückt die Rückmeldung — beim Abschließen einer Einheit werden
+   mehrere Quellen auf einmal ausgelöst und dort zusammen gemeldet. */
+function vergibXP(quelle, options){
+  const q = XP_QUELLEN[quelle];
+  if(!q) return 0;
+  const opt = options || {};
+  if(!xpQuelleOffen(quelle)) return 0;
+  const punkte = typeof opt.xp === "number" ? opt.xp : q.xp;
+  if(punkte <= 0){
+    // Quellen ohne feste Punktzahl (z. B. der Streak-Bonus) sollen den Deckel trotzdem
+    // verbrauchen, damit sie nicht mehrfach am Tag zählen.
+    xpHeute()[quelle] = xpVergabenHeute(quelle) + 1;
+    return 0;
+  }
+  const vorherLevel = xpLevel(state.xp);
+  state.xp += punkte;
+  xpHeute()[quelle] = xpVergabenHeute(quelle) + 1;
+  const nachherLevel = xpLevel(state.xp);
+  if(!opt.still){
+    saveState();
+    renderXP();
+    if(nachherLevel > vorherLevel) feiereLevel(nachherLevel);
+    else showToast("+" + punkte + " XP · " + q.label);
+  }
+  return punkte;
+}
+
+function feiereLevel(level){
+  const rang = xpRang(level);
+  celebrate(icon("funkeVoll"), "Level " + level + " erreicht — " + rang.name + "!", true);
+}
+
+// Nach einem Block mehrerer Vergaben: einmal prüfen, ob dabei ein Level dazugekommen ist.
+function pruefeLevelAufstieg(vorherLevel){
+  const jetzt = xpLevel(state.xp);
+  if(jetzt > vorherLevel){ feiereLevel(jetzt); return true; }
+  return false;
+}
+
 function checkWeeklyXpBonus(){
   const monday = mondayOf(new Date());
   const weekKey = ymd(monday);
@@ -4511,16 +4671,64 @@ function checkWeeklyXpBonus(){
   }
   return 0;
 }
+let xpQuellenOffen = false;
+function toggleXpQuellen(){ xpQuellenOffen = !xpQuellenOffen; renderXP(); }
+
 function renderXP(){
   const el = document.getElementById("homeXpCard");
   if(!el) return;
   const level = xpLevel(state.xp);
   const into = xpIntoLevel(state.xp);
-  const pct = Math.round((into / 500) * 100);
-  el.innerHTML =
-    '<div class="xp-head"><span class="xp-level">Level ' + level + '</span><span class="xp-total">' + state.xp + ' XP</span></div>' +
+  const noetig = xpFuerNaechstesLevel(state.xp);
+  const pct = Math.max(0, Math.min(100, Math.round((into / noetig) * 100)));
+  const rang = xpRang(level);
+  const naechsterRang = XP_RAENGE.find(function(r){ return r.ab > level; });
+
+  let html =
+    '<div class="xp-head">' +
+      '<span class="xp-level">Level ' + level + ' · ' + rang.name + '</span>' +
+      '<span class="xp-total">' + state.xp + ' XP</span>' +
+    '</div>' +
     '<div class="vol-bar-track"><div class="vol-bar-fill" style="width:' + pct + '%;"></div></div>' +
-    '<p class="rank-hint" style="margin:6px 0 0;">' + into + ' / 500 XP bis Level ' + (level + 1) + '</p>';
+    '<p class="rank-hint" style="margin:6px 0 0;">' + into + ' / ' + noetig + ' XP bis Level ' + (level + 1) +
+      (naechsterRang ? (' · ab Level ' + naechsterRang.ab + ' bist du ' + naechsterRang.name) : '') + '</p>' +
+    '<p class="xp-rang-text">' + escapeHtml(rang.text) + '</p>';
+
+  // Die Übersicht zeigt, wofür es überhaupt Punkte gibt — und was heute schon geholt ist.
+  // Ohne sie bliebe die Vielfalt der Quellen unsichtbar und damit wirkungslos.
+  html += '<button type="button" class="xp-quellen-toggle" id="xpQuellenToggle" aria-expanded="' +
+    (xpQuellenOffen ? 'true' : 'false') + '">' +
+    (xpQuellenOffen ? 'Punktequellen ausblenden' : 'Wofür gibt es Punkte?') +
+    '<span class="xp-chevron' + (xpQuellenOffen ? ' open' : '') + '">' + icon("pfeilRunter") + '</span></button>';
+
+  if(xpQuellenOffen){
+    const bereiche = {};
+    Object.keys(XP_QUELLEN).forEach(function(key){
+      const q = XP_QUELLEN[key];
+      if(q.xp <= 0) return;   // Quellen ohne feste Punktzahl lassen sich nicht ankündigen
+      (bereiche[q.bereich] = bereiche[q.bereich] || []).push({ key: key, q: q });
+    });
+    html += '<div class="xp-quellen">';
+    Object.keys(bereiche).forEach(function(bereich){
+      html += '<div class="xp-quellen-gruppe">' + escapeHtml(bereich) + '</div>';
+      bereiche[bereich].forEach(function(e){
+        const genutzt = xpVergabenHeute(e.key);
+        const offen = genutzt < e.q.proTag;
+        html += '<div class="xp-quelle' + (offen ? '' : ' erledigt') + '">' +
+          '<span class="xp-quelle-name">' + escapeHtml(e.q.label) + '</span>' +
+          '<span class="xp-quelle-wert">+' + e.q.xp + ' XP' +
+          (e.q.proTag > 1 ? (' · ' + genutzt + '/' + e.q.proTag + ' heute') : '') + '</span>' +
+          '</div>';
+      });
+    });
+    html += '</div>' +
+      '<p class="rank-hint" style="margin:8px 0 0;">Jede Quelle zählt pro Tag nur begrenzt — ' +
+      'das Level misst Dranbleiben, nicht Herumtippen.</p>';
+  }
+
+  el.innerHTML = html;
+  const toggle = document.getElementById("xpQuellenToggle");
+  if(toggle) toggle.onclick = toggleXpQuellen;
 }
 
 // --- Trainingsdauer-Timer (pro Einheit) ---
@@ -5617,7 +5825,9 @@ let celebrateTimeout = null;
 let lastCelebratePRs = null;
 function celebrate(emoji, msg, big, prDetails){
   const overlay = document.getElementById("celebrateOverlay");
-  document.getElementById("celebrateEmoji").textContent = emoji;
+  // Nimmt sowohl ein Zeichen als auch ein gezeichnetes Symbol entgegen. Alle Aufrufer
+  // übergeben app-eigene Konstanten, nie Nutzereingaben.
+  document.getElementById("celebrateEmoji").innerHTML = emoji;
   document.getElementById("celebrateMsg").textContent = msg;
   const field = document.getElementById("confettiField");
   field.innerHTML = "";
@@ -5810,6 +6020,7 @@ async function finishSession(){
   });
   exs.forEach(function(ex){ resetEntryChecks(ex); });
   let xpGained = 0;
+  const levelVorher = xpLevel(state.xp);
   if(doneCount > 0){
     if(state.completedDays.indexOf(today) === -1) state.completedDays.push(today);
     const dayInfo = activeDays()[currentDay];
@@ -5821,10 +6032,16 @@ async function finishSession(){
       note: noteText,
       duration: stopSessionTimerForFinish()
     };
-    xpGained += addXP(updateLongestStreak());
-    xpGained += addXP(checkWeeklyXpBonus());
-    xpGained += addXP(newPRs.length * 50);
-    xpGained += addXP(doneCount === exs.length && exs.length > 0 ? 100 : 50);
+    // Alle Vergaben laufen über die zentrale Stelle: sie führt den Tagesdeckel mit und
+    // verhindert, dass dieselbe Einheit durch mehrfaches Abschließen mehrfach zählt.
+    // "still" unterdrückt die einzelnen Meldungen — gefeiert wird am Ende gemeinsam.
+    xpGained += vergibXP("streakRekord", { xp: updateLongestStreak(), still: true });
+    xpGained += vergibXP("wochenziel", { xp: checkWeeklyXpBonus(), still: true });
+    if(newPRs.length) xpGained += vergibXP("rekord", { xp: newPRs.length * 50, still: true });
+    xpGained += (doneCount === exs.length && exs.length > 0)
+      ? vergibXP("einheitKomplett", { still: true })
+      : vergibXP("einheitTeil", { still: true });
+    if(noteText && noteText.trim().length >= 3) xpGained += vergibXP("einheitNotiz", { still: true });
   }
   // Übersprungene Übungen dieses Tages waren nur "für heute" ausgeblendet — nach dem
   // Abschließen der Einheit sind beim nächsten Aufruf dieses Tages wieder alle Übungen da.
@@ -5835,11 +6052,18 @@ async function finishSession(){
   if(doneCount > 0){
     checkWeeklyReward(today);
   }
-  const xpSuffix = xpGained > 0 ? (" (+" + xpGained + " XP)") : "";
+  // Ein Levelaufstieg bekommt keine zweite Einblendung über die erste gelegt, sondern wird
+  // in derselben Meldung genannt.
+  const levelNachher = xpLevel(state.xp);
+  const aufstieg = levelNachher > levelVorher;
+  const xpSuffix = (xpGained > 0 ? (" (+" + xpGained + " XP)") : "") +
+    (aufstieg ? (" · Level " + levelNachher + ": " + xpRang(levelNachher).name + "!") : "");
   if(newPRs.length){
-    celebrate("🏆", "Neuer PR: " + newPRs.join(", ") + xpSuffix, true, newPRDetails);
+    celebrate(icon("pokal"), "Neuer PR: " + newPRs.join(", ") + xpSuffix, true, newPRDetails);
   } else if(doneCount === exs.length && exs.length > 0){
-    celebrate("🥇", "Einheit geschafft!" + xpSuffix, false);
+    celebrate(icon("haken"), "Einheit geschafft!" + xpSuffix, false);
+  } else if(aufstieg){
+    celebrate(icon("funkeVoll"), "Level " + levelNachher + " — " + xpRang(levelNachher).name + "!", true);
   } else {
     showToast("Einheit gespeichert" + xpSuffix);
   }
@@ -6043,7 +6267,7 @@ document.getElementById("bwSave").onclick = async function(){
   renderBodyweight();
   renderRankCard();
   renderBmr();
-  showToast("Körpergewicht gespeichert");
+  if(!vergibXP("koerpergewicht")) showToast("Körpergewicht gespeichert");
 };
 
 // --- Wasser-Tracker ---
@@ -6058,6 +6282,7 @@ document.getElementById("waterPlus").onclick = function(){
   state.waterLog[key] = (state.waterLog[key] || 0) + 1;
   saveState();
   renderWater();
+  if(state.waterLog[key] >= 8) vergibXP("wasser");
 };
 document.getElementById("waterMinus").onclick = function(){
   const key = todayKey();
@@ -6173,7 +6398,12 @@ function saveStepsFromInput(showConfirmation){
   saveState();
   updateStepsCalorieHint();
   renderBmr();
-  if(showConfirmation) showToast("Schritte gespeichert");
+  // Punkte erst ab einer Zahl, die nach einem echten Tag aussieht — sonst zählt schon eine
+  // versehentlich gespeicherte 0 als Eintrag.
+  let gemeldet = false;
+  if(val >= 1000) gemeldet = !!vergibXP("schritte");
+  if(val >= 10000) gemeldet = !!vergibXP("schrittZiel") || gemeldet;
+  if(showConfirmation && !gemeldet) showToast("Schritte gespeichert");
 }
 document.getElementById("stepsInput").oninput = function(){
   clearTimeout(stepsSaveTimer);
@@ -6322,6 +6552,7 @@ document.querySelectorAll(".measure-add-btn").forEach(function(btn){
     if(!state.measurements[key]) state.measurements[key] = [];
     state.measurements[key] = state.measurements[key].filter(function(m){ return m.date !== today; });
     state.measurements[key].push({ date: today, value: val });
+    vergibXP("koerpermasse");
     state.measurements[key].sort(function(a,b){ return a.date.localeCompare(b.date); });
     if(state.measurements[key].length > 60) state.measurements[key] = state.measurements[key].slice(-60);
     saveState();
@@ -6378,7 +6609,24 @@ function logFoodToday(item){
   state.nutritionLog[key].push(item);
   saveState();
   renderNutritionLog();
-  showToast(item.name + " geloggt");
+  if(!vergibXP("mahlzeit")) showToast(item.name + " geloggt");
+  pruefeTagesZieleXP();
+}
+
+/* Prüft nach jedem Eintrag, ob die Tagesziele erreicht sind. Bewusst hier und nicht beim
+   Rendern: Punkte sollen an eine Handlung gekoppelt sein, nicht daran, dass man einen
+   Bildschirm öffnet. Der Tagesdeckel sorgt dafür, dass jedes Ziel nur einmal zählt. */
+function pruefeTagesZieleXP(){
+  const energie = computeDailyEnergy(state.activeGoal);
+  if(!energie) return;
+  const heute = state.nutritionLog[todayKey()] || [];
+  if(!heute.length) return;
+  const summe = heute.reduce(function(acc, it){
+    acc.kcal += it.kcal || 0; acc.p += it.p || 0; return acc;
+  }, { kcal:0, p:0 });
+  if(summe.p >= energie.targetProtein) vergibXP("eiweissZiel");
+  // "Getroffen" heißt hier: innerhalb von 150 kcal um das Ziel — darunter wie darüber.
+  if(Math.abs(summe.kcal - energie.targetKcal) <= 150) vergibXP("kalorienZiel");
 }
 function removeFoodLog(index){
   const key = todayKey();
@@ -7600,7 +7848,7 @@ function saveBlutwert(sid){
   feld.value = "";
   saveState();
   renderSupplements();
-  showToast("Blutwert gespeichert");
+  if(!vergibXP("blutwert")) showToast("Blutwert gespeichert");
 }
 function removeBlutwert(sid, datum){
   if(!state.bloodValues[sid]) return;
@@ -7671,6 +7919,9 @@ function toggleSuppTaken(id, e){
   state.suppLog[key][id] = !state.suppLog[key][id];
   saveState();
   renderSupplements();
+  // Punkte nur beim Abhaken, nicht beim Zurücknehmen — sonst ließe sich durch Hin- und
+  // Herschalten sammeln.
+  if(state.suppLog[key][id]) vergibXP("supplement");
 }
 // Der Zielbereich stand bisher nur als Text da — man konnte den eigenen Wert nirgends
 // festhalten und damit auch nicht einordnen. Der Block hängt direkt unter "Optimaler Blutwert",
