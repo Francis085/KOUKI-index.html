@@ -2388,6 +2388,38 @@ const EXERCISE_LIBRARY = {
   ],
 };
 
+/* ===== Standardplan: 3× pro Woche Ganzkörper ==============================================
+   Vorher standen hier 9–10 Übungen pro Tag (29 insgesamt, rund 78 Sätze pro Woche). Das ist
+   für drei Einheiten mehr, als sich sinnvoll wegtrainieren lässt, und die Einheiten wurden
+   entsprechend lang.
+
+   Grundlage der Neufassung:
+   - Pelland et al. (2025, Meta-Regression): ab etwa 4 Sätzen je Muskel und Woche entsteht
+     Wachstum, 5–10 Sätze gelten als guter Bereich; darüber geht es weiter, aber mit deutlich
+     abnehmendem Ertrag.
+   - Baz-Valle et al. (2022): 12–20 Wochensätze je Muskel als Orientierung für Fortgeschrittene.
+   - Schoenfeld/Grgic/Krieger sowie neuere Übersichten: bei gleichem Wochenvolumen bringt eine
+     höhere Frequenz keinen Vorteil — entscheidend ist die Wochensumme, nicht ihre Verteilung.
+     Zwei- bis dreimal pro Woche je Muskel ist mindestens so gut wie einmal.
+   - Meta-Regression zum Volumen je Einheit: der Ertrag flacht bei etwa 6–8 harten Sätzen je
+     Muskel und Einheit ab. Alles darüber ist in einer Ganzkörpereinheit verschenkte Zeit.
+
+   Daraus folgt für drei Ganzkörpertage: je Muskel und Einheit 2–4 Sätze, macht über die Woche
+   6–12 Sätze — im wirksamen Bereich und unter der Grenze, ab der es kaum noch etwas bringt.
+   Ergebnis: 7 Übungen und 19–20 Sätze pro Einheit statt 9–10 Übungen.
+
+   Wochensätze der Neufassung (direkt, ohne indirekte Beteiligung):
+     Brust 11 · Rücken 9 · Quadrizeps 9 · Beinbeuger/Gesäß 5 · Seitliche Schulter 6
+     Hintere Schulter 6 · Nacken/Trapez 5 · Waden 4 · Bizeps 2 · Trizeps 2 · Bauch 2
+   Bizeps und Trizeps stehen bewusst niedrig: Sie arbeiten bei allen Zug- und Druckübungen
+   kräftig mit, was rechnerisch weitere 4–6 Sätze je Woche ergibt.
+
+   Die Übungs-IDs bestehender Übungen bleiben unverändert, auch wenn eine Übung den Tag
+   wechselt — daran hängen Sätze, Verlauf und Rekorde.
+   Ebenso bleiben ihre NAMEN unverändert: historyFor() ordnet Verlaufseinträge über den Namen
+   zu (um getauschte Übungen auseinanderzuhalten). Eine Umbenennung würde den bisherigen
+   Verlauf dieser Übung aus ihrer eigenen Ansicht und aus dem Progressionsvorschlag
+   verschwinden lassen, obwohl er gespeichert bleibt. */
 const DEFAULT_PLAN = {
   id: "default",
   label: "3-Tage Ganzkörper",
@@ -2398,34 +2430,25 @@ const DEFAULT_PLAN = {
       label: "Montag", sub: "Ganzkörper A",
       groups: [
         { name: "Beine", exercises: [
-          { id: "mon_squat", name: "Kniebeuge", sets: "3x6-10", type: "grund", rirTarget: "2–3", restSeconds: 180 },
+          { id: "mon_squat", name: "Kniebeuge", sets: "3x5-8", type: "grund", rirTarget: "2–3", restSeconds: 180 },
         ]},
         { name: "Brust", exercises: [
           { id: "mon_bench", name: "Bankdrücken", sets: "3x6-10", type: "grund", rirTarget: "1–2", restSeconds: 180 },
         ]},
         { name: "Rücken", exercises: [
-          { id: "mon_pullup", name: "Klimmzüge/Latzug", sets: "3x6-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+          { id: "mon_pullup", name: "Klimmzüge/Latzug", sets: "3x6-10", type: "grund", rirTarget: "1–2", restSeconds: 150 },
         ]},
         { name: "Beine", exercises: [
-          { id: "mon_rdl", name: "Rumänisches Kreuzheben", sets: "2x6-10", type: "grund", rirTarget: "2", restSeconds: 180 },
+          { id: "mon_rdl", name: "Rumänisches Kreuzheben", sets: "2x8-12", type: "grund", rirTarget: "2", restSeconds: 180 },
         ]},
         { name: "Schultern", exercises: [
-          { id: "mon_lateral", name: "Seitheben", sets: "3x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+          { id: "mon_lateral", name: "Seitheben", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
         ]},
         { name: "Schultern", exercises: [
           { id: "mon_reardelt", name: "Reverse Flys", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
         ]},
         { name: "Rücken", exercises: [
-          { id: "mon_shrug", name: "Shrugs mit Kurzhanteln", sets: "3x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
-        ]},
-        { name: "Beine", exercises: [
-          { id: "mon_calfraise", name: "Wadenheben stehend", sets: "3x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
-        ]},
-        { name: "Bizeps", exercises: [
-          { id: "mon_curl", name: "Bizepscurls", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
-        ]},
-        { name: "Bauch", exercises: [
-          { id: "mon_crunch", name: "Kabel-Crunch", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+          { id: "mon_shrug", name: "Shrugs mit Kurzhanteln", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
       ]
     },
@@ -2435,29 +2458,23 @@ const DEFAULT_PLAN = {
         { name: "Beine", exercises: [
           { id: "wed_legpress", name: "Beinpresse", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
         ]},
-        { name: "Brust", exercises: [
-          { id: "wed_inclinedb", name: "Schrägbankdrücken mit Kurzhanteln", sets: "3x6-12", type: "grund", rirTarget: "1–2", restSeconds: 165 },
-        ]},
         { name: "Rücken", exercises: [
           { id: "wed_row", name: "Rudern an Maschine oder Kabelzug", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
         ]},
+        { name: "Brust", exercises: [
+          { id: "wed_inclinedb", name: "Schrägbankdrücken mit Kurzhanteln", sets: "3x6-10", type: "grund", rirTarget: "1–2", restSeconds: 165 },
+        ]},
         { name: "Beine", exercises: [
-          { id: "wed_legcurl", name: "Beinbeuger", sets: "3x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 120 },
-        ]},
-        { name: "Schultern", exercises: [
-          { id: "wed_ohp", name: "Schulterdrücken", sets: "2x6-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
-        ]},
-        { name: "Schultern", exercises: [
-          { id: "wed_facepull", name: "Face Pulls", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
-        ]},
-        { name: "Rücken", exercises: [
-          { id: "wed_shrug", name: "Shrugs am Kabel", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
+          { id: "wed_legcurl", name: "Beinbeuger", sets: "3x8-12", type: "isolation", rirTarget: "1–2", restSeconds: 120 },
         ]},
         { name: "Brust", exercises: [
           { id: "wed_butterfly", name: "Butterfly", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
-        { name: "Trizeps", exercises: [
-          { id: "wed_tricep", name: "Trizepsdrücken am Kabel", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
+        { name: "Schultern", exercises: [
+          { id: "wed_facepull", name: "Face Pulls", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        ]},
+        { name: "Bizeps", exercises: [
+          { id: "fri_curl", name: "Bizepscurls", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
       ]
     },
@@ -2465,34 +2482,25 @@ const DEFAULT_PLAN = {
       label: "Freitag", sub: "Ganzkörper C",
       groups: [
         { name: "Beine", exercises: [
-          { id: "fri_hacksquat", name: "Hack Squat", sets: "2x6-10", type: "grund", rirTarget: "1–2", restSeconds: 180 },
+          { id: "fri_hacksquat", name: "Hack Squat", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 165 },
+        ]},
+        { name: "Schultern", exercises: [
+          { id: "wed_ohp", name: "Schulterdrücken", sets: "3x6-10", type: "grund", rirTarget: "1–2", restSeconds: 150 },
+        ]},
+        { name: "Rücken", exercises: [
+          { id: "fri_barbellrow", name: "Langhantelrudern vorgebeugt", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
         ]},
         { name: "Brust", exercises: [
           { id: "fri_dips", name: "Dips mit Zusatzgewicht", sets: "3x6-12", type: "grund", rirTarget: "1–2", restSeconds: 165 },
         ]},
-        { name: "Rücken", exercises: [
-          { id: "fri_pulldown", name: "Klimmzüge/Latzug", sets: "3x8-12", type: "grund", rirTarget: "1–2", restSeconds: 150 },
-        ]},
         { name: "Beine", exercises: [
-          { id: "fri_legext", name: "Beinstrecker", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 120 },
-        ]},
-        { name: "Beine", exercises: [
-          { id: "fri_legcurl", name: "Beinbeuger sitzend", sets: "3x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 120 },
-        ]},
-        { name: "Schultern", exercises: [
-          { id: "fri_lateral", name: "Seitheben", sets: "3x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
-        ]},
-        { name: "Beine", exercises: [
-          { id: "fri_calfraise", name: "Wadenheben sitzend", sets: "3x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
-        ]},
-        { name: "Bizeps", exercises: [
-          { id: "fri_curl", name: "Bizepscurls", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
+          { id: "fri_calfraise", name: "Wadenheben sitzend", sets: "4x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
         { name: "Trizeps", exercises: [
-          { id: "fri_ohtricep", name: "Überkopf-Trizeps", sets: "3x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
+          { id: "wed_tricep", name: "Trizepsdrücken am Kabel", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
         { name: "Bauch", exercises: [
-          { id: "fri_leraise", name: "Hanging Leg Raises", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+          { id: "mon_crunch", name: "Kabel-Crunch", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
         ]},
       ]
     }
@@ -3451,7 +3459,9 @@ function exportTrainingPDF(){
         const rows = [];
         Object.keys(state.history).forEach(function(id){
           const found = (state.history[id] || []).find(function(h){ return h.date === dateStr; });
-          if(found) rows.push({ name: idToName[id] || id, sets: found.sets });
+          // idToName kennt nur Übungen der aktuellen Pläne; für frühere greift der im
+          // Verlaufseintrag mitgeschriebene Name.
+          if(found) rows.push({ name: idToName[id] || found.name || id, sets: found.sets });
         });
         if(rows.length){
           bodyHtml += "<ul>";
@@ -5798,7 +5808,9 @@ function openDayDetail(dateStr){
   Object.keys(state.history).forEach(function(id){
     if(seenIds[id]) return;
     const found = (state.history[id] || []).find(function(h){ return h.date === dateStr; });
-    if(found){ rows.push({ name: exerciseNameById(id) || id, sets: found.sets }); seenIds[id] = true; }
+    // Steht die Übung nicht mehr im Plan, liefert exerciseNameById() nichts. Der Verlaufseintrag
+    // führt seinen Namen aber selbst mit — sonst stünde hier die rohe ID wie "mon_curl".
+    if(found){ rows.push({ name: exerciseNameById(id) || found.name || id, sets: found.sets }); seenIds[id] = true; }
   });
 
   let html = '<div class="day-modal-head"><h3>' + formatDateLong(dateStr) + '</h3>' +
