@@ -849,9 +849,105 @@
     background:var(--surface);border:1px solid var(--line);border-radius:18px;
     padding:14px 16px;margin:-2px 0 12px;color:var(--ink-soft);
   }
-  .recipe-detail h4{font-family:'Baloo 2',sans-serif;font-size:13px;color:var(--text-strong);margin:0 0 6px;}
-  .recipe-detail ul{margin:0 0 12px;padding-left:18px;font-size:12.5px;line-height:1.7;}
-  .recipe-detail ol{margin:0;padding-left:18px;font-size:12.5px;line-height:1.8;}
+  .recipe-detail h4{font-family:'Baloo 2',sans-serif;font-size:15px;color:var(--text-strong);margin:0;}
+  /* Die Reihenfolge wird über die order-Eigenschaft gesetzt, damit die Karten beim Filtern
+     und Sortieren nicht neu erzeugt werden müssen. Der Block muss dafür selbst das
+     Flex-Element sein — mit display:contents wäre er keines und order bliebe wirkungslos. */
+  #recipeList{display:flex;flex-direction:column;}
+
+  /* --- Rezept-Detail: Zutaten als antippbare Liste ---------------------------------------
+     Die Zutaten standen als 12,5px-Aufzählung da — zu klein, um sie beim Kochen vom
+     aufgestellten Handy abzulesen, und ohne jede Möglichkeit, eine einzelne davon
+     mitzunehmen. Jetzt ist jede Zeile ein Knopf in Lesegröße. */
+  .rd-kopf{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}
+  .rd-portionen{display:flex;gap:4px;flex:0 0 auto;}
+  .rd-portion{
+    min-width:38px;min-height:var(--tap-min,44px);padding:0 10px;border-radius:11px;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;
+  }
+  .rd-portion.aktiv{background:var(--olive);border-color:var(--olive);color:#fff;}
+  .rd-hinweis{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0 0 10px;}
+  .rd-zutaten{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+  .rd-zutat{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
+    padding:10px 12px;border:1px solid var(--line);border-radius:13px;background:var(--bg);
+    font-family:'Inter',sans-serif;font-size:15px;line-height:1.35;color:var(--ink);
+    min-height:var(--tap-min,44px);
+  }
+  .rd-zutat.drin{border-color:var(--olive);background:var(--pastel-overlay);}
+  .rd-zutat-box{
+    flex:0 0 auto;width:24px;height:24px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;font-size:14px;border:1.5px solid var(--line);color:var(--ink-soft);
+    background:var(--surface);
+  }
+  .rd-zutat.drin .rd-zutat-box{background:var(--olive);border-color:var(--olive);color:#fff;}
+  .rd-zutat-text{flex:1 1 auto;min-width:0;}
+  .rd-alle{width:100%;margin-top:2px;}
+  .rd-bestaetigung[hidden]{display:none;}
+  .rd-bestaetigung{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    margin-top:9px;padding:9px 12px;border-radius:13px;
+    background:var(--pastel-overlay);border:1px solid var(--olive);
+    font-size:13px;color:var(--text-strong);font-weight:600;
+  }
+  .rd-bestaetigung-text{display:flex;align-items:center;gap:6px;}
+  .rd-zur-liste{
+    flex:0 0 auto;border:none;border-radius:10px;background:var(--olive);color:#fff;cursor:pointer;
+    padding:8px 12px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;
+    min-height:var(--tap-min,44px);
+  }
+  .rd-zubereitung-titel{margin-top:16px !important;}
+  .rd-portionshinweis{margin-top:6px;}
+  .rd-schritte{margin:8px 0 0;padding-left:20px;font-size:14px;line-height:1.75;color:var(--ink);}
+  .rd-schritte li{margin-bottom:7px;}
+  .rd-essen{width:100%;margin-top:14px;}
+
+  /* --- Einkaufsliste: nach Warengruppen statt nach Zufall ------------------------------- */
+  .ek-zaehler{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;color:var(--olive);}
+  .ek-fortschritt{display:flex;align-items:center;gap:9px;margin:2px 0 12px;}
+  .ek-balken{flex:1 1 auto;height:7px;border-radius:4px;background:var(--line);overflow:hidden;}
+  .ek-balken-fuell{height:100%;background:var(--olive);border-radius:4px;transition:width .25s;}
+  .ek-fortschritt-text{flex:0 0 auto;font-size:11.5px;color:var(--ink-soft);}
+  .ek-gruppe{margin-bottom:12px;}
+  .ek-gruppe-kopf{
+    display:flex;align-items:center;gap:7px;margin-bottom:5px;
+    font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);
+  }
+  .ek-gruppe-kopf svg{width:14px;height:14px;}
+  .ek-gruppe-zahl{
+    margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0;
+    background:var(--bg);border-radius:8px;padding:1px 7px;
+  }
+  .ek-zeile{
+    display:flex;align-items:center;gap:10px;cursor:pointer;
+    padding:9px 10px;border-radius:12px;background:var(--bg);margin-bottom:5px;
+    min-height:var(--tap-min,44px);
+  }
+  .ek-haken{
+    flex:0 0 auto;width:22px;height:22px;border-radius:7px;border:1.5px solid var(--line);
+    background:var(--surface);display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:#fff;
+  }
+  .ek-zeile.erledigt .ek-haken{background:var(--olive);border-color:var(--olive);}
+  .ek-text{flex:1 1 auto;min-width:0;font-size:14.5px;line-height:1.35;color:var(--ink);}
+  .ek-zeile.erledigt .ek-text{text-decoration:line-through;color:var(--ink-soft);}
+  .ek-von{display:block;font-size:11px;color:var(--ink-soft);margin-top:1px;}
+  .ek-weg{
+    flex:0 0 auto;width:30px;height:30px;border:none;border-radius:50%;background:none;
+    color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:13px;padding:0;position:relative;
+  }
+  .ek-weg::after{content:"";position:absolute;inset:-7px;}
+  .ek-gruppe-erledigt{opacity:.72;}
+
+  /* Kurzes Aufleuchten, wenn aus einem Rezept zur Liste gesprungen wird */
+  @keyframes kartenPuls{
+    0%{box-shadow:0 0 0 0 rgba(0,0,0,0);}
+    18%{box-shadow:0 0 0 4px var(--olive);}
+    100%{box-shadow:0 0 0 0 rgba(0,0,0,0);}
+  }
+  .karte-hervor{animation:kartenPuls 1.8s ease-out;}
   .no-recipes{font-size:12.5px;color:var(--ink-soft);line-height:1.6;}
 
   .supp-hint{font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 14px;}
@@ -1779,8 +1875,12 @@
     </div>
 
     <div class="rank-card" id="shoppingListCard" style="display:none;">
-      <div class="rank-head"><span class="rank-title"><span class="ti-icon" data-icon="korb"></span>Einkaufsliste</span></div>
+      <div class="rank-head">
+        <span class="rank-title"><span class="ti-icon" data-icon="korb"></span>Einkaufsliste</span>
+        <span class="ek-zaehler" id="shoppingCount"></span>
+      </div>
       <div id="shoppingListArea"></div>
+      <button class="quickfill-btn" id="clearDoneBtn" style="margin-top:10px;display:none;">Erledigte entfernen</button>
       <button class="backup-btn" id="clearShoppingListBtn" style="margin-top:8px;">Liste leeren</button>
     </div>
     <div id="recipeFilterBlock">
@@ -1796,6 +1896,7 @@
       <div class="filter-row" id="goalFilterRow"></div>
     </div>
     <p class="rezept-treffer" id="recipeSearchInfo" style="display:none;" role="status" aria-live="polite"></p>
+    <div id="recipeEmpty" hidden></div>
     <div id="recipeList"></div>
   </div>
 
@@ -7952,7 +8053,21 @@ function getMealTargetKcal(){
   if(!energie) return null;
   return energie.targetKcal / 3;
 }
-function toggleRecipe(id){ openRecipe[id] = !openRecipe[id]; renderRecipes(); }
+/* Klappt genau ein Rezept auf oder zu. Früher lief hier renderRecipes() — und damit ein
+   kompletter Neuaufbau der Liste samt aller 50 Fotos. */
+function toggleRecipe(id){
+  openRecipe[id] = !openRecipe[id];
+  const k = rezeptBloecke[id];
+  if(!k){ renderRecipes(); return; }
+  if(openRecipe[id]){
+    const r = RECIPES.find(function(x){ return x.id === id; });
+    if(r) renderRezeptDetail(r);
+    k.detail.hidden = false;
+  } else {
+    k.detail.hidden = true;
+    k.detail.innerHTML = "";
+  }
+}
 
 // --- Rezeptsuche -------------------------------------------------------------------------
 // Gesucht wird in Namen, Zutaten sowie in Mahlzeit- und Kategorie-Angaben. Mehrere Wörter
@@ -8055,16 +8170,171 @@ function rezeptSuchmodusAnzeigen(aktiv){
   }
 }
 
-// --- Einkaufsliste ---
-function addRecipeToShoppingList(r){
+// --- Einkaufsliste ------------------------------------------------------------------------
+/* Die Liste war eine flache Aufzählung in der Reihenfolge des Hinzufügens. Im Supermarkt
+   läuft man damit mehrfach durch denselben Gang. Deshalb werden die Einträge nach
+   Warengruppen sortiert.
+   Die Reihenfolge der Gruppen ist die Reihenfolge der Prüfung, und sie ist bewusst so
+   gewählt: "Kokosmilch" und "Pflanzenmilch" enthalten beide "milch", gehören aber in
+   unterschiedliche Gänge. Wer hier etwas ergänzt, muss den spezielleren Begriff vor den
+   allgemeineren setzen. */
+const EINKAUF_GRUPPEN = [
+  { name:"Vorrat & Gewürze", icon:"korb", woerter:[
+    "kokosmilch","tomatenmark","passierte tomaten","gehackte tomaten","dose","sojasauce","sauce",
+    "dressing","paste","essig","balsamico","senf","olivenöl","sesamöl","öl","salz","pfeffer",
+    "curry","paprikapulver","chili","kreuzkümmel","muskat","zimt","oregano","basilikum",
+    "rosmarin","thymian","ingwer","honig","ahornsirup","sirup","brühe","backpulver",
+    "proteinpulver","chiasamen","leinsamen","sesam","kräuter","vanille","kakao","erdnussmus",
+    "tahini","hummus","kokosraspel","olive","alge"] },
+  /* Fleisch steht bewusst vor Obst & Gemüse: der vegane Patty wird sonst über die
+     "Kichererbsen" in seiner Beschreibung als Gemüse einsortiert. Damit das gefahrlos geht,
+     heißen die Schlagwörter hier "rinderhack"/"hackfleisch" und nicht "hack" — sonst hätte
+     "5g frische Kräuter (1 EL ge-hack-t)" plötzlich in die Fleischtheke gezeigt. */
+  { name:"Fleisch & Fisch", icon:"hantel", woerter:[
+    "hähnchen","hühner","pute","rind","schwein","rinderhack","hackfleisch","steak","schnitzel",
+    "schinken","speck","lachs","thunfisch","garnele","fisch","kabeljau","forelle","patty"] },
+  { name:"Obst & Gemüse", icon:"schale", woerter:[
+    "apfel","banane","beere","erdbeer","himbeer","blaubeer","zitrone","limette","orange","birne",
+    "mango","ananas","traube","dattel","avocado","tomate","gurke","paprika","zucchini","aubergine",
+    "karotte","möhre","brokkoli","blumenkohl","spinat","salat","rucola","zwiebel","knoblauch",
+    "kartoffel","süßkartoffel","kürbis","champignon","pilz","erbse","mais","sellerie","lauch",
+    "frühlingszwiebel","spargel","rote bete","gemüse","obst","kresse","petersilie","schnittlauch",
+    "koriander","minze","dill"] },
+  { name:"Milch & Eier", icon:"tropfen", woerter:[
+    "milch","joghurt","quark","skyr","käse","feta","halloumi","mozzarella","parmesan","hüttenkäse",
+    "frischkäse","butter","sahne","schmand","ei","eier"] },
+  { name:"Getreide & Beilagen", icon:"schale", woerter:[
+    "reis","nudel","pasta","spaghetti","penne","haferflocken","hafer","brot","toast","brötchen",
+    "pita","bagel","crouton","quinoa","couscous","bulgur","mehl","tortilla","wrap","linsen",
+    "kichererbsen","bohnen","tofu","tempeh","falafel","nuss","nüsse","mandel","walnuss","cashew",
+    "müsli"] },
+];
+const EINKAUF_REST = { name:"Sonstiges", icon:"notiz" };
+
+/* Kurze Suchwörter dürfen nicht als beliebige Teilzeichenkette greifen: "ei" steckt in
+   "Reis" und "Fleisch" und hätte Reis unter "Milch & Eier" einsortiert. Ab vier Zeichen ist
+   die Teilzeichenkette dagegen gewollt — nur so findet "milch" auch die "Pflanzenmilch" und
+   "zwiebel" die "Frühlingszwiebeln". */
+function istBuchstabe(c){ return !!c && /[a-zäöüß]/.test(c); }
+function wortTreffer(text, wort){
+  let ab = 0;
+  for(;;){
+    const i = text.indexOf(wort, ab);
+    if(i === -1) return false;
+    if(wort.length >= 4) return true;
+    const davor = i > 0 ? text.charAt(i - 1) : "";
+    const danach = text.charAt(i + wort.length);
+    if(!istBuchstabe(davor) && !istBuchstabe(danach)) return true;
+    ab = i + 1;
+  }
+}
+function zutatGruppe(text){
+  const t = String(text || "").toLowerCase();
+  for(let i = 0; i < EINKAUF_GRUPPEN.length; i++){
+    const g = EINKAUF_GRUPPEN[i];
+    for(let j = 0; j < g.woerter.length; j++){
+      if(wortTreffer(t, g.woerter[j])) return g;
+    }
+  }
+  return EINKAUF_REST;
+}
+
+/* --- Portionen ---------------------------------------------------------------------------
+   Die Rezepte sind für eine Portion angelegt. Wer für zwei oder vier kocht, musste bisher im
+   Kopf rechnen — und beim Einkaufen erst recht.
+   Skaliert werden ALLE Zahlen einer Zeile, nicht nur die erste: Zeilen wie
+   "3g Salz (½ TL), 1g Pfeffer (½ TL)" tragen mehrere Mengen, die sonst auseinanderliefen.
+   Geprüft an allen 252 Zutatenzeilen der App: Jede enthält mindestens eine Zahl, und alle
+   Zahlen darin sind Mengenangaben. */
+const BRUCH_ZEICHEN = { "½":0.5, "¼":0.25, "¾":0.75, "⅓":1/3, "⅔":2/3 };
+// Maßeinheiten bleiben unverändert; nach ihnen wird nichts in den Plural gesetzt.
+const MASS_EINHEITEN = ["g","kg","ml","l","tl","el","prise","msp","cl"];
+// Zählbare Wörter, die in dieser Rezeptsammlung hinter einer Zahl vorkommen.
+const MEHRZAHL = {
+  "Dose":"Dosen", "Zwiebel":"Zwiebeln", "Knoblauchzehe":"Knoblauchzehen", "Zehe":"Zehen",
+  "Zitrone":"Zitronen", "Limette":"Limetten", "Apfel":"Äpfel", "Birne":"Birnen",
+  "Banane":"Bananen", "Karotte":"Karotten", "Möhre":"Möhren", "Gurke":"Gurken",
+  "Paprika":"Paprika", "Zucchini":"Zucchini", "Tomate":"Tomaten", "Scheibe":"Scheiben",
+  "Ei":"Eier", "Brötchen":"Brötchen", "Vollkornbrötchen":"Vollkornbrötchen",
+  "Stück":"Stück", "Handvoll":"Handvoll", "Blatt":"Blätter", "Bund":"Bund",
+};
+
+function zahlAlsText(n){
+  const gerundet = Math.round(n * 100) / 100;
+  if(Math.abs(gerundet - Math.round(gerundet)) < 0.001) return String(Math.round(gerundet));
+  const rest = gerundet - Math.floor(gerundet);
+  const ganz = Math.floor(gerundet);
+  // Halbe und viertel Mengen liest man als Bruch schneller als als Kommazahl
+  for(const z in BRUCH_ZEICHEN){
+    if(Math.abs(rest - BRUCH_ZEICHEN[z]) < 0.001) return (ganz ? String(ganz) : "") + z;
+  }
+  return String(gerundet).replace(".", ",");
+}
+
+function skaliereZutat(text, faktor){
+  if(!faktor || faktor === 1) return String(text);
+  let s = String(text);
+  // Erst "1½" und Bruchzeichen zu Dezimalzahlen, damit eine Regel für alles reicht
+  s = s.replace(/(\d+)?\s*([½¼¾⅓⅔])/g, function(_, ganz, bruch){
+    return String((ganz ? parseInt(ganz, 10) : 0) + BRUCH_ZEICHEN[bruch]);
+  });
+  s = s.replace(/\d+(?:[.,]\d+)?/g, function(z){
+    return zahlAlsText(parseFloat(z.replace(",", ".")) * faktor);
+  });
+  /* Mehrzahl: nur beim Wort direkt hinter der ersten Zahl, und nur wenn das keine Maßeinheit
+     ist. Trifft es dort nicht, wird das letzte Wort des ersten Abschnitts versucht — so wird
+     aus "1 reife Banane" auch "2 reife Bananen".
+     Entscheidend ist die Menge NACH dem Skalieren: "½ Zitrone" wird verdoppelt zu einer
+     ganzen Zitrone und darf dann eben nicht "1 Zitronen" heißen. */
+  const m = s.match(/^(\S+)\s+(\S+)/);
+  const menge = m ? parseFloat(String(m[1]).replace(",", ".")) : NaN;
+  if(m && menge > 1
+     && MASS_EINHEITEN.indexOf(m[2].toLowerCase().replace(/[^a-zäöüß]/g, "")) === -1
+     && !/^\d/.test(m[2])){
+    if(MEHRZAHL[m[2]]){
+      s = s.replace(m[2], MEHRZAHL[m[2]]);
+    } else {
+      const abschnitt = s.split(",")[0];
+      const woerter = abschnitt.trim().split(/\s+/);
+      const letztes = woerter[woerter.length - 1];
+      if(MEHRZAHL[letztes]) s = s.replace(letztes, MEHRZAHL[letztes]);
+    }
+  }
+  return s;
+}
+
+function istAufListe(text){
+  return state.shoppingList.some(function(item){ return item.text === text; });
+}
+function listenIndex(text){
+  for(let i = 0; i < state.shoppingList.length; i++){
+    if(state.shoppingList[i].text === text) return i;
+  }
+  return -1;
+}
+
+// Einzelne Zutat auf die Liste legen oder wieder herunternehmen.
+function toggleZutatAufListe(text, vonRezept){
+  const idx = listenIndex(text);
+  if(idx >= 0) state.shoppingList.splice(idx, 1);
+  else state.shoppingList.push({ text: text, checked: false, von: vonRezept || "" });
+  saveState();
+  renderShoppingList();
+  return idx < 0;
+}
+
+function addRecipeToShoppingList(r, faktor){
   let added = 0;
   r.ingredients.forEach(function(ing){
-    const exists = state.shoppingList.some(function(item){ return item.text === ing; });
-    if(!exists){ state.shoppingList.push({ text: ing, checked: false }); added++; }
+    const text = skaliereZutat(ing, faktor);
+    if(!istAufListe(text)){
+      state.shoppingList.push({ text: text, checked: false, von: r.name });
+      added++;
+    }
   });
   saveState();
   renderShoppingList();
-  showToast(added > 0 ? (added + " Zutaten hinzugefügt") : "Zutaten waren schon auf der Liste");
+  return added;
 }
 function toggleShoppingItem(idx){
   if(state.shoppingList[idx]){
@@ -8087,24 +8357,94 @@ function clearShoppingList(){
   saveState();
   renderShoppingList();
 }
+// Nimmt alle abgehakten Einträge heraus — nach dem Einkauf der übliche nächste Schritt.
+function erledigteEntfernen(){
+  const vorher = state.shoppingList.length;
+  state.shoppingList = state.shoppingList.filter(function(i){ return !i.checked; });
+  if(state.shoppingList.length === vorher) return;
+  saveState();
+  renderShoppingList();
+  showToast((vorher - state.shoppingList.length) + " erledigte Einträge entfernt");
+}
+
+/* Springt zur Einkaufsliste und hebt sie kurz hervor. Ohne das war nach dem Hinzufügen aus
+   einem Rezept nicht ersichtlich, wohin die Zutaten überhaupt gewandert sind — die Liste
+   steht weit oben im Bereich, das Rezept oft weit unten. */
+function zurEinkaufsliste(){
+  const card = document.getElementById("shoppingListCard");
+  if(!card || card.style.display === "none") return;
+  card.scrollIntoView({ behavior: "smooth", block: "start" });
+  card.classList.remove("karte-hervor");
+  void card.offsetWidth;            // erzwingt den Neustart der Animation
+  card.classList.add("karte-hervor");
+  setTimeout(function(){ card.classList.remove("karte-hervor"); }, 1800);
+}
+
 function renderShoppingList(){
   const card = document.getElementById("shoppingListCard");
   const area = document.getElementById("shoppingListArea");
   if(!card || !area) return;
   if(!state.shoppingList.length){
     card.style.display = "none";
+    const zaehler = document.getElementById("shoppingCount");
+    if(zaehler) zaehler.textContent = "";
+    rezeptListenStandAktualisieren();
     return;
   }
   card.style.display = "block";
-  area.innerHTML = state.shoppingList.map(function(item, i){
-    return '<div class="home-pr-row" style="cursor:pointer;" data-idx="' + i + '">' +
-      '<span style="' + (item.checked ? "text-decoration:line-through;color:var(--ink-soft);" : "") + '">' +
-      (item.checked ? "☑ " : "☐ ") + escapeHtml(item.text) + '</span>' +
-      '<span class="set-del" data-remove-idx="' + i + '">✕</span></div>';
-  }).join("");
+
+  const offen = state.shoppingList.filter(function(i){ return !i.checked; });
+  const erledigt = state.shoppingList.filter(function(i){ return i.checked; });
+  const zaehler = document.getElementById("shoppingCount");
+  if(zaehler) zaehler.textContent = offen.length + " offen";
+
+  // Nach Warengruppen bündeln; erledigte Einträge wandern ans Ende und stören nicht mehr.
+  const gruppen = [];
+  offen.forEach(function(item){
+    const g = zutatGruppe(item.text);
+    let eintrag = gruppen.find(function(x){ return x.name === g.name; });
+    if(!eintrag){ eintrag = { name: g.name, icon: g.icon, items: [] }; gruppen.push(eintrag); }
+    eintrag.items.push(item);
+  });
+  // Reihenfolge wie im Laden, nicht wie zufällig hinzugefügt
+  const reihenfolge = EINKAUF_GRUPPEN.map(function(g){ return g.name; }).concat([EINKAUF_REST.name]);
+  gruppen.sort(function(a, b){ return reihenfolge.indexOf(a.name) - reihenfolge.indexOf(b.name); });
+
+  function zeile(item){
+    const i = state.shoppingList.indexOf(item);
+    return '<div class="ek-zeile' + (item.checked ? " erledigt" : "") + '" data-idx="' + i + '">' +
+      '<span class="ek-haken" aria-hidden="true">' + (item.checked ? icon("haken") : "") + '</span>' +
+      '<span class="ek-text">' + escapeHtml(item.text) +
+        (item.von ? '<span class="ek-von">' + escapeHtml(item.von) + '</span>' : '') +
+      '</span>' +
+      '<button type="button" class="ek-weg" data-remove-idx="' + i + '" aria-label="Eintrag entfernen">' +
+      icon("kreuz") + '</button></div>';
+  }
+
+  let html = '<div class="ek-fortschritt">' +
+    '<div class="ek-balken"><div class="ek-balken-fuell" style="width:' +
+      Math.round((erledigt.length / state.shoppingList.length) * 100) + '%;"></div></div>' +
+    '<span class="ek-fortschritt-text">' + erledigt.length + ' von ' + state.shoppingList.length + ' erledigt</span>' +
+    '</div>';
+
+  gruppen.forEach(function(g){
+    html += '<div class="ek-gruppe">' +
+      '<div class="ek-gruppe-kopf"><span class="ti-icon">' + icon(g.icon) + '</span>' +
+      escapeHtml(g.name) + '<span class="ek-gruppe-zahl">' + g.items.length + '</span></div>' +
+      g.items.map(zeile).join("") + '</div>';
+  });
+
+  if(erledigt.length){
+    html += '<div class="ek-gruppe ek-gruppe-erledigt">' +
+      '<div class="ek-gruppe-kopf">' + icon("haken") + 'Erledigt' +
+      '<span class="ek-gruppe-zahl">' + erledigt.length + '</span></div>' +
+      erledigt.map(zeile).join("") + '</div>';
+  }
+  area.innerHTML = html;
+
   area.querySelectorAll("[data-idx]").forEach(function(row){
     row.onclick = function(e){
-      if(e.target.hasAttribute("data-remove-idx")) return;
+      if(e.target.closest("[data-remove-idx]")) return;
       toggleShoppingItem(parseInt(row.getAttribute("data-idx"), 10));
     };
   });
@@ -8114,8 +8454,13 @@ function renderShoppingList(){
       removeShoppingItem(parseInt(btn.getAttribute("data-remove-idx"), 10));
     };
   });
+  const wegBtn = document.getElementById("clearDoneBtn");
+  if(wegBtn) wegBtn.style.display = erledigt.length ? "block" : "none";
+  rezeptListenStandAktualisieren();
 }
 document.getElementById("clearShoppingListBtn").onclick = clearShoppingList;
+const clearDoneBtnEl = document.getElementById("clearDoneBtn");
+if(clearDoneBtnEl) clearDoneBtnEl.onclick = erledigteEntfernen;
 
 // Das Suchfeld steht im festen HTML und wird von renderRecipes() nicht angefasst — sonst
 // verlöre es bei jedem Zeichen den Fokus und der Cursor spränge ans Ende.
@@ -8185,14 +8530,10 @@ function addWeekToShoppingList(){
   ids.forEach(function(id){
     const r = findRecipeById(id);
     if(!r) return;
-    r.ingredients.forEach(function(ing){
-      const exists = state.shoppingList.some(function(item){ return item.text === ing; });
-      if(!exists){ state.shoppingList.push({ text: ing, checked: false }); totalAdded++; }
-    });
+    totalAdded += addRecipeToShoppingList(r, 1);
   });
-  saveState();
-  renderShoppingList();
   showToast(totalAdded > 0 ? (totalAdded + " Zutaten aus " + ids.length + " Rezepten hinzugefügt") : "Alle Zutaten waren schon auf der Liste");
+  if(totalAdded > 0) zurEinkaufsliste();
 }
 document.getElementById("mealPlanToShoppingBtn").onclick = addWeekToShoppingList;
 function renderMealPlan(){
@@ -8252,6 +8593,161 @@ function renderMealPlan(){
   });
 }
 
+/* Die Rezeptliste wurde bisher bei jeder Änderung komplett neu aufgebaut — auch beim bloßen
+   Aufklappen eines Rezepts oder bei jedem Buchstaben in der Suche. Damit wurden alle 50
+   <img>-Elemente verworfen und neu erzeugt; der Browser musste jedes Foto erneut aus seiner
+   Datenurl dekodieren, was als Flackern sichtbar war (gemessen: 0 von 50 Bildern überlebten
+   einen Tipp).
+   Die Karten werden deshalb einmal gebaut und danach nur noch ein- und ausgeblendet sowie
+   umsortiert. Die Bildelemente bleiben dabei am Leben. */
+let rezeptBloecke = {};      // Rezept-id -> { block, karte, detail, treffer }
+let rezeptPortionen = {};    // Rezept-id -> 1 | 2 | 4
+
+function rezeptKarteHTML(r, idx){
+  const dietLabel = r.diet === "vegan" ? "Vegan" : (r.diet === "vegetarian" ? "Vegetarisch" : "Allesesser");
+  return '<div class="recipe-top"><span class="recipe-name">' + escapeHtml(r.name) + '</span>' +
+      '<span class="recipe-kcal">' + r.kcal + ' kcal</span></div>' +
+    '<div class="recipe-photo">' +
+      (r.photo ? ('<img src="' + r.photo + '" alt="' + escapeHtml(r.name) + '" decoding="async">') : (r.img || "🍽️")) +
+    '</div>' +
+    '<div class="recipe-tags">' +
+      '<span class="tag">' + dietLabel + '</span>' +
+      '<span class="tag match" data-ziel hidden>✓ Passt zu deinem Ziel</span>' +
+      r.allergens.map(function(a){ return '<span class="tag">' + ALLERGEN_LABELS[a] + '</span>'; }).join("") +
+    '</div>' +
+    '<div class="recipe-macros-row"><span>P ' + r.p + 'g</span><span>F ' + r.f + 'g</span><span>KH ' + r.c + 'g</span></div>' +
+    '<div class="recipe-hit" data-hit hidden></div>';
+}
+
+function baueRezeptKarten(){
+  const list = document.getElementById("recipeList");
+  if(!list) return;
+  list.innerHTML = "";
+  rezeptBloecke = {};
+  RECIPES.forEach(function(r, idx){
+    const block = document.createElement("div");
+    block.className = "recipe-block";
+    const karte = document.createElement("div");
+    // Die Farbe hängt am festen Platz im Rezeptfeld, nicht an der Position in der gefilterten
+    // Liste — sonst wechselte ein Rezept beim Filtern die Farbe.
+    karte.className = "recipe-card pc-" + (idx % 3);
+    karte.innerHTML = rezeptKarteHTML(r, idx);
+    karte.onclick = function(){ toggleRecipe(r.id); };
+    const detail = document.createElement("div");
+    detail.className = "recipe-detail";
+    detail.hidden = true;
+    block.appendChild(karte);
+    block.appendChild(detail);
+    list.appendChild(block);
+    rezeptBloecke[r.id] = { block: block, karte: karte, detail: detail };
+  });
+}
+
+// --- Detailansicht eines Rezepts ---
+function rezeptPortion(id){ return rezeptPortionen[id] || 1; }
+
+function setzeRezeptPortion(id, faktor){
+  rezeptPortionen[id] = faktor;
+  const r = RECIPES.find(function(x){ return x.id === id; });
+  if(r) renderRezeptDetail(r);
+}
+
+function renderRezeptDetail(r){
+  const knoten = rezeptBloecke[r.id];
+  if(!knoten) return;
+  const detail = knoten.detail;
+  const faktor = rezeptPortion(r.id);
+  const zutaten = r.ingredients.map(function(z){ return skaliereZutat(z, faktor); });
+  const drauf = zutaten.filter(istAufListe).length;
+
+  let html = '<div class="rd-kopf">' +
+      '<h4>Zutaten</h4>' +
+      '<div class="rd-portionen" role="group" aria-label="Portionen">' +
+        [1, 2, 4].map(function(f){
+          return '<button type="button" class="rd-portion' + (f === faktor ? " aktiv" : "") +
+            '" data-portion="' + f + '" aria-pressed="' + (f === faktor) + '">' + f + '×</button>';
+        }).join("") +
+      '</div>' +
+    '</div>' +
+    '<p class="rd-hinweis">' + (faktor === 1 ? "Mengen für 1 Portion" : "Mengen für " + faktor + " Portionen") +
+      ' · tippe eine Zutat an, um sie einzeln auf die Einkaufsliste zu legen</p>' +
+    '<div class="rd-zutaten">' +
+      zutaten.map(function(z){
+        const drin = istAufListe(z);
+        return '<button type="button" class="rd-zutat' + (drin ? " drin" : "") + '" data-zutat="' + escapeHtml(z) + '" ' +
+          'aria-pressed="' + drin + '">' +
+          '<span class="rd-zutat-box" aria-hidden="true">' + (drin ? icon("haken") : icon("korb")) + '</span>' +
+          '<span class="rd-zutat-text">' + escapeHtml(z) + '</span></button>';
+      }).join("") +
+    '</div>';
+
+  html += '<button type="button" class="btn btn-primary rd-alle" data-alle>' +
+      icon("korb", "ki-inline") + ' ' +
+      (drauf === zutaten.length ? "Alle Zutaten sind auf der Liste"
+        : (drauf > 0 ? ("Restliche " + (zutaten.length - drauf) + " Zutaten auf die Liste")
+                     : "Alle " + zutaten.length + " Zutaten auf die Liste")) +
+    '</button>' +
+    '<div class="rd-bestaetigung" data-bestaetigung hidden></div>';
+
+  html += '<h4 class="rd-zubereitung-titel">Zubereitung</h4>' +
+    (faktor > 1 ? '<p class="rd-hinweis rd-portionshinweis">Die Schritte beschreiben eine Portion. ' +
+      'Zeiten und Temperaturen bleiben gleich, nur die Mengen oben sind ' + faktor + '×.</p>' : '') +
+    '<ol class="rd-schritte">' +
+    r.steps.map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join("") + '</ol>' +
+    '<button type="button" class="quickfill-btn rd-essen" data-essen>+ Zu heute hinzufügen (' + r.kcal + ' kcal)</button>';
+
+  detail.innerHTML = html;
+
+  detail.querySelectorAll("[data-portion]").forEach(function(b){
+    b.onclick = function(){ setzeRezeptPortion(r.id, parseInt(b.getAttribute("data-portion"), 10)); };
+  });
+  detail.querySelectorAll("[data-zutat]").forEach(function(b){
+    b.onclick = function(){
+      const text = b.getAttribute("data-zutat");
+      const dazu = toggleZutatAufListe(text, r.name);
+      renderRezeptDetail(r);
+      zeigeListenHinweis(r, dazu ? "1 Zutat auf der Liste" : "Zutat wieder entfernt", dazu);
+    };
+  });
+  const alle = detail.querySelector("[data-alle]");
+  if(alle) alle.onclick = function(){
+    const added = addRecipeToShoppingList({ name: r.name, ingredients: zutaten }, 1);
+    renderRezeptDetail(r);
+    zeigeListenHinweis(r, added > 0 ? (added + (added === 1 ? " Zutat" : " Zutaten") + " auf die Liste gelegt")
+                                    : "Alle Zutaten standen schon auf der Liste", true);
+  };
+  const essen = detail.querySelector("[data-essen]");
+  if(essen) essen.onclick = function(){
+    // Nährwerte gelten je Portion — beim Loggen zählt, wie viel man wirklich isst.
+    logFoodToday({ name: r.name + (faktor > 1 ? (" (" + faktor + " Portionen)") : ""),
+      kcal: r.kcal * faktor, p: r.p * faktor, f: r.f * faktor, c: r.c * faktor });
+  };
+}
+
+/* Sagt direkt im Rezept, was passiert ist, und bietet den Weg zur Liste an. Vorher gab es nur
+   einen Toast — der verschwand, und die Liste selbst steht weit oben im Bereich. */
+function zeigeListenHinweis(r, text, mitWeg){
+  const knoten = rezeptBloecke[r.id];
+  if(!knoten) return;
+  const feld = knoten.detail.querySelector("[data-bestaetigung]");
+  if(!feld) return;
+  feld.innerHTML = '<span class="rd-bestaetigung-text">' + icon("haken", "ki-inline") + ' ' + escapeHtml(text) + '</span>' +
+    (mitWeg ? '<button type="button" class="rd-zur-liste" data-zur-liste>Zur Einkaufsliste</button>' : '');
+  feld.hidden = false;
+  const btn = feld.querySelector("[data-zur-liste]");
+  if(btn) btn.onclick = zurEinkaufsliste;
+}
+
+// Hält die Zutatenhaken der offenen Rezepte im Takt mit der Einkaufsliste, wenn dort etwas
+// abgehakt oder gelöscht wird.
+function rezeptListenStandAktualisieren(){
+  Object.keys(openRecipe).forEach(function(id){
+    if(!openRecipe[id]) return;
+    const r = RECIPES.find(function(x){ return x.id === id; });
+    if(r && rezeptBloecke[id]) renderRezeptDetail(r);
+  });
+}
+
 function renderRecipes(){
   renderMealTypeFilter();
   renderGoalTagFilter();
@@ -8259,7 +8755,10 @@ function renderRecipes(){
   renderAllergenFilter();
   renderGoalFilter();
   const list = document.getElementById("recipeList");
-  list.innerHTML = "";
+  if(!list) return;
+  if(!Object.keys(rezeptBloecke).length) baueRezeptKarten();
+
+  const leer = document.getElementById("recipeEmpty");
   const mealTarget = getMealTargetKcal();
   const tokens = rezeptSuchbegriffe(recipeSearchTerm);
   const trefferInfos = {};
@@ -8305,80 +8804,67 @@ function renderRecipes(){
     }
   }
 
-  if(!filtered.length){
-    if(tokens.length){
-      const zaehler = rezeptTrefferOhneFilter(tokens);
-      let html = '<p class="no-recipes">Kein Rezept gefunden für „' + escapeHtml(recipeSearchTerm.trim()) + '".</p>';
-      if(zaehler.ohneFilter > 0){
-        html += '<button class="quickfill-btn" id="recipeFilterResetBtn" style="margin-top:10px;">Filter zurücksetzen (' +
-          zaehler.ohneFilter + ' Treffer)</button>';
-      }
-      if(zaehler.nurAllergen > 0){
-        html += '<p class="no-recipes" style="margin-top:10px;">' + zaehler.nurAllergen +
-          (zaehler.nurAllergen === 1 ? ' weiterer Treffer ist' : ' weitere Treffer sind') +
-          ' durch deine Allergen-Filter ausgeblendet.</p>';
-      }
-      if(!zaehler.ohneFilter && !zaehler.nurAllergen){
-        html += '<p class="no-recipes" style="margin-top:10px;">Gesucht wird in Rezeptnamen und Zutaten — versuch einen kürzeren Begriff, z. B. nur „Reis".</p>';
-      }
-      list.innerHTML = html;
-      const resetBtn = document.getElementById("recipeFilterResetBtn");
-      if(resetBtn) resetBtn.onclick = function(){
-        mealTypeFilter = null;
-        goalTagFilter = null;
-        dietFilter = "omni";
-        renderRecipes();
-      };
-    } else {
-      list.innerHTML = '<p class="no-recipes">Keine Rezepte passen zu dieser Kombination aus Filtern. Versuch, ein Allergen-Filter zu entfernen.</p>';
+  // Sichtbarkeit und Reihenfolge setzen, statt die Liste neu zu bauen
+  const sichtbar = {};
+  filtered.forEach(function(r, i){
+    sichtbar[r.id] = true;
+    const k = rezeptBloecke[r.id];
+    if(!k) return;
+    k.block.hidden = false;
+    k.block.style.order = String(i);
+    const ziel = k.karte.querySelector("[data-ziel]");
+    if(ziel) ziel.hidden = !(mealTarget && Math.abs(r.kcal - mealTarget) <= mealTarget * 0.22);
+    // Bei einem Zutaten-Treffer steht der Grund auf der Karte — sonst wäre nicht ersichtlich,
+    // warum "Ei" das Rezept "Protein-Pancakes" findet.
+    const hit = k.karte.querySelector("[data-hit]");
+    const zutat = trefferInfos[r.id] && trefferInfos[r.id].zutat;
+    if(hit){
+      hit.hidden = !zutat;
+      if(zutat) hit.innerHTML = icon("lupe", "ki-inline") + '<span>Zutat: ' + escapeHtml(zutat) + '</span>';
     }
-    return;
-  }
-
-  filtered.forEach(function(r, idx){
-    const isMatch = mealTarget && Math.abs(r.kcal - mealTarget) <= mealTarget * 0.22;
-    const card = document.createElement("div");
-    card.className = "recipe-card pc-" + (idx % 3);
-    const dietLabel = r.diet === "vegan" ? "Vegan" : (r.diet === "vegetarian" ? "Vegetarisch" : "Allesesser");
-    card.innerHTML =
-      '<div class="recipe-top"><span class="recipe-name">' + r.name + '</span><span class="recipe-kcal">' + r.kcal + ' kcal</span></div>' +
-      '<div class="recipe-photo">' + (r.photo ? ('<img src="' + r.photo + '" alt="' + r.name + '">') : (r.img || "🍽️")) + '</div>' +
-      '<div class="recipe-tags">' +
-        '<span class="tag">' + dietLabel + '</span>' +
-        (isMatch ? '<span class="tag match">✓ Passt zu deinem Ziel</span>' : '') +
-        r.allergens.map(function(a){ return '<span class="tag">' + ALLERGEN_LABELS[a] + '</span>'; }).join("") +
-      '</div>' +
-      '<div class="recipe-macros-row"><span>P ' + r.p + 'g</span><span>F ' + r.f + 'g</span><span>KH ' + r.c + 'g</span></div>' +
-      // Bei einem Zutaten-Treffer steht der Grund auf der Karte — sonst wäre nicht
-      // ersichtlich, warum "Ei" das Rezept "Protein-Pancakes" findet.
-      ((trefferInfos[r.id] && trefferInfos[r.id].zutat)
-        ? '<div class="recipe-hit">' + icon("lupe", "ki-inline") + '<span>Zutat: ' + escapeHtml(trefferInfos[r.id].zutat) + '</span></div>'
-        : '');
-    card.onclick = function(){ toggleRecipe(r.id); };
-    list.appendChild(card);
-
     if(openRecipe[r.id]){
-      const detail = document.createElement("div");
-      detail.className = "recipe-detail";
-      detail.innerHTML =
-        '<h4>Zutaten (1 Portion)</h4><ul>' + r.ingredients.map(function(i){ return '<li>' + i + '</li>'; }).join("") + '</ul>' +
-        '<h4>Zubereitung</h4><ol>' + r.steps.map(function(s){ return '<li>' + s + '</li>'; }).join("") + '</ol>';
-      const logBtn = document.createElement("button");
-      logBtn.className = "btn btn-primary";
-      logBtn.style.width = "100%";
-      logBtn.style.marginTop = "10px";
-      logBtn.textContent = "+ Zu heute hinzufügen (" + r.kcal + " kcal)";
-      logBtn.onclick = function(){ logFoodToday({ name: r.name, kcal: r.kcal, p: r.p, f: r.f, c: r.c }); };
-      detail.appendChild(logBtn);
-      const shopBtn = document.createElement("button");
-      shopBtn.className = "quickfill-btn";
-      shopBtn.style.marginTop = "8px";
-      shopBtn.innerHTML = icon("korb", "ki-inline") + " Zutaten zur Einkaufsliste hinzufügen";
-      shopBtn.onclick = function(){ addRecipeToShoppingList(r); };
-      detail.appendChild(shopBtn);
-      list.appendChild(detail);
+      k.detail.hidden = false;
+      renderRezeptDetail(r);
+    } else {
+      k.detail.hidden = true;
     }
   });
+  RECIPES.forEach(function(r){
+    if(sichtbar[r.id]) return;
+    const k = rezeptBloecke[r.id];
+    if(k) k.block.hidden = true;
+  });
+
+  if(!leer) return;
+  if(filtered.length){ leer.hidden = true; leer.innerHTML = ""; return; }
+
+  leer.hidden = false;
+  if(tokens.length){
+    const zaehler = rezeptTrefferOhneFilter(tokens);
+    let html = '<p class="no-recipes">Kein Rezept gefunden für „' + escapeHtml(recipeSearchTerm.trim()) + '".</p>';
+    if(zaehler.ohneFilter > 0){
+      html += '<button class="quickfill-btn" id="recipeFilterResetBtn" style="margin-top:10px;">Filter zurücksetzen (' +
+        zaehler.ohneFilter + ' Treffer)</button>';
+    }
+    if(zaehler.nurAllergen > 0){
+      html += '<p class="no-recipes" style="margin-top:10px;">' + zaehler.nurAllergen +
+        (zaehler.nurAllergen === 1 ? ' weiterer Treffer ist' : ' weitere Treffer sind') +
+        ' durch deine Allergen-Filter ausgeblendet.</p>';
+    }
+    if(!zaehler.ohneFilter && !zaehler.nurAllergen){
+      html += '<p class="no-recipes" style="margin-top:10px;">Gesucht wird in Rezeptnamen und Zutaten — versuch einen kürzeren Begriff, z. B. nur „Reis".</p>';
+    }
+    leer.innerHTML = html;
+    const resetBtn = document.getElementById("recipeFilterResetBtn");
+    if(resetBtn) resetBtn.onclick = function(){
+      mealTypeFilter = null;
+      goalTagFilter = null;
+      dietFilter = "omni";
+      renderRecipes();
+    };
+  } else {
+    leer.innerHTML = '<p class="no-recipes">Keine Rezepte passen zu dieser Kombination aus Filtern. Versuch, ein Allergen-Filter zu entfernen.</p>';
+  }
 }
 
 const SUPPLEMENTS = [
