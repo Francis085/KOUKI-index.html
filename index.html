@@ -194,9 +194,13 @@
     --line:#2A2A2A; --text-strong:#ffffff; --olive:#B98B4E; --olive-2:#8f6c3c;
     --done:#5fa876; --warn:#e0685c;
   }
-  body.dark[data-theme="energy"]{ --olive:#43cf85; --olive-2:#2f9d5c; }
-  body.dark[data-theme="ocean"]{ --olive:#3ec2e0; --olive-2:#2497b3; }
-  body.dark[data-theme="sunset"]{ --olive:#ff9478; --olive-2:#e2664a; }
+  /* data-theme steht am <html>, die Klasse "dark" am <body>. "body.dark[data-theme=…]"
+     verlangte beides am selben Element und konnte deshalb nie greifen — im Dunkelmodus trugen
+     alle vier Themes denselben Akzent. Deshalb der Nachfahren-Selektor. */
+  html[data-theme="natural"] body.dark{ --olive:#B98B4E; --olive-2:#8f6c3c; }
+  html[data-theme="energy"] body.dark{ --olive:#43cf85; --olive-2:#2f9d5c; }
+  html[data-theme="ocean"] body.dark{ --olive:#3ec2e0; --olive-2:#2497b3; }
+  html[data-theme="sunset"] body.dark{ --olive:#ff9478; --olive-2:#e2664a; }
   *{box-sizing:border-box;}
   input, select, textarea{ font-size:16px; }
   /* touch-action:pan-x pan-y (statt "auto") erlaubt weiterhin normales Scrollen in beide
@@ -10381,7 +10385,28 @@ const THEME_DARK_PASTEL = {
   ocean:{ "--yellow":"#204139", "--yellow-deep":"#305a51", "--lilac":"#183649", "--lilac-deep":"#264b63", "--pink":"#1b3145", "--pink-deep":"#2e455c" },
   sunset:{ "--yellow":"#52360e", "--yellow-deep":"#714b19", "--lilac":"#461b2d", "--lilac-deep":"#61293d", "--pink":"#55250c", "--pink-deep":"#713419" },
 };
+// Grundtöne des Dunkelmodus — identisch mit der CSS-Regel body.dark, hier für den JS-Weg.
+const DARK_GRUNDTOENE = {
+  "--bg":"#121212", "--surface":"#1D1D1D", "--ink":"#F5F5F5", "--ink-soft":"#A7A7A7",
+  "--line":"#2A2A2A", "--text-strong":"#ffffff",
+};
 const THEME_DARK_PASTEL_TEXT = { "--pastel-text":"#F0EDE4", "--pastel-text-soft":"#B8B3A5", "--pastel-overlay":"rgba(255,255,255,.12)", "--pastel-border":"rgba(255,255,255,.16)" };
+/* Jede Eigenschaft, die der Dunkelmodus am body setzen kann — die Liste dient dem
+   vollständigen Aufräumen beim Zurückschalten auf hell. Aus den Quellen abgeleitet, damit
+   sie nicht auseinanderlaufen kann, wenn dort eine Farbe dazukommt. */
+const DARK_EIGENSCHAFTEN = (function(){
+  const alle = {};
+  [DARK_GRUNDTOENE, THEME_DARK_PASTEL_TEXT].forEach(function(q){
+    Object.keys(q).forEach(function(k){ alle[k] = true; });
+  });
+  [THEME_DARK_ACCENT, THEME_DARK_PASTEL].forEach(function(gruppe){
+    Object.keys(gruppe).forEach(function(name){
+      Object.keys(gruppe[name]).forEach(function(k){ alle[k] = true; });
+    });
+  });
+  return Object.keys(alle);
+})();
+
 let currentThemeName = "natural";
 let currentThemeMode = "light"; // "light" | "dark" | "system"
 let systemDarkQuery = null;
@@ -10405,18 +10430,19 @@ function applyTheme(){
   const root = document.documentElement.style;
   const vars = THEME_VARS[currentThemeName] || THEME_VARS.natural;
   Object.keys(vars).forEach(function(k){ root.setProperty(k, vars[k]); });
+  /* Die Dunkelmodus-Werte gehören an den <body> und nicht ans <html>: Die Regel body.dark
+     deklariert dieselben Eigenschaften am body, und eine Deklaration am Element selbst sticht
+     alles, was von oben geerbt käme. Am <html> gesetzt wären sie also wirkungslos gewesen.
+     Zuerst wird alles Frühere entfernt, sonst blieben beim Zurückschalten auf hell die dunklen
+     Werte als Inline-Stil am body kleben. */
+  const koerper = document.body.style;
+  DARK_EIGENSCHAFTEN.forEach(function(k){ koerper.removeProperty(k); });
   if(dark && currentThemeName !== "dark"){
-    const darkAccent = THEME_DARK_ACCENT[currentThemeName] || {};
-    root.setProperty("--bg", "#121212");
-    root.setProperty("--surface", "#1D1D1D");
-    root.setProperty("--ink", "#F5F5F5");
-    root.setProperty("--ink-soft", "#A7A7A7");
-    root.setProperty("--line", "#2A2A2A");
-    root.setProperty("--text-strong", "#ffffff");
-    Object.keys(darkAccent).forEach(function(k){ root.setProperty(k, darkAccent[k]); });
-    const darkPastel = THEME_DARK_PASTEL[currentThemeName] || {};
-    Object.keys(darkPastel).forEach(function(k){ root.setProperty(k, darkPastel[k]); });
-    Object.keys(THEME_DARK_PASTEL_TEXT).forEach(function(k){ root.setProperty(k, THEME_DARK_PASTEL_TEXT[k]); });
+    const dunkel = Object.assign({}, DARK_GRUNDTOENE,
+      THEME_DARK_ACCENT[currentThemeName] || {},
+      THEME_DARK_PASTEL[currentThemeName] || {},
+      THEME_DARK_PASTEL_TEXT);
+    Object.keys(dunkel).forEach(function(k){ koerper.setProperty(k, dunkel[k]); });
   }
 
   const themeToggleBtn = document.getElementById("themeToggle");
