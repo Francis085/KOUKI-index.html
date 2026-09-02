@@ -755,13 +755,72 @@
     transition:opacity .2s, visibility .2s;
   }
   .celebrate-overlay.show{opacity:1;visibility:visible;}
-  .celebrate-emoji{font-size:76px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1);}
+  /* Die Rekord-Feier bleibt stehen, bis man sie schließt — deshalb ist sie ein echter
+     Dialog mit abgedunkeltem Grund. Ohne ihn stand die Meldung durchsichtig über der
+     laufenden Trainingsansicht und war zusammen mit Pausentimer und Karten unlesbar. */
+  .celebrate-overlay.modal{
+    pointer-events:auto;background:rgba(0,0,0,.55);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+    padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+    overflow-y:auto;
+  }
+  .celebrate-box{
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    max-width:100%;position:relative;z-index:1;
+  }
+  .celebrate-overlay.modal .celebrate-box{
+    width:min(360px,100%);gap:12px;background:var(--surface);border:1px solid var(--line);
+    border-radius:24px;padding:20px 18px;box-shadow:0 18px 48px rgba(0,0,0,.3);
+    max-height:100%;overflow:hidden;
+  }
+  /* Passen die Rekorde auf kleinen Geräten nicht alle in die Karte, rollt nur die Liste —
+     Überschrift und Knöpfe bleiben sichtbar, statt unter den Bildschirmrand zu rutschen. */
+  .celebrate-overlay.modal .celebrate-pr-list{flex:0 1 auto;min-height:0;overflow-y:auto;}
+  .celebrate-emoji{font-size:76px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1);flex:0 0 auto;}
+  .celebrate-overlay.modal .celebrate-emoji{font-size:54px;}
   .celebrate-msg{
     font-family:'Baloo 2',sans-serif;font-weight:800;font-size:18px;color:var(--olive);
     background:rgba(255,255,255,.95);padding:9px 20px;border-radius:20px;
-    box-shadow:0 8px 24px rgba(0,0,0,.18);text-align:center;max-width:80vw;
+    box-shadow:0 8px 24px rgba(0,0,0,.18);text-align:center;max-width:80vw;flex:0 0 auto;
   }
-  .confetti-field{position:absolute;inset:0;overflow:hidden;}
+  /* Im Dialog trägt schon die Karte den hellen Grund — die Überschrift braucht keine
+     zweite Pille darin und darf dafür deutlich größer sein. */
+  .celebrate-overlay.modal .celebrate-msg{
+    background:none;box-shadow:none;padding:0;font-size:22px;line-height:1.25;max-width:100%;flex:0 0 auto;
+  }
+  .celebrate-pr-list{display:flex;flex-direction:column;gap:8px;width:100%;}
+  .celebrate-pr{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 14px;
+  }
+  .celebrate-pr-name{
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:14px;line-height:1.25;
+    color:var(--text-strong);text-align:left;min-width:0;flex:1 1 auto;overflow-wrap:break-word;
+  }
+  /* Bewusst --text-strong statt der Akzentfarbe: --olive erreicht in den Themen Energy,
+     Ocean und Sunset im hellen Modus nur 2.9-4.1:1 gegen den Kachelgrund und wäre für eine
+     13px-Zahl zu blass. Die Mono-Schrift hebt den Wert auch ohne Farbe vom Namen ab. */
+  .celebrate-pr-wert{
+    font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13px;
+    color:var(--text-strong);white-space:nowrap;flex:0 0 auto;
+  }
+  .celebrate-xp{
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13px;text-align:center;
+    background:var(--yellow);color:var(--pastel-text);border-radius:999px;padding:7px 16px;
+    max-width:100%;flex:0 0 auto;
+  }
+  .celebrate-actions{display:flex;flex-direction:column;gap:8px;width:100%;flex:0 0 auto;}
+  /* .btn bringt flex:1 mit. In dieser Spalte hat das die beiden Knöpfe über die gesamte
+     Resthöhe gestreckt (gemessen 141x284 bzw. 96x341 px) und den Schließen-Knopf aus dem
+     Bild geschoben. Hier deshalb ausdrücklich zurück auf die natürliche Höhe. */
+  .celebrate-actions .btn{flex:0 0 auto;width:100%;min-height:var(--tap-min);font-size:15px;}
+  /* --ink-soft ergibt auf der Kartenfläche nur 3.5:1 — für den einzigen Weg aus dem Dialog
+     zu wenig. --ink liegt bei allen Themen über 4.5:1. */
+  .celebrate-actions .btn-ghost{color:var(--ink);}
+  .celebrate-pr-list[hidden],.celebrate-xp[hidden],.celebrate-actions[hidden]{display:none;}
+  /* pointer-events:none, damit das Konfetti im Rekord-Dialog nicht den Tipp auf den
+     abgedunkelten Rand abfängt — sonst ließe sich der Dialog dort nicht schließen. */
+  .confetti-field{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
   .confetti-piece{position:absolute;top:-20px;width:8px;height:14px;border-radius:2px;animation-name:confettiFall;animation-timing-function:ease-in;animation-fill-mode:forwards;}
 
   .bmr-inputs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
@@ -2166,11 +2225,17 @@
 
 <div id="fxLayer"></div>
 <div class="celebrate-overlay" id="celebrateOverlay">
-  <div class="celebrate-emoji" id="celebrateEmoji">🏆</div>
-  <div class="celebrate-msg" id="celebrateMsg">Neuer PR!</div>
   <div class="confetti-field" id="confettiField"></div>
-  <button class="btn btn-primary" id="celebrateShareBtn" style="display:none;margin-top:16px;pointer-events:auto;">📤 Als Bild teilen</button>
-  <button class="btn btn-ghost" id="celebrateCloseBtn" style="display:none;margin-top:8px;pointer-events:auto;">Schließen</button>
+  <div class="celebrate-box" id="celebrateBox">
+    <div class="celebrate-emoji" id="celebrateEmoji">🏆</div>
+    <div class="celebrate-msg" id="celebrateMsg">Neuer PR!</div>
+    <div class="celebrate-pr-list" id="celebratePrList" hidden></div>
+    <div class="celebrate-xp" id="celebrateXp" hidden></div>
+    <div class="celebrate-actions" id="celebrateActions" hidden>
+      <button class="btn btn-primary" id="celebrateShareBtn">📤 Als Bild teilen</button>
+      <button class="btn btn-ghost" id="celebrateCloseBtn">Schließen</button>
+    </div>
+  </div>
 </div>
 
 <!-- Detailansicht einer Kouki-Karte -->
@@ -6430,7 +6495,37 @@ function buildExerciseCard(ex, dayColor, el){
 
 let celebrateTimeout = null;
 let lastCelebratePRs = null;
-function celebrate(emoji, msg, big, prDetails){
+// Weiß auf der Akzentfarbe erreicht je nach Farbthema nur 2.0:1 (Energy im Nachtmodus) bis
+// 14.8:1 (Natural am Tag). Für den Hauptknopf im Rekord-Dialog wird die Schriftfarbe deshalb
+// aus der Helligkeit des Knopfgrunds bestimmt, statt sie fest auf Weiß zu setzen.
+function relativeHelligkeit(farbe){
+  const t = String(farbe).match(/[\d.]+/g);
+  if(!t || t.length < 3) return 1;
+  const f = function(v){ const c = parseFloat(v) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(t[0]) + 0.7152 * f(t[1]) + 0.0722 * f(t[2]);
+}
+function lesbareSchriftfarbe(hintergrund){
+  // Nicht nach Schwellwert raten, sondern beide Möglichkeiten durchrechnen und die mit dem
+  // größeren Kontrast nehmen — bei mittelhellen Akzenten wie #B98B4E liegt Dunkel vorn (6.2:1
+  // statt 3.1:1 mit Weiß).
+  const l = relativeHelligkeit(hintergrund);
+  const hell = 1.05 / (l + 0.05);                       // Weiß auf dem Grund
+  const dunkelL = relativeHelligkeit("rgb(20,20,15)");
+  const dunkel = (l + 0.05) / (dunkelL + 0.05);         // Fast-Schwarz auf dem Grund
+  return dunkel > hell ? "#14140f" : "#ffffff";
+}
+// Ein Rekord kann als Gewicht oder als gehaltene Zeit anfallen. effectiveLoad() liefert bei
+// Körpergewichtsübungen krumme Nachkommastellen (71.44999…), deshalb hier einheitlich auf
+// eine Stelle runden — für die Liste im Dialog und für die Teilen-Grafik dieselbe Funktion.
+function prWertText(pr){
+  const wert = Math.round(parseFloat(pr.weight) * 10) / 10;
+  const zahl = isNaN(wert) ? String(pr.weight) : String(wert);
+  if(pr.unit === "sek") return zahl + " Sek.";
+  return zahl + " kg" + (pr.reps ? (" × " + pr.reps) : "");
+}
+// msg  : kurze Überschrift ("3 neue Rekorde!") — die Übungen stehen darunter in der Liste
+// xpText: optionale Zeile für XP-Gewinn und Levelaufstieg
+function celebrate(emoji, msg, big, prDetails, xpText){
   const overlay = document.getElementById("celebrateOverlay");
   // Nimmt sowohl ein Zeichen als auch ein gezeichnetes Symbol entgegen. Alle Aufrufer
   // übergeben app-eigene Konstanten, nie Nutzereingaben.
@@ -6451,23 +6546,73 @@ function celebrate(emoji, msg, big, prDetails){
   }
   overlay.classList.add("show");
   clearTimeout(celebrateTimeout);
-  const shareBtn = document.getElementById("celebrateShareBtn");
-  const closeBtn = document.getElementById("celebrateCloseBtn");
+  const liste = document.getElementById("celebratePrList");
+  const xpBadge = document.getElementById("celebrateXp");
+  const aktionen = document.getElementById("celebrateActions");
   lastCelebratePRs = (prDetails && prDetails.length) ? prDetails : null;
+  liste.innerHTML = "";
   if(lastCelebratePRs){
     // Bei einem PR nicht automatisch ausblenden — Nutzer soll Zeit zum Teilen haben,
-    // schließt manuell über den Schließen-Knopf.
-    shareBtn.style.display = "inline-block";
-    closeBtn.style.display = "inline-block";
+    // schließt manuell über den Schließen-Knopf. Deshalb als Dialog mit dunklem Grund.
+    lastCelebratePRs.forEach(function(pr){
+      const zeile = document.createElement("div");
+      zeile.className = "celebrate-pr";
+      const name = document.createElement("span");
+      name.className = "celebrate-pr-name";
+      // Namen wie "Klimmzüge/Latzug" haben kein Leerzeichen und wurden auf schmalen Geräten
+      // mitten im Wort umgebrochen ("Klimmzüge/Latzu g"). Ein <wbr> hinter dem Schrägstrich
+      // gibt eine saubere Umbruchstelle, ohne den Textinhalt zu verändern.
+      String(pr.name).split("/").forEach(function(teil, i){
+        if(i > 0){
+          name.appendChild(document.createTextNode("/"));
+          name.appendChild(document.createElement("wbr"));
+        }
+        name.appendChild(document.createTextNode(teil));
+      });
+      const wert = document.createElement("span");
+      wert.className = "celebrate-pr-wert";
+      wert.textContent = prWertText(pr);
+      zeile.appendChild(name); zeile.appendChild(wert);
+      liste.appendChild(zeile);
+    });
+    liste.hidden = false;
+    xpBadge.textContent = xpText || "";
+    xpBadge.hidden = !xpText;
+    aktionen.hidden = false;
+    const teilen = document.getElementById("celebrateShareBtn");
+    teilen.style.color = lesbareSchriftfarbe(getComputedStyle(teilen).backgroundColor);
+    overlay.classList.add("modal");
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", msg);
   } else {
-    shareBtn.style.display = "none";
-    closeBtn.style.display = "none";
+    liste.hidden = true;
+    xpBadge.hidden = true;
+    aktionen.hidden = true;
+    overlay.classList.remove("modal");
+    overlay.removeAttribute("role");
+    overlay.removeAttribute("aria-modal");
+    overlay.removeAttribute("aria-label");
     celebrateTimeout = setTimeout(function(){ overlay.classList.remove("show"); }, big ? 2200 : 1600);
   }
 }
-document.getElementById("celebrateCloseBtn").onclick = function(){
-  document.getElementById("celebrateOverlay").classList.remove("show");
-};
+function schliesseFeier(){
+  const overlay = document.getElementById("celebrateOverlay");
+  overlay.classList.remove("show");
+  overlay.classList.remove("modal");
+}
+document.getElementById("celebrateCloseBtn").onclick = schliesseFeier;
+// Tippen neben die Karte schließt ebenfalls — nur der abgedunkelte Rand, nicht die Karte
+// selbst, sonst würde jeder Tipp auf "Als Bild teilen" den Dialog gleich mit zuklappen.
+document.getElementById("celebrateOverlay").addEventListener("click", function(e){
+  if(e.target === this && this.classList.contains("modal")) schliesseFeier();
+});
+document.addEventListener("keydown", function(e){
+  const overlay = document.getElementById("celebrateOverlay");
+  if(e.key === "Escape" && overlay.classList.contains("modal") && overlay.classList.contains("show")){
+    schliesseFeier();
+  }
+});
 // Zeichnet eine teilbare 1080x1080-Bildkarte für den/die neuen PR(s) mit den aktuellen
 // Theme-Farben (aus den CSS-Variablen ausgelesen, da Canvas kein var() versteht).
 function drawPRShareCard(prDetails){
@@ -6516,7 +6661,7 @@ function drawPRShareCard(prDetails){
     ctx.fillText(pr.name, 540, y);
     ctx.font = "600 36px 'JetBrains Mono', monospace";
     ctx.fillStyle = yellow;
-    ctx.fillText(pr.weight + (pr.unit === "sek" ? " Sek." : " kg") + (pr.reps && pr.unit !== "sek" ? (" × " + pr.reps) : ""), 540, y + 50);
+    ctx.fillText(prWertText(pr), 540, y + 50);
     y += ITEM_HEIGHT;
   });
 
@@ -6666,7 +6811,14 @@ async function finishSession(){
   const xpSuffix = (xpGained > 0 ? (" (+" + xpGained + " XP)") : "") +
     (aufstieg ? (" · Level " + levelNachher + ": " + xpRang(levelNachher).name + "!") : "");
   if(newPRs.length){
-    celebrate(icon("pokal"), "Neuer PR: " + newPRs.join(", ") + xpSuffix, true, newPRDetails);
+    // Früher standen alle Übungsnamen in einer einzigen langen Zeile — bei sieben Rekorden
+    // war das ein siebenzeiliger Fließtext. Jetzt trägt die Überschrift nur die Anzahl,
+    // die Übungen stehen als Liste darunter, XP und Levelaufstieg als eigene Zeile.
+    const kopf = newPRs.length === 1 ? "Neuer Rekord!" : (newPRs.length + " neue Rekorde!");
+    const xpTeile = [];
+    if(xpGained > 0) xpTeile.push("+" + xpGained + " XP");
+    if(aufstieg) xpTeile.push("Level " + levelNachher + ": " + xpRang(levelNachher).name + "!");
+    celebrate(icon("pokal"), kopf, true, newPRDetails, xpTeile.join(" · "));
   } else if(doneCount === exs.length && exs.length > 0){
     celebrate(icon("haken"), "Einheit geschafft!" + xpSuffix, false);
   } else if(aufstieg){
@@ -10459,6 +10611,13 @@ function applyTheme(){
 
   const themeToggleBtn = document.getElementById("themeToggle");
   if(themeToggleBtn) themeToggleBtn.innerHTML = icon(dark ? "sonne" : "mond");
+  // Steht gerade ein Rekord-Dialog offen, bekommt sein Hauptknopf die zur neuen Akzentfarbe
+  // passende Schriftfarbe — sonst bliebe die beim Umschalten auf der alten stehen.
+  const teilenKnopf = document.getElementById("celebrateShareBtn");
+  if(teilenKnopf && teilenKnopf.style.color){
+    teilenKnopf.style.color = "";
+    teilenKnopf.style.color = lesbareSchriftfarbe(getComputedStyle(teilenKnopf).backgroundColor);
+  }
   renderThemeSettings();
 }
 function setThemeName(name){
