@@ -384,6 +384,38 @@
     cursor:pointer;margin-bottom:2px;
   }
   .quickfill-btn:active{transform:scale(.98);}
+  /* Rückgängig-Leiste. Grund und Schrift sind --text-strong und --surface, der Knopf
+     dreht beide um — damit ist der Kontrast in jedem Theme und in beiden Modi gesichert,
+     ohne eine dritte Farbe zu erfinden. */
+  .undo-toast{
+    position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(env(safe-area-inset-bottom,0px) + 92px);
+    z-index:96;display:flex;align-items:center;gap:12px;
+    width:max-content;max-width:min(420px,calc(100vw - 32px));
+    background:var(--text-strong);color:var(--surface);
+    border-radius:16px;padding:9px 10px 9px 16px;
+    box-shadow:0 10px 28px rgba(0,0,0,.28);
+    font-family:'Inter',sans-serif;font-size:13px;line-height:1.35;
+  }
+  .undo-toast[hidden]{display:none;}
+  .undo-text{flex:1 1 auto;min-width:0;}
+  .undo-btn{
+    flex:0 0 auto;min-height:var(--tap-min,44px);padding:0 14px;border:none;border-radius:12px;
+    background:var(--surface);color:var(--text-strong);cursor:pointer;
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13px;
+  }
+  .undo-btn:active{transform:scale(.96);}
+  /* Hinweis auf einen wahrscheinlichen Vertipper, direkt unter der betroffenen Satzzeile */
+  .satz-warnung{
+    display:flex;align-items:flex-start;gap:8px;margin-top:-2px;padding:8px 12px;
+    background:rgba(230,163,172,.35);border-radius:12px;
+    font-family:'Inter',sans-serif;font-size:12px;line-height:1.45;color:var(--pastel-text);
+  }
+  .satz-warnung button{
+    flex:0 0 auto;margin-left:auto;min-height:32px;padding:0 10px;border:none;border-radius:10px;
+    background:rgba(255,255,255,.65);color:var(--pastel-text);cursor:pointer;
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:12px;
+  }
   .quickfill-row{display:flex;gap:6px;margin-bottom:2px;}
   .quickfill-row .quickfill-btn{flex:1 1 0;min-width:0;margin-bottom:0;min-height:var(--tap-min,44px);
     display:flex;align-items:center;justify-content:center;gap:4px;}
@@ -1646,6 +1678,7 @@
   <div id="frame-home">
     <div class="home-greeting" id="homeGreeting"></div>
     <div id="firstStepsHome"></div>
+    <div id="deloadHintHome"></div>
     <div id="installHintHome"></div>
     <div id="backupHintHome"></div>
     <div class="rank-card" id="homeXpCard" style="margin-bottom:14px;"></div>
@@ -2249,6 +2282,12 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Rückgängig-Leiste: erscheint nach Aktionen, die sonst unwiederbringlich wären -->
+<div class="undo-toast" id="undoToast" hidden>
+  <span class="undo-text" id="undoToastText"></span>
+  <button class="undo-btn" id="undoToastBtn" type="button">Rückgängig</button>
+</div>
 
 <div id="fxLayer"></div>
 <div class="celebrate-overlay" id="celebrateOverlay">
@@ -3456,6 +3495,76 @@ function renderBackupHint(){
   };
 }
 
+/* --- Deload-Woche erkennen ---------------------------------------------------------------
+   Wenn die Leistung nicht in einer, sondern quer über mehrere Übungen zurückgeht, liegt das
+   selten an der Tagesform und meist an fehlender Erholung. Genau an diesem Punkt kippen die
+   meisten Pläne: Man steigert weiter, wird langsamer, steigert wieder. Eine leichtere Woche
+   bringt dort schneller weiter als die nächste Steigerung.
+
+   Bewusst konservativ: mindestens drei Übungen mit genug Verlauf müssen beurteilbar sein, und
+   mindestens die Hälfte davon muss zurückgehen. Der Hinweis ist ein Vorschlag, nichts wird
+   automatisch am Plan geändert. Einmal weggetippt, bleibt er für diese Woche weg.            */
+const DELOAD_MIN_UEBUNGEN = 3;
+
+// Alle Übungen aller Tage des aktiven Plans — der Rückgang zeigt sich über die ganze Woche,
+// nicht nur am heutigen Trainingstag.
+function alleUebungenDesPlans(){
+  const plan = getActivePlan();
+  const out = [];
+  if(!plan || !plan.days) return out;
+  Object.keys(plan.days).forEach(function(key){
+    const tag = plan.days[key];
+    if(!tag || !tag.groups) return;
+    tag.groups.forEach(function(g){
+      (g.exercises || []).forEach(function(ex){
+        const swap = state.exerciseSwaps && state.exerciseSwaps[ex.id];
+        out.push(swap ? Object.assign({}, ex, swap) : ex);
+      });
+    });
+  });
+  return out;
+}
+
+function deloadHintState(){
+  if(state.deloadHintDismissedWeek === aktuelleWochenKennung()) return null;
+  const beurteilbar = [];
+  const ruecklaeufig = [];
+  alleUebungenDesPlans().forEach(function(ex){
+    const hist = historyFor(ex);
+    if(hist.length < 3) return;   // zwei Einheiten reichen nicht, um einen Trend zu sehen
+    beurteilbar.push(ex);
+    if(istRuecklaeufig(hist, exerciseMode(ex))) ruecklaeufig.push(exerciseNameById(ex.id) || ex.name);
+  });
+  if(beurteilbar.length < DELOAD_MIN_UEBUNGEN) return null;
+  if(ruecklaeufig.length < Math.ceil(beurteilbar.length / 2)) return null;
+  return { anzahl: ruecklaeufig.length, gesamt: beurteilbar.length, namen: ruecklaeufig.slice(0, 3) };
+}
+
+// Kalenderwoche als Schlüssel, damit ein weggetippter Hinweis nächste Woche wieder auftaucht.
+function aktuelleWochenKennung(){
+  return ymd(mondayOf(new Date()));
+}
+
+function renderDeloadHint(){
+  const el = document.getElementById("deloadHintHome");
+  if(!el) return;
+  const befund = deloadHintState();
+  if(!befund){ el.innerHTML = ""; return; }
+  el.innerHTML = '<div class="progression-tip tip-deload" style="margin-bottom:14px;">' +
+    '<span class="tip-icon">' + icon("achtung") + '</span>' +
+    '<span>In ' + befund.anzahl + ' von ' + befund.gesamt + ' Übungen gehen deine Werte seit zwei Einheiten zurück (' +
+    escapeHtml(befund.namen.join(", ")) + (befund.anzahl > befund.namen.length ? " u. a." : "") +
+    '). Das ist meist ein Zeichen für zu wenig Erholung. Eine leichtere Woche — etwa 60&nbsp;% des Gewichts und die halbe Satzzahl — bringt dich hier erfahrungsgemäß schneller weiter als die nächste Steigerung.</span>' +
+    '<span class="set-del" id="deloadHintDismissBtn" title="Diese Woche nicht mehr">✕</span>' +
+  '</div>';
+  const dismiss = document.getElementById("deloadHintDismissBtn");
+  if(dismiss) dismiss.onclick = function(){
+    state.deloadHintDismissedWeek = aktuelleWochenKennung();
+    saveState();
+    renderDeloadHint();
+  };
+}
+
 // --- Installations-Hinweis: macht sichtbar, dass KOUKI als "richtige" App installierbar ist ---
 // Wer die Seite nur im normalen Browser-Tab öffnet, merkt oft gar nicht, dass es eine
 // installierbare Variante gibt — dabei funktionieren Erinnerungen auf dem iPhone laut
@@ -3828,15 +3937,26 @@ function addSet(ex){
   renderContent();
   renderProgressRing();
 }
+// Früher stand hier ein confirm()-Dialog. Der blockiert, muss bei jedem Löschen weggetippt
+// werden und schützt trotzdem nur vor dem Fehlgriff, nicht vor dem Irrtum. Jetzt geht der Satz
+// sofort weg und lässt sich ein paar Sekunden lang zurückholen — inklusive seiner Werte.
 function removeSet(ex, idx){
   const e = getEntry(ex);
   if(e.sets.length <= 1) return;
-  const displayName = exerciseNameById(ex.id) || ex.name;
-  if(!confirm('Satz ' + (idx + 1) + ' bei "' + displayName + '" wirklich entfernen? Eingetragene Werte für diesen Satz gehen dabei verloren.')) return;
+  const entfernt = Object.assign({}, e.sets[idx]);
   e.sets.splice(idx, 1);
   saveState();
   renderContent();
   renderProgressRing();
+  const displayName = exerciseNameById(ex.id) || ex.name;
+  zeigeRueckgaengig("Satz " + (idx + 1) + ' bei "' + displayName + '" entfernt.', function(){
+    const saetze = getEntry(ex).sets;
+    saetze.splice(Math.min(idx, saetze.length), 0, entfernt);
+    saveState();
+    renderContent();
+    renderProgressRing();
+    showToast("Satz wiederhergestellt");
+  });
 }
 function setSetWeight(ex, idx, v){
   getEntry(ex).sets[idx].weight = v;
@@ -3853,6 +3973,97 @@ function setSetRir(ex, idx, v){
 function setSetNote(ex, idx, v){
   getEntry(ex).sets[idx].note = v;
   saveState();
+}
+
+/* --- Rückgängig -----------------------------------------------------------------------
+   Für Aktionen, die sonst unwiederbringlich wären. Besser als eine Rückfrage vorher: die
+   Aktion läuft sofort durch (kein Dialog im Weg), und wer danebengegriffen hat, holt sie
+   ein paar Sekunden lang zurück.                                                          */
+let rueckgaengigTimer = null;
+let rueckgaengigAktion = null;
+
+function versteckeRueckgaengig(){
+  clearTimeout(rueckgaengigTimer);
+  rueckgaengigTimer = null;
+  rueckgaengigAktion = null;
+  const el = document.getElementById("undoToast");
+  if(el) el.hidden = true;
+}
+
+function zeigeRueckgaengig(text, wiederherstellen){
+  const el = document.getElementById("undoToast");
+  const textEl = document.getElementById("undoToastText");
+  if(!el || !textEl){ showToast(text); return; }
+  clearTimeout(rueckgaengigTimer);
+  rueckgaengigAktion = wiederherstellen;
+  textEl.textContent = text;
+  el.hidden = false;
+  rueckgaengigTimer = setTimeout(versteckeRueckgaengig, 7000);
+}
+
+/* --- Bildschirm wach halten ------------------------------------------------------------
+   Zwischen zwei Sätzen liegt oft mehr als die Display-Zeitsperre. Ohne das hier ging der
+   Bildschirm mitten in der Einheit aus und musste bei jedem Satz neu entsperrt werden.
+   Die Sperre gilt nur in der Trainingsansicht und solange eine Pause läuft; Browser geben
+   sie ohnehin automatisch frei, sobald die App in den Hintergrund geht — deshalb wird sie
+   beim Zurückkehren neu angefordert. Ohne Unterstützung passiert schlicht nichts.          */
+let bildschirmSperre = null;
+
+async function haltBildschirmWach(){
+  if(!("wakeLock" in navigator) || bildschirmSperre) return;
+  try{
+    bildschirmSperre = await navigator.wakeLock.request("screen");
+    bildschirmSperre.addEventListener("release", function(){ bildschirmSperre = null; });
+  }catch(e){ bildschirmSperre = null; }
+}
+
+function gibBildschirmFrei(){
+  if(!bildschirmSperre) return;
+  try{ bildschirmSperre.release(); }catch(e){}
+  bildschirmSperre = null;
+}
+
+function pflegeBildschirmSperre(){
+  const gebraucht = document.visibilityState === "visible" &&
+    (activeGroup === "navTraining" || restInterval !== null);
+  if(gebraucht) haltBildschirmWach(); else gibBildschirmFrei();
+}
+
+/* --- Zuletzt geöffnete Ansicht ----------------------------------------------------------
+   Die App startete immer auf Home. Beendet das Handy den Tab mitten in der Einheit — was es
+   bei laufender Musik und offener Kamera-App gern tut —, war man wieder ganz vorn. Bewusst
+   in localStorage und nicht in state: Das ist Bedienzustand dieses Geräts und hat in der
+   Cloud-Sicherung nichts verloren.                                                          */
+const ANSICHT_KEY = "kouki_ansicht";
+
+function merkeAnsicht(){
+  try{
+    if(!storageAvailable()) return;
+    localStorage.setItem(ANSICHT_KEY, JSON.stringify({
+      group: activeGroup, subtab: activeSubtabIndex,
+      day: currentDay, exercise: currentExerciseIndex, plan: currentPlanId
+    }));
+  }catch(e){}
+}
+
+function stelleAnsichtHer(){
+  try{
+    if(!storageAvailable()) return;
+    const roh = localStorage.getItem(ANSICHT_KEY);
+    if(!roh) return;
+    const a = JSON.parse(roh);
+    if(!a || !a.group || !NAV_GROUPS[a.group]) return;
+    // Das Profil ist kein Ort, an dem man weiterarbeitet — dorthin wird nicht zurückgesprungen.
+    if(a.group === "navProfileGroup") return;
+    const subtabs = NAV_GROUPS[a.group].subtabs;
+    const subtab = (typeof a.subtab === "number" && a.subtab >= 0 && a.subtab < subtabs.length) ? a.subtab : 0;
+    // Die Übungsnummer nur übernehmen, wenn Plan und Tag noch dieselben sind — sonst zeigte
+    // sie auf eine ganz andere Übung.
+    if(a.plan === currentPlanId && a.day === currentDay && typeof a.exercise === "number" && a.exercise >= 0){
+      currentExerciseIndex = a.exercise;
+    }
+    showGroup(a.group, subtab);
+  }catch(e){}
 }
 
 /* --- Werte im Satz ändern -------------------------------------------------------------
@@ -3933,13 +4144,88 @@ function zeigeSetStepper(input, art, exMode){
   setStepperEl = box;
 }
 
-// Hängt Markieren und Stepper an ein Satzfeld. onblur/oninput der Felder bleiben unberührt.
+// Springt zum nächsten Eingabefeld der Einheit — erst durch die Zeile, dann in die nächste.
+// Ohne das musste jedes einzelne Feld angetippt werden, wobei die Tastatur jedes Mal zu- und
+// wieder aufging.
+function springeZumNaechstenSatzfeld(input){
+  const felder = Array.from(document.querySelectorAll("#dayContent .set-row .set-input"));
+  const ziel = felder.indexOf(input) + 1;
+  // Erst das Feld verlassen: der blur-Handler übernimmt das Gewicht auf die folgenden Sätze
+  // und hakt ggf. automatisch ab — beides zeichnet die Karte neu. Würde man vorher das
+  // Zielfeld fokussieren, wäre dieses Element danach nicht mehr im Dokument und der Fokus weg.
+  input.blur();
+  if(ziel <= 0 || ziel >= felder.length) return false;
+  setTimeout(function(){
+    const neu = document.querySelectorAll("#dayContent .set-row .set-input")[ziel];
+    if(neu) neu.focus();
+  }, 0);
+  return true;
+}
+
+// Hängt Markieren, Stepper und Tastaturfluss an ein Satzfeld.
+// onblur/oninput der Felder bleiben unberührt.
 function ruesteSatzfeld(input, art, exMode){
   input.addEventListener("focus", function(){
     markiereFeldinhalt(input);
     zeigeSetStepper(input, art, exMode);
   });
   input.addEventListener("blur", versteckeSetStepper);
+  // Die Beschriftung der Eingabetaste passend zum Feld: weiter bzw. fertig.
+  input.enterKeyHint = art === "rir" ? "done" : "next";
+  input.addEventListener("keydown", function(e){
+    if(e.key !== "Enter") return;
+    e.preventDefault();
+    springeZumNaechstenSatzfeld(input);   // am letzten Feld bleibt es beim Schließen
+  });
+}
+
+/* --- Warnung bei einem wahrscheinlichen Vertipper -----------------------------------------
+   Für Körperdaten prüft pruefeZahl() auf plausible Bereiche, für die Satzfelder gab es keine
+   Grenze. Aus 600 statt 60 kg wird sonst ein falscher Rekord, ein unbrauchbarer Volumen-Graph
+   und ab der nächsten Einheit ein unsinniger Zielvorschlag — und all das fällt erst Wochen
+   später auf. Der Hinweis blockiert nichts: Wer wirklich so viel bewegt hat, tippt auf
+   "Stimmt so" und der Wert bleibt.                                                            */
+const SATZ_WARNUNG_FAKTOR = 1.5;
+
+function satzWertVerdaechtig(ex, rohwert){
+  const wert = parseFloat(String(rohwert).replace(",", "."));
+  if(isNaN(wert) || wert <= 0) return null;
+  const hist = historyFor(ex);
+  if(hist.length < 2) return null;   // ohne Vergleichsbasis lieber nichts sagen
+  let bestwert = 0;
+  hist.forEach(function(h){
+    (h.sets || []).forEach(function(s){
+      const w = parseFloat(s.weight);
+      if(!isNaN(w) && w > bestwert) bestwert = w;
+    });
+  });
+  if(bestwert <= 0) return null;
+  if(wert <= bestwert * SATZ_WARNUNG_FAKTOR) return null;
+  return { wert: wert, bestwert: bestwert };
+}
+
+function zeigeSatzWarnung(input, befund){
+  const zeile = input.closest(".set-row");
+  if(!zeile || !zeile.parentNode) return;
+  entferneSatzWarnung(zeile);
+  const box = document.createElement("div");
+  box.className = "satz-warnung";
+  box.dataset.satzWarnung = "1";
+  const text = document.createElement("span");
+  text.textContent = "Sicher? " + zielZahl(befund.wert) + " kg ist deutlich mehr als dein bisheriger Bestwert von " +
+    zielZahl(befund.bestwert) + " kg.";
+  const passt = document.createElement("button");
+  passt.type = "button";
+  passt.textContent = "Stimmt so";
+  passt.onclick = function(){ entferneSatzWarnung(zeile); };
+  box.appendChild(text);
+  box.appendChild(passt);
+  zeile.parentNode.insertBefore(box, zeile.nextSibling);
+}
+
+function entferneSatzWarnung(zeile){
+  const naechstes = zeile && zeile.nextElementSibling;
+  if(naechstes && naechstes.dataset && naechstes.dataset.satzWarnung) naechstes.remove();
 }
 function toggleSetNote(exId, idx){
   const key = exId + ":" + idx;
@@ -6253,6 +6539,7 @@ function renderContent(){
         uebersichtOffen = false;
         renderContent();
         scrollToCurrentExercise();
+        merkeAnsicht();
       };
       liste.appendChild(zeile);
     });
@@ -6268,16 +6555,12 @@ function renderContent(){
   prevBtn.className = "btn btn-ghost";
   prevBtn.textContent = "← Zurück";
   prevBtn.disabled = currentExerciseIndex === 0;
-  prevBtn.onclick = function(){
-    if(currentExerciseIndex > 0){ currentExerciseIndex--; renderContent(); scrollToCurrentExercise(); }
-  };
+  prevBtn.onclick = function(){ wechsleUebung(-1); };
   const nextBtn = document.createElement("button");
   nextBtn.className = "btn btn-primary";
   nextBtn.textContent = isLast ? "Letzte Übung ✓" : "Nächste Übung →";
   nextBtn.disabled = isLast;
-  nextBtn.onclick = function(){
-    if(currentExerciseIndex < list.length - 1){ currentExerciseIndex++; renderContent(); scrollToCurrentExercise(); }
-  };
+  nextBtn.onclick = function(){ wechsleUebung(1); };
   navBtns.appendChild(prevBtn);
   navBtns.appendChild(nextBtn);
   el.appendChild(navBtns);
@@ -6501,8 +6784,17 @@ function buildExerciseCard(ex, dayColor, el){
         weightInput.value = s.weight || "";
         weightInput.oninput = function(){ setSetWeight(ex, sIdx, weightInput.value); };
         weightInput.onblur = function(){
+          const befund = exMode === "weight" ? satzWertVerdaechtig(ex, weightInput.value) : null;
           const carried = carryWeightToFollowingSets(ex, sIdx);
           if(maybeAutoCheckSet(ex, sIdx) || carried){ renderContent(); renderProgressRing(); }
+          // Nach einem Neuaufbau der Karte ist dieses Feld ein anderes — die Warnung deshalb
+          // über die frisch gezeichnete Zeile setzen.
+          if(befund){
+            const zeile = document.querySelectorAll("#dayContent .set-row")[sIdx];
+            const aktuelles = zeile ? zeile.querySelector(".set-input")
+              : (weightInput.isConnected ? weightInput : null);
+            if(aktuelles) zeigeSatzWarnung(aktuelles, befund);
+          }
         };
         ruesteSatzfeld(weightInput, "weight", exMode);
         row.appendChild(weightInput);
@@ -7112,11 +7404,28 @@ async function finishSession(){
   }
 }
 
+// "Haken zurücksetzen" steht direkt neben "Einheit abschließen". Ein Fehlgriff kostete
+// bisher die Haken der ganzen Einheit — die Werte blieben zwar stehen, aber alles war neu
+// abzuhaken. Deshalb der Zustand vorher gemerkt und ein paar Sekunden lang zurückholbar.
 async function resetChecks(){
   const exs = allExercisesOfActiveDay();
+  const vorher = exs.map(function(ex){
+    return { ex: ex, haken: getEntry(ex).sets.map(function(s){ return !!s.done; }) };
+  });
+  const gabEsWas = vorher.some(function(v){ return v.haken.some(Boolean); });
   exs.forEach(function(ex){ resetEntryChecks(ex); });
   await saveState();
   renderAll();
+  if(!gabEsWas) return;
+  zeigeRueckgaengig("Alle Haken zurückgesetzt.", async function(){
+    vorher.forEach(function(v){
+      const saetze = getEntry(v.ex).sets;
+      v.haken.forEach(function(d, i){ if(saetze[i]) saetze[i].done = d; });
+    });
+    await saveState();
+    renderAll();
+    showToast("Haken wiederhergestellt");
+  });
 }
 
 let restInterval = null;
@@ -7207,13 +7516,40 @@ function getDefaultRestSeconds(ex){
   if(ex.restSeconds) return ex.restSeconds;
   return ex.type === "grund" ? 120 : 75;
 }
+// Die eingestellte Pausenlänge — nicht zu verwechseln mit restRemaining, der Restzeit.
+let restGeplantSekunden = 0;
+let restMeldungTimer = null;
+
+/* Der Ton am Ende der Pause kommt aus einem setInterval. Liegt das Handy gesperrt in der
+   Tasche, drosseln Browser dieses Intervall — der Ton kommt dann zu spät oder gar nicht.
+   Deshalb zusätzlich eine Benachrichtigung auf den Endzeitpunkt terminieren. Die greift,
+   solange das Gerät wach ist und die Erlaubnis erteilt wurde; bei ganz eingefrorenem Tab
+   (typisch iOS mit gesperrtem Bildschirm) hilft nur die Bildschirmsperre oben, die den
+   Timer während des Trainings ohnehin am Laufen hält. */
+function planePausenMeldung(){
+  clearTimeout(restMeldungTimer);
+  restMeldungTimer = null;
+  const ms = restEndAt - Date.now();
+  if(ms <= 0) return;
+  restMeldungTimer = setTimeout(function(){
+    restMeldungTimer = null;
+    sendLocalNotification("Pause vorbei", "Weiter mit dem nächsten Satz.", "kouki-pause");
+  }, ms);
+}
+function stoppePausenMeldung(){
+  clearTimeout(restMeldungTimer);
+  restMeldungTimer = null;
+}
+
 function startRestTimer(seconds, exId){
   currentRestExerciseId = exId || null;
   clearInterval(restInterval);
   restRemaining = seconds;
+  restGeplantSekunden = seconds;
   restEndAt = Date.now() + seconds * 1000;
   updateRestDisplay();
   document.getElementById("restBar").classList.add("show");
+  planePausenMeldung();
   restInterval = setInterval(function(){
     // Über die feste Zielzeit statt reinem Runterzählen — bleibt auch korrekt,
     // wenn das Intervall zwischenzeitlich (z. B. App im Hintergrund) ausgesetzt wurde.
@@ -7222,16 +7558,25 @@ function startRestTimer(seconds, exId){
       clearInterval(restInterval);
       restRemaining = 0;
       updateRestDisplay();
+      // Sieht man gerade hin, reicht der Ton — dann keine zusätzliche Benachrichtigung.
+      if(document.visibilityState === "visible") stoppePausenMeldung();
       beep();
-      setTimeout(function(){ document.getElementById("restBar").classList.remove("show"); restInterval = null; }, 3000);
+      setTimeout(function(){
+        document.getElementById("restBar").classList.remove("show");
+        restInterval = null;
+        pflegeBildschirmSperre();
+      }, 3000);
     } else updateRestDisplay();
   }, 1000);
+  pflegeBildschirmSperre();
 }
 function hideRestBar(){
   clearInterval(restInterval);
   restInterval = null;
+  stoppePausenMeldung();
   const bar = document.getElementById("restBar");
   if(bar) bar.classList.remove("show");
+  pflegeBildschirmSperre();
 }
 // Sorgt dafür, dass die Pausen-Leiste beim Zurückkehren in die App (z. B. nach dem
 // Sperrbildschirm oder App-Wechsel) nie "hängen" bleibt: läuft noch ein Timer, wird die
@@ -7248,6 +7593,10 @@ function reconcileRestBarOnResume(){
         restRemaining = 0;
         updateRestDisplay();
         bar.classList.remove("show");
+        stoppePausenMeldung();
+        // Ist die Pause vorbeigegangen, während die App im Hintergrund lag, verschwand die
+        // Leiste bisher wortlos. Ein kurzer Hinweis sagt, woran man ist.
+        showToast("Pause ist vorbei");
       } else {
         restRemaining = remaining;
         updateRestDisplay();
@@ -7256,16 +7605,33 @@ function reconcileRestBarOnResume(){
       bar.classList.remove("show");
     }
   }catch(e){ console.error("Pausen-Leiste konnte nicht synchronisiert werden", e); }
+  // Browser geben die Bildschirmsperre beim Wechsel in den Hintergrund selbst frei —
+  // beim Zurückkommen muss sie also neu angefordert werden.
+  try{ pflegeBildschirmSperre(); }catch(e){}
 }
 function saveCustomRestTime(){
   if(currentRestExerciseId){
     if(!state.customRestTimes) state.customRestTimes = {};
-    state.customRestTimes[currentRestExerciseId] = restRemaining;
+    // Gemerkt wird die eingestellte Pausenlänge, nicht die zufällige Restzeit im Moment des
+    // Antippens — sonst wurde aus "+15s bei Sekunde 90 von 120" eine 105-Sekunden-Pause.
+    state.customRestTimes[currentRestExerciseId] = restGeplantSekunden;
     saveState();
   }
 }
-document.getElementById("restMinus").addEventListener("click", function(){ restRemaining = Math.max(0, restRemaining - 15); updateRestDisplay(); saveCustomRestTime(); });
-document.getElementById("restPlus").addEventListener("click", function(){ restRemaining += 15; updateRestDisplay(); saveCustomRestTime(); });
+// restEndAt muss mitwandern: das Intervall rechnet die Restzeit jede Sekunde daraus neu,
+// eine Änderung nur an restRemaining war deshalb nach einer Sekunde wieder weg — die beiden
+// Knöpfe hatten schlicht keine bleibende Wirkung.
+function verschiebePausenende(sekunden){
+  const neu = Math.max(0, restRemaining + sekunden);
+  restGeplantSekunden = Math.max(0, restGeplantSekunden + sekunden);
+  restRemaining = neu;
+  restEndAt = Date.now() + neu * 1000;
+  updateRestDisplay();
+  planePausenMeldung();
+  saveCustomRestTime();
+}
+document.getElementById("restMinus").addEventListener("click", function(){ verschiebePausenende(-15); });
+document.getElementById("restPlus").addEventListener("click", function(){ verschiebePausenende(15); });
 document.getElementById("restStop").addEventListener("click", hideRestBar);
 document.getElementById("restClose").addEventListener("click", hideRestBar);
 
@@ -10529,6 +10895,7 @@ function renderHome(){
     greetEl.textContent = hour < 11 ? "Guten Morgen! ☀️" : hour < 18 ? "Hey, schön dass du da bist 👋" : "Guten Abend! 🌙";
   }
   renderFirstSteps();
+  renderDeloadHint();
   renderInstallHint();
   renderBackupHint();
 
@@ -10635,7 +11002,7 @@ const NAV_GROUPS = {
 // diesen Bereich dauerhaft weg (kein nerviges Wiederauftauchen).
 const FRAME_HINTS = {
   "frame-home": "Dein Tagesüberblick: Fortschritts-Ring, Wochen-Statistiken und deine letzten Rekorde auf einen Blick.",
-  "frame-plan": "Trag deine Sätze ein — die grauen Zahlen zeigen, was du beim letzten Mal geschafft hast. Über \"Übung 1 von …\" siehst du die ganze Einheit auf einen Blick, über \"⋯\" an der Übung findest du Muskel-Info, Aufwärmsätze, Übungstausch und mehr.",
+  "frame-plan": "Trag deine Sätze ein — die grauen Zahlen sind der aus deinem Verlauf berechnete Vorschlag für heute. Wisch nach links oder rechts, um zur nächsten Übung zu kommen. Über \"Übung 1 von …\" siehst du die ganze Einheit auf einen Blick, über \"⋯\" an der Übung findest du Muskel-Info, Aufwärmsätze, Übungstausch und mehr.",
   "frame-progress-overview": "Dein Volumen-Verlauf über Zeit sowie Fortschritt bei den großen Grundübungen im Blick behalten.",
   "frame-calendar": "Dein Trainingskalender — tippe auf einen Tag für Details, Notizen und was du an dem Tag trainiert hast.",
   "frame-progress": "Dein Kraft-Rang je Grundübung im Vergleich zu deinem Körpergewicht, plus Körpermaße-Verlauf.",
@@ -10720,6 +11087,8 @@ function showGroup(group, subtabIndex){
   if(activeFrameId === "frame-progress-overview") renderProgressOverview();
   if(activeFrameId === "frame-calendar") scrollToTodayInCalendar();
   else window.scrollTo({ top: 0, behavior: "smooth" });
+  pflegeBildschirmSperre();
+  merkeAnsicht();
 }
 function scrollToTodayInCalendar(){
   requestAnimationFrame(function(){
@@ -10743,7 +11112,7 @@ document.getElementById("homeStartBtn").onclick = function(){ showGroup("navTrai
 // Wischgesten: links/rechts zwischen den Hauptbereichen wechseln
 const GROUP_ORDER = ["navHome", "navTraining", "navProgressGroup", "navNutritionGroup"];
 const SWIPE_IGNORE_SELECTOR = ".bottom-nav, .plan-switch, .filter-row, input, textarea, select, button";
-let swipeActive = false, swipeStartX = 0, swipeStartY = 0, swipeStartTime = 0;
+let swipeActive = false, swipeStartX = 0, swipeStartY = 0, swipeStartTime = 0, swipeInUebung = false;
 document.addEventListener("touchstart", function(e){
   if(e.touches.length !== 1) return;
   if(activeGroup === "navProfileGroup") return;
@@ -10752,7 +11121,24 @@ document.addEventListener("touchstart", function(e){
   swipeStartX = e.touches[0].clientX;
   swipeStartY = e.touches[0].clientY;
   swipeStartTime = Date.now();
+  // Innerhalb der Übungsliste bedeutet dieselbe Geste "eine Übung weiter" statt
+  // "ein Bereich weiter" — der Weg, den man in der Halle sowieso ständig geht.
+  swipeInUebung = !!e.target.closest("#dayContent");
 }, { passive: true });
+
+// Eine Übung vor oder zurück, mit denselben Grenzen wie die beiden Knöpfe unter der Karte.
+function wechsleUebung(richtung){
+  const anzahl = flatExerciseList().length;
+  if(anzahl < 2) return false;
+  const ziel = currentExerciseIndex + richtung;
+  if(ziel < 0 || ziel > anzahl - 1) return false;
+  currentExerciseIndex = ziel;
+  uebersichtOffen = false;
+  renderContent();
+  scrollToCurrentExercise();
+  merkeAnsicht();
+  return true;
+}
 
 document.addEventListener("touchend", function(e){
   if(!swipeActive) return;
@@ -10765,6 +11151,11 @@ document.addEventListener("touchend", function(e){
   if(elapsed > 700) return;
   if(Math.abs(deltaX) < 65) return;
   if(Math.abs(deltaX) < Math.abs(deltaY) * 1.4) return;
+  if(swipeInUebung && activeGroup === "navTraining"){
+    // Am ersten bzw. letzten Ende der Übungsliste greift wieder der Bereichswechsel,
+    // damit man aus der Trainingsansicht nicht ausbrechen kann, ohne zu wischen.
+    if(wechsleUebung(deltaX < 0 ? 1 : -1)) return;
+  }
   const idx = GROUP_ORDER.indexOf(activeGroup);
   if(idx === -1) return;
   if(deltaX < 0 && idx < GROUP_ORDER.length - 1){
@@ -11970,6 +12361,9 @@ function init(){
       // bekannt sind.
       try{ selectTodaysTrainingDay(); }catch(e){ console.error("Tagesauswahl fehlgeschlagen", e); }
       try{ renderAll(); }catch(e){ console.error("Render nach Laden fehlgeschlagen", e); }
+      // Erst nach der Tagesauswahl, damit die gemerkte Übungsnummer gegen den richtigen Tag
+      // geprüft wird. Für neue Nutzer gibt es nichts zu merken — dann bleibt es bei Home.
+      try{ stelleAnsichtHer(); }catch(e){ console.error("Letzte Ansicht konnte nicht wiederhergestellt werden", e); }
     })
     .catch(function(e){ console.error("Initialisierung ohne Speicher fortgesetzt", e); })
     .then(function(){
@@ -12004,9 +12398,18 @@ function init(){
 document.addEventListener("visibilitychange", function(){
   if(document.visibilityState === "visible"){
     checkReminders();
-    reconcileRestBarOnResume();
+    reconcileRestBarOnResume();   // fordert auch die Bildschirmsperre neu an
+  } else {
+    gibBildschirmFrei();
   }
 });
+document.getElementById("undoToastBtn").onclick = async function(){
+  const aktion = rueckgaengigAktion;
+  versteckeRueckgaengig();
+  if(aktion){
+    try{ await aktion(); }catch(e){ console.error("Rückgängig fehlgeschlagen", e); }
+  }
+};
 setInterval(checkReminders, 30 * 60 * 1000);
 // iOS zeigt beim Zurückkehren aus dem App-Wechsler teils "pageshow" statt "visibilitychange" —
 // sicherheitshalber auch hier die Pausen-Leiste absichern.
