@@ -384,6 +384,11 @@
     cursor:pointer;margin-bottom:2px;
   }
   .quickfill-btn:active{transform:scale(.98);}
+  .quickfill-row{display:flex;gap:6px;margin-bottom:2px;}
+  .quickfill-row .quickfill-btn{flex:1 1 0;min-width:0;margin-bottom:0;min-height:var(--tap-min,44px);
+    display:flex;align-items:center;justify-content:center;gap:4px;}
+  /* Der berechnete Vorschlag ist der Regelfall — er bekommt deshalb den kräftigeren Grund. */
+  .quickfill-ziel{background:var(--olive);color:#fff;}
   .tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;letter-spacing:.02em;white-space:nowrap;background:var(--pastel-overlay);}
   .tag.pr{background:var(--olive);color:#fff;}
   .tag.up{background:#e6f0da;color:#3f6b2a;}
@@ -4326,6 +4331,140 @@ function getProgressionSuggestionHold(ex){
     type: "neutral"
   };
 }
+
+/* --- Konkretes Ziel je Satz ---------------------------------------------------------------
+   Der Hinweis über der Übung sagt in Worten, was ansteht ("oberes Ende erreicht, versuche
+   62,5kg"). Das gilt aber immer nur für den schwersten Satz. Diese Funktion macht daraus eine
+   Zahl für JEDEN Satz: welches Gewicht und wie viele Wiederholungen heute in genau diesem Satz
+   dran sind. Grundlage ist dieselbe doppelte Progression — erst die Wiederholungsspanne
+   ausreizen, dann das Gewicht erhöhen —, nur satzweise gerechnet. Das ist wichtig, weil der
+   dritte Satz fast nie dieselbe Leistung hergibt wie der erste: Wer letzte Woche 60/60/55
+   gemacht hat, bekommt heute drei unterschiedliche Ziele statt eines Durchschnitts.
+
+   Rückgabe: Array mit einem Eintrag {weight, reps} je Satz (weight kann null sein, wenn zuletzt
+   kein Gewicht eingetragen war), oder null, wenn die Grundlage fehlt — ohne Verlauf oder ohne
+   Wiederholungsspanne im Plan gibt es nichts zu rechnen, dann bleibt es beim bisherigen
+   Verhalten (die Werte der letzten Einheit als grauer Vorschlag).                              */
+function rundeAufHalbe(wert){ return Math.round(wert * 2) / 2; }
+
+function spitzenwertDerEinheit(eintrag, mode){
+  const saetze = (eintrag && eintrag.sets) || [];
+  const werte = saetze.map(function(s){
+    return mode === "weight" ? parseFloat(s.weight) : parseInt(s.reps, 10);
+  }).filter(function(v){ return !isNaN(v); });
+  return werte.length ? Math.max.apply(null, werte) : null;
+}
+
+// War die letzte Einheit schwächer als die davor, wird heute nicht gesteigert, sondern
+// gehalten. Sonst würde die App nach einem schlechten Tag ein Gewicht vorschlagen, das schon
+// beim letzten Mal nicht ging.
+function istRuecklaeufig(hist, mode){
+  if(hist.length < 2) return false;
+  const jetzt = spitzenwertDerEinheit(hist[hist.length - 1], mode);
+  const davor = spitzenwertDerEinheit(hist[hist.length - 2], mode);
+  return jetzt !== null && davor !== null && jetzt < davor;
+}
+
+function satzZiele(ex, anzahlSaetze){
+  const range = repRangeFor(ex);
+  if(!range) return null;
+  const hist = historyFor(ex);
+  if(!hist.length) return null;
+  const letzte = (hist[hist.length - 1].sets || []).filter(function(s){ return s && (s.reps || s.weight); });
+  if(!letzte.length) return null;
+  const mitWdh = letzte.filter(function(s){ return !isNaN(parseInt(s.reps, 10)); });
+  if(!mitWdh.length) return null;   // ohne Wiederholungen lässt sich nichts ableiten
+
+  const mode = exerciseMode(ex);
+  const rueckgang = istRuecklaeufig(hist, mode);
+  // Doppelte Progression, so wie die App sie auch in der Hilfe beschreibt: Das Gewicht steigt
+  // erst, wenn ALLE Sätze das obere Ende der Wiederholungsspanne erreicht haben. Alles andere
+  // wäre in der Praxis auch nicht umsetzbar — ein höheres Gewicht nur im ersten Satz hieße,
+  // zwischen den Sätzen wieder abzuladen.
+  const alleAmOberenEnde = mitWdh.every(function(s){ return parseInt(s.reps, 10) >= range.max; });
+
+  if(alleAmOberenEnde && !rueckgang && mode !== "hold"){
+    const gewichte = mitWdh.map(function(s){ return parseFloat(s.weight); }).filter(function(w){ return !isNaN(w); });
+    const basisGewicht = gewichte.length ? Math.max.apply(null, gewichte) : 0;
+    const rirWerte = mitWdh.map(function(s){ return parseFloat(s.rir); }).filter(function(v){ return !isNaN(v); });
+    const avgRir = rirWerte.length ? (rirWerte.reduce(function(a, b){ return a + b; }, 0) / rirWerte.length) : null;
+    // Wer mit drei oder mehr Wiederholungen in Reserve aufgehört hat, hat nicht ausgereizt —
+    // dann darf der Sprung größer ausfallen als nach Sätzen am Limit.
+    const vielReserve = avgRir !== null && avgRir >= 3;
+    let schritt;
+    if(mode === "bodyweight"){
+      schritt = 2.5;   // Calisthenics: erst Wiederholungen, dann ein kleines Zusatzgewicht
+    } else {
+      schritt = ex.type === "grund" ? 2.5 : 1;   // Grundübungen vertragen den größeren Sprung
+      if(vielReserve) schritt *= 2;
+    }
+    const neuesGewicht = rundeAufHalbe(basisGewicht + schritt);
+    const ziele = [];
+    // Neues Gewicht heißt: wieder am unteren Ende der Spanne anfangen und sie erneut hochkämpfen.
+    for(let i = 0; i < anzahlSaetze; i++) ziele.push({ weight: neuesGewicht, reps: range.min });
+    return ziele;
+  }
+
+  // Sonst bleibt das Gewicht je Satz, wie es war, und die Wiederholungen gehen nach oben —
+  // satzweise, denn der dritte Satz gibt selten dieselbe Leistung her wie der erste.
+  const ziele = [];
+  for(let i = 0; i < anzahlSaetze; i++){
+    // Wer heute einen Satz mehr macht als beim letzten Mal, orientiert sich beim Extra-Satz
+    // am letzten geloggten Satz — der kommt der zusätzlichen Ermüdung am nächsten.
+    let basis = letzte[i] || letzte[letzte.length - 1];
+    if(isNaN(parseInt(basis.reps, 10))) basis = mitWdh[mitWdh.length - 1];
+    const wdh = parseInt(basis.reps, 10);
+    const gewicht = parseFloat(basis.weight);
+    const rir = parseFloat(basis.rir);
+    const vielReserve = !isNaN(rir) && rir >= 3;
+    let zielWdh;
+    if(mode === "hold"){
+      // Bei Halte-Übungen stehen im reps-Feld Sekunden; gesteigert wird in 5-Sekunden-Schritten.
+      zielWdh = rueckgang ? wdh : (wdh >= range.max ? wdh + 5 : Math.min(range.max, wdh + 5));
+    } else {
+      const plus = (vielReserve && !rueckgang) ? 2 : 1;
+      zielWdh = Math.min(range.max, Math.max(range.min, wdh + plus));
+    }
+    ziele.push({ weight: isNaN(gewicht) ? null : gewicht, reps: zielWdh });
+  }
+  return ziele;
+}
+
+// Für Platzhalter und Knopfbeschriftung: 62.5 -> "62.5", 60.0 -> "60"
+function zielZahl(wert){ return String(Math.round(wert * 10) / 10); }
+
+// Steht im title des Feldes: was in genau diesem Satz beim letzten Mal drinstand.
+function letztesMalText(satz, exMode){
+  if(!satz) return "";
+  const teile = [];
+  const g = parseFloat(satz.weight);
+  if(!isNaN(g)) teile.push(zielZahl(g) + (exMode === "weight" ? " kg" : " kg Zusatz"));
+  if(satz.reps) teile.push(satz.reps + (exMode === "hold" ? " Sek." : " Wdh."));
+  if(satz.rir) teile.push("RIR " + satz.rir);
+  return teile.length ? ("Letztes Mal: " + teile.join(" × ").replace(" × RIR", " @ RIR")) : "";
+}
+
+// Übernimmt die berechneten Ziele in die noch leeren Felder.
+function uebernehmeVorschlag(ex){
+  const entry = getEntry(ex);
+  const ziele = satzZiele(ex, entry.sets.length);
+  if(!ziele) return;
+  const exMode = exerciseMode(ex);
+  let gesetzt = 0;
+  entry.sets.forEach(function(s, i){
+    const ziel = ziele[i];
+    if(!ziel) return;
+    // Nur leere Felder füllen — schon Eingetragenes wird nie überschrieben.
+    if(!s.weight && ziel.weight !== null && ziel.weight !== undefined && !(exMode === "bodyweight" && ziel.weight === 0)){
+      s.weight = zielZahl(ziel.weight); gesetzt++;
+    }
+    if(!s.reps){ s.reps = String(ziel.reps); gesetzt++; }
+  });
+  if(!gesetzt){ showToast("Alle Felder sind schon ausgefüllt"); return; }
+  saveState();
+  renderContent();
+  showToast("Vorschlag übernommen");
+}
 /* Verlaufslinie mit Beschriftung an beiden Enden.
    Zwei Dinge waren hier vorher nicht in Ordnung:
    1. Die Linie war eine nackte Kurve ohne eine einzige Zahl — man sah "es geht hoch", aber
@@ -6162,6 +6301,10 @@ function buildExerciseCard(ex, dayColor, el){
       const exGroupLabel = exerciseGroupName(ex);
       const hist = historyFor(ex);
       const lastSession = hist && hist.length ? hist[hist.length - 1] : null;
+      // Ziel für jeden einzelnen Satz aus dem Verlauf berechnen. Steht eines zur Verfügung,
+      // zeigen die grauen Platzhalter nicht mehr die Werte der letzten Einheit, sondern das,
+      // was heute ansteht.
+      const zieleDerSaetze = satzZiele(ex, entry.sets.length);
       const supersetPartner = supersetPartnerName(ex.id);
       const top = document.createElement("div");
       top.className = "ex-top";
@@ -6251,11 +6394,24 @@ function buildExerciseCard(ex, dayColor, el){
       if(lastSession){
         const hasEmptySet = entry.sets.some(function(s){ return !setHasData(ex, s); });
         if(hasEmptySet){
+          // Zwei Wege in die Felder: der berechnete Vorschlag für heute (falls es einen gibt)
+          // und wie bisher die unveränderten Werte der letzten Einheit — wer sich heute nicht
+          // steigern will, soll deswegen keinen Umweg gehen müssen.
+          const knopfReihe = document.createElement("div");
+          knopfReihe.className = "quickfill-row";
+          if(zieleDerSaetze){
+            const zielBtn = document.createElement("div");
+            zielBtn.className = "quickfill-btn quickfill-ziel";
+            zielBtn.innerHTML = icon("ziel", "ki-inline") + " Ziel übernehmen";
+            zielBtn.onclick = function(){ uebernehmeVorschlag(ex); };
+            knopfReihe.appendChild(zielBtn);
+          }
           const fillBtn = document.createElement("div");
           fillBtn.className = "quickfill-btn";
-          fillBtn.innerHTML = icon("blitz", "ki-inline") + " Letzte Werte übernehmen";
+          fillBtn.innerHTML = icon("blitz", "ki-inline") + (zieleDerSaetze ? " Letzte Werte" : " Letzte Werte übernehmen");
           fillBtn.onclick = function(){ quickFillFromLastSession(ex); };
-          card.appendChild(fillBtn);
+          knopfReihe.appendChild(fillBtn);
+          card.appendChild(knopfReihe);
         }
       } else if(state.completedDays.length < 3){
         // Ohne Historie zeigt die Karte sonst gar nichts an: kein "Letzte Werte übernehmen"
@@ -6290,11 +6446,13 @@ function buildExerciseCard(ex, dayColor, el){
       }
 
       // Die Erklärung der grauen Zahlen steht nur an der ersten Übung — dort schaut man beim
-      // Start der Einheit hin. An jeder der zehn Karten wäre sie eine Wiederholung zu viel.
+      // Start der Einheit hin. An jeder der Karten wäre sie eine Wiederholung zu viel.
       if(lastSession && currentExerciseIndex === 0){
         const legende = document.createElement("p");
         legende.className = "set-legende";
-        legende.textContent = "Grau = deine Werte vom letzten Mal. Tipp einfach drüber.";
+        legende.textContent = zieleDerSaetze
+          ? "Grau = mein Vorschlag für heute, aus deinem Verlauf berechnet. Tipp einfach drüber."
+          : "Grau = deine Werte vom letzten Mal. Tipp einfach drüber.";
         card.appendChild(legende);
       }
 
@@ -6309,12 +6467,15 @@ function buildExerciseCard(ex, dayColor, el){
         const row = document.createElement("div");
         row.className = "set-row" + (s.done ? " checked" : "");
 
-        // Der gleich nummerierte Satz aus der letzten Einheit dient als Vorschlag: Er steht
-        // grau im leeren Feld, sodass man beim Eintragen direkt sieht, was zu schlagen ist,
-        // statt es sich merken oder oben nachlesen zu müssen. Sobald etwas eingetippt ist,
-        // verschwindet der Vorschlag von selbst — Platzhalter sind nie gespeicherte Werte.
+        // Im leeren Feld steht grau, was heute ansteht: das berechnete Ziel für genau diesen
+        // Satz. Fehlt die Grundlage dafür (kein Verlauf, keine Wiederholungsspanne im Plan),
+        // bleibt es beim bisherigen Verhalten — den Werten der letzten Einheit. Sobald etwas
+        // eingetippt ist, verschwindet der Vorschlag von selbst; Platzhalter sind nie
+        // gespeicherte Werte.
         const vorher = (lastSession && lastSession.sets && lastSession.sets[sIdx]) || null;
-        if(vorher) row.classList.add("hat-vorschlag");
+        const ziel = zieleDerSaetze ? zieleDerSaetze[sIdx] : null;
+        if(vorher || ziel) row.classList.add("hat-vorschlag");
+        const letztesMal = letztesMalText(vorher, exMode);
 
         // Satz-Nummer doppelt als Notiz-Schalter — hält die enge Satz-Zeile frei von
         // einem weiteren Knopf. Ein Punkt zeigt, dass zu diesem Satz eine Notiz existiert.
@@ -6330,8 +6491,13 @@ function buildExerciseCard(ex, dayColor, el){
         weightInput.type = "number";
         weightInput.inputMode = "decimal";
         weightInput.className = "set-input";
-        weightInput.placeholder = (vorher && vorher.weight) || (exMode === "weight" ? "–" : "+0");
-        weightInput.title = exMode === "weight" ? "" : "Zusatzgewicht (0 = nur Körpergewicht, negativ = Bandunterstützung)";
+        weightInput.placeholder = (ziel && ziel.weight !== null && ziel.weight !== undefined)
+          ? zielZahl(ziel.weight)
+          : ((vorher && vorher.weight) || (exMode === "weight" ? "–" : "+0"));
+        weightInput.title = [
+          exMode === "weight" ? "" : "Zusatzgewicht (0 = nur Körpergewicht, negativ = Bandunterstützung)",
+          letztesMal
+        ].filter(Boolean).join(" · ");
         weightInput.value = s.weight || "";
         weightInput.oninput = function(){ setSetWeight(ex, sIdx, weightInput.value); };
         weightInput.onblur = function(){
@@ -6359,7 +6525,9 @@ function buildExerciseCard(ex, dayColor, el){
         repsInput.type = "number";
         repsInput.inputMode = "numeric";
         repsInput.className = "set-input reps-input";
-        repsInput.placeholder = (vorher && vorher.reps) || entry.repsHint || (exMode === "hold" ? "Sek." : "–");
+        repsInput.placeholder = ziel ? String(ziel.reps)
+          : ((vorher && vorher.reps) || entry.repsHint || (exMode === "hold" ? "Sek." : "–"));
+        if(letztesMal) repsInput.title = letztesMal;
         repsInput.value = s.reps || "";
         repsInput.oninput = function(){ setSetReps(ex, sIdx, repsInput.value); };
         repsInput.onblur = function(){ if(maybeAutoCheckSet(ex, sIdx)){ renderContent(); renderProgressRing(); } };
