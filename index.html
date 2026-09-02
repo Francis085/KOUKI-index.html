@@ -89,7 +89,7 @@
     --bg:#f7f1de;
     --surface:#ffffff;
     --ink:#332f1e;
-    --ink-soft:#8b8467;
+    --ink-soft:#7d765c;
     --yellow:#f2e08f;
     --yellow-deep:#e0c85f;
     --lilac:#dccbf2;
@@ -100,7 +100,7 @@
     --olive-2:#524c30;
     --line:#ebe0bd;
     --done:#6f8a4a;
-    --warn:#c1544a;
+    --warn:#BD5248;
     --text-strong:#38351f;
     --pastel-text:#38351f;
     --pastel-text-soft:#524c30;
@@ -162,22 +162,22 @@
      Übungs-/Kalender-/Rezept-Kacheln passen sich pro Theme an. Innerhalb eines Themes bleiben
      die Kacheln aber immer hell mit dunkler Schrift, auch im Dunkelmodus (bewusste Konstante). --- */
   html[data-theme="natural"]{
-    --bg:#F6F3EC; --surface:#ffffff; --ink:#24231F; --ink-soft:#8A887C;
+    --bg:#F6F3EC; --surface:#ffffff; --ink:#24231F; --ink-soft:#716F65;
     --line:#eae6da; --olive:#292820; --olive-2:#4a473c; --text-strong:#24231F;
     --yellow:#f2e08f; --yellow-deep:#e0c85f; --lilac:#dccbf2; --lilac-deep:#b79ce0; --pink:#f4cdd2; --pink-deep:#e6a3ac;
   }
   html[data-theme="energy"]{
-    --bg:#EAF2EC; --surface:#F7FBF8; --ink:#26302a; --ink-soft:#748077;
+    --bg:#EAF2EC; --surface:#F7FBF8; --ink:#26302a; --ink-soft:#657068;
     --line:#d8e6dc; --olive:#2f9d5c; --olive-2:#237a47; --text-strong:#1E2420; --done:#2f9d5c;
     --yellow:#dcedb0; --yellow-deep:#b9d47f; --lilac:#bfe9d4; --lilac-deep:#84cba8; --pink:#ffd6bd; --pink-deep:#f3a67e;
   }
   html[data-theme="ocean"]{
-    --bg:#E7F2F5; --surface:#FAFDFE; --ink:#23343a; --ink-soft:#72888e;
+    --bg:#E7F2F5; --surface:#FAFDFE; --ink:#23343a; --ink-soft:#5E6F74;
     --line:#d4e6ea; --olive:#1B7F96; --olive-2:#166477; --text-strong:#1c2a2d;
     --yellow:#bee6dd; --yellow-deep:#7dc9b8; --lilac:#bfdef2; --lilac-deep:#7fb8de; --pink:#a9c9e8; --pink-deep:#6e9bc7;
   }
   html[data-theme="sunset"]{
-    --bg:#FBEDE5; --surface:#FFF9F6; --ink:#4a352e; --ink-soft:#9c8178;
+    --bg:#FBEDE5; --surface:#FFF9F6; --ink:#4a352e; --ink-soft:#7F6861;
     --line:#f2ddd0; --olive:#E2664A; --olive-2:#b94f38; --text-strong:#2b211d;
     --yellow:#fbcb88; --yellow-deep:#f0a94a; --lilac:#f0c4d6; --lilac-deep:#de8fac; --pink:#ffc2a3; --pink-deep:#f28e62;
   }
@@ -273,7 +273,7 @@
     border:1px solid var(--line);font-family:'Baloo 2',sans-serif;font-size:13px;font-weight:600;
     color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:all .15s;
   }
-  .plan-chip.active{background:var(--olive);color:#fff;border-color:var(--olive);}
+  .plan-chip.active{background:var(--olive);color:var(--on-olive,#fff);border-color:var(--olive);}
   .plan-chip.add{background:var(--yellow);color:var(--pastel-text);border-color:var(--yellow-deep);}
   .plan-delete{
     flex:0 0 auto;width:36px;height:36px;border-radius:50%;background:var(--surface);
@@ -288,7 +288,7 @@
     font-family:'Baloo 2',sans-serif;font-weight:600;font-size:14px;color:var(--ink-soft);
     transition:all .15s;
   }
-  .day-btn.active{background:var(--olive);color:#fff;border-color:var(--olive);}
+  .day-btn.active{background:var(--olive);color:var(--on-olive,#fff);border-color:var(--olive);}
   .day-btn.day-c0{box-shadow:inset 0 3px 0 var(--yellow-deep);}
   .day-btn.day-c1{box-shadow:inset 0 3px 0 var(--lilac-deep);}
   .day-btn.day-c2{box-shadow:inset 0 3px 0 var(--pink-deep);}
@@ -347,8 +347,8 @@
     display:flex;align-items:center;justify-content:center;
     font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ink-soft);
   }
-  .so-row.done .so-nr{background:var(--olive);color:#fff;}
-  .so-row.active .so-nr{background:var(--olive);color:#fff;}
+  .so-row.done .so-nr{background:var(--olive);color:var(--on-olive,#fff);}
+  .so-row.active .so-nr{background:var(--olive);color:var(--on-olive,#fff);}
   .so-row-name{flex:1 1 auto;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .so-row-sets{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-soft);flex:0 0 auto;}
   .step-nav-btns{display:flex;gap:10px;margin-top:14px;}
@@ -420,9 +420,9 @@
   .quickfill-row .quickfill-btn{flex:1 1 0;min-width:0;margin-bottom:0;min-height:var(--tap-min,44px);
     display:flex;align-items:center;justify-content:center;gap:4px;}
   /* Der berechnete Vorschlag ist der Regelfall — er bekommt deshalb den kräftigeren Grund. */
-  .quickfill-ziel{background:var(--olive);color:#fff;}
+  .quickfill-ziel{background:var(--olive);color:var(--on-olive,#fff);}
   .tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;letter-spacing:.02em;white-space:nowrap;background:var(--pastel-overlay);}
-  .tag.pr{background:var(--olive);color:#fff;}
+  .tag.pr{background:var(--olive);color:var(--on-olive,#fff);}
   .tag.up{background:#e6f0da;color:#3f6b2a;}
   .tag.down{background:#f7dede;color:#a33b34;}
   .tag.flat{background:#faf0cf;color:#8a6d13;}
@@ -439,7 +439,7 @@
   .ex-menu-icon{font-size:18px;flex-shrink:0;width:22px;display:flex;align-items:center;justify-content:center;}
   .ex-menu-text{display:flex;flex-direction:column;gap:1px;min-width:0;}
   .ex-menu-hint{font-size:11px;color:var(--ink-soft);}
-  .icon-btn.active{background:var(--olive);color:#fff;}
+  .icon-btn.active{background:var(--olive);color:var(--on-olive,#fff);}
   /* Werte der letzten Einheit stehen als Vorschlag im leeren Feld — deutlich genug, um sie
      lesen zu können, aber klar von einem echten Eintrag unterscheidbar. */
   .set-row.hat-vorschlag .set-input::placeholder{color:var(--ink-soft);opacity:.75;font-weight:600;}
@@ -491,7 +491,7 @@
   .deload-banner h4{font-family:'Baloo 2',sans-serif;font-size:13.5px;color:var(--text-strong);margin:0 0 6px;}
   .deload-banner p{font-size:12px;line-height:1.6;color:var(--ink-soft);margin:0 0 10px;}
   .deload-banner button{
-    background:var(--olive);color:#fff;border:none;border-radius:14px;padding:8px 14px;
+    background:var(--olive);color:var(--on-olive,#fff);border:none;border-radius:14px;padding:8px 14px;
     font-family:'Baloo 2',sans-serif;font-weight:700;font-size:12px;cursor:pointer;
   }
   .progression-tip.tip-weak{background:rgba(230,163,172,.35);}
@@ -507,9 +507,9 @@
   @keyframes koukiSetDone{ 0%{ transform:scale(1); } 40%{ transform:scale(1.015); } 100%{ transform:scale(1); } }
   .set-row.checked{background:var(--olive);animation:koukiSetDone .25s ease;}
   .set-row.checked .set-label,
-  .set-row.checked .set-unit{color:rgba(255,255,255,.75);}
-  .set-row.checked .set-input{color:#fff;}
-  .set-row.checked .set-input::placeholder{color:rgba(255,255,255,.55);}
+  .set-row.checked .set-unit{color:var(--on-olive-soft,rgba(255,255,255,.75));}
+  .set-row.checked .set-input{color:var(--on-olive,#fff);}
+  .set-row.checked .set-input::placeholder{color:var(--on-olive-blass,rgba(255,255,255,.55));}
   .set-label{
     font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
     color:var(--pastel-text-soft);
@@ -561,7 +561,7 @@
     display:flex;align-items:center;justify-content:center;font-size:13px;
     color:var(--pastel-text-soft);cursor:pointer;
   }
-  .set-row.checked .set-del{color:rgba(255,255,255,.6);}
+  .set-row.checked .set-del{color:var(--on-olive-blass,rgba(255,255,255,.6));}
   .add-set-btn{
     margin-top:2px;text-align:center;font-family:'Inter',sans-serif;font-weight:600;font-size:12px;
     color:var(--pastel-text-soft);background:var(--pastel-overlay);border-radius:12px;
@@ -575,7 +575,7 @@
     font-weight:700;font-size:14px;cursor:pointer;transition:filter .15s,transform .1s;
   }
   .btn:active{transform:scale(.98);}
-  .btn-primary{background:var(--olive);color:#fff;}
+  .btn-primary{background:var(--olive);color:var(--on-olive,#fff);}
   .btn-primary:hover{filter:brightness(1.15);}
   .btn-ghost{background:var(--surface);color:var(--ink-soft);border:1px solid var(--line);}
   .btn-ghost:hover{color:var(--ink);}
@@ -608,7 +608,7 @@
 
   .toast{
     position:fixed;bottom:calc(96px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);
-    background:var(--olive);color:#fff;font-family:'Baloo 2',sans-serif;font-weight:700;
+    background:var(--olive);color:var(--on-olive,#fff);font-family:'Baloo 2',sans-serif;font-weight:700;
     font-size:13px;padding:12px 22px;border-radius:50px;opacity:0;
     transition:opacity .25s,transform .25s;pointer-events:none;z-index:60;
   }
@@ -639,7 +639,7 @@
   .rest-time{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;color:var(--yellow);min-width:58px;}
   .rest-actions{display:flex;gap:6px;align-items:center;}
   .rest-actions button{
-    background:rgba(255,255,255,.14);border:none;color:#fff;border-radius:10px;
+    background:var(--on-olive-hauch,rgba(255,255,255,.14));border:none;color:#fff;border-radius:10px;
     padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;cursor:pointer;
     touch-action:manipulation;position:relative;z-index:2;
   }
@@ -711,14 +711,14 @@
   .legal-card strong{color:var(--text-strong);}
   .legal-card a{color:var(--text-strong);font-weight:700;text-decoration:underline;}
   .legal-medbox{
-    background:var(--warn);color:#fff;border-radius:16px;padding:14px 16px;margin-top:6px;
+    background:var(--warn);color:var(--on-warn,#fff);border-radius:16px;padding:14px 16px;margin-top:6px;
   }
-  .legal-medbox p{color:#fff;margin:0;font-size:12.5px;line-height:1.65;}
-  .legal-medbox strong{color:#fff;}
+  .legal-medbox p{color:var(--on-warn,#fff);margin:0;font-size:12.5px;line-height:1.65;}
+  .legal-medbox strong{color:var(--on-warn,#fff);}
   .legal-footer{font-size:11px;color:var(--ink-soft);text-align:center;margin:18px 0 6px;line-height:1.6;}
   .backup-btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
   .backup-btn{
-    flex:1;min-width:140px;background:var(--olive);color:#fff;border:none;border-radius:16px;
+    flex:1;min-width:140px;background:var(--olive);color:var(--on-olive,#fff);border:none;border-radius:16px;
     padding:11px 12px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13px;cursor:pointer;
   }
   .backup-btn:active{transform:scale(.97);}
@@ -780,19 +780,19 @@
 
   .nav-btn .nav-icon{
     font-size:17px;line-height:1;
-    background:rgba(255,255,255,.14);
+    background:var(--on-olive-hauch,rgba(255,255,255,.14));
     width:30px;height:30px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     /* Die eigenen Symbole zeichnen sich über currentColor. Ohne diese Angabe stünden sie
        auf Schwarz und wären auf der dunklen Leiste kaum zu erkennen. */
-    color:rgba(255,255,255,.78);
+    color:var(--on-olive-soft,rgba(255,255,255,.78));
   }
   .nav-btn.active .nav-icon{color:var(--olive);}
   .nav-btn .nav-label{
     font-family:'Inter',sans-serif;font-weight:600;font-size:8.5px;letter-spacing:.01em;
-    color:rgba(255,255,255,.6);
+    color:var(--on-olive-blass,rgba(255,255,255,.6));
   }
-  .nav-btn.active .nav-icon{background:#fff;}
+  .nav-btn.active .nav-icon{background:var(--on-olive,#fff);}
   .nav-btn.active .nav-label{color:var(--yellow);}
 
   @keyframes popIn{0%{transform:scale(.3) rotate(-15deg);opacity:0;}60%{transform:scale(1.18) rotate(5deg);opacity:1;}100%{transform:scale(1) rotate(0);opacity:1;}}
@@ -914,7 +914,7 @@
     border:1px solid var(--line);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;
     color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:all .15s;
   }
-  .filter-chip.active{background:var(--olive);color:#fff;border-color:var(--olive);}
+  .filter-chip.active{background:var(--olive);color:var(--on-olive,#fff);border-color:var(--olive);}
   .filter-chip.excl.active{background:var(--warn);border-color:var(--warn);}
   .filter-label{font-size:10.5px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px 2px;}
 
@@ -965,7 +965,7 @@
   .recipe-kcal{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--pastel-text);white-space:nowrap;}
   .recipe-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
   .recipe-tags .tag{background:var(--pastel-overlay);color:var(--pastel-text);}
-  .recipe-tags .tag.match{background:var(--olive);color:#fff;}
+  .recipe-tags .tag.match{background:var(--olive);color:var(--on-olive,#fff);}
   .recipe-macros-row{display:flex;gap:10px;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--pastel-text-soft);}
   .recipe-detail{
     background:var(--surface);border:1px solid var(--line);border-radius:18px;
@@ -988,7 +988,7 @@
     border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);cursor:pointer;
     font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;
   }
-  .rd-portion.aktiv{background:var(--olive);border-color:var(--olive);color:#fff;}
+  .rd-portion.aktiv{background:var(--olive);border-color:var(--olive);color:var(--on-olive,#fff);}
   .rd-hinweis{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0 0 10px;}
   .rd-zutaten{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
   .rd-zutat{
@@ -1003,7 +1003,7 @@
     justify-content:center;font-size:14px;border:1.5px solid var(--line);color:var(--ink-soft);
     background:var(--surface);
   }
-  .rd-zutat.drin .rd-zutat-box{background:var(--olive);border-color:var(--olive);color:#fff;}
+  .rd-zutat.drin .rd-zutat-box{background:var(--olive);border-color:var(--olive);color:var(--on-olive,#fff);}
   .rd-zutat-text{flex:1 1 auto;min-width:0;}
   .rd-alle{width:100%;margin-top:2px;}
   .rd-bestaetigung[hidden]{display:none;}
@@ -1015,7 +1015,7 @@
   }
   .rd-bestaetigung-text{display:flex;align-items:center;gap:6px;}
   .rd-zur-liste{
-    flex:0 0 auto;border:none;border-radius:10px;background:var(--olive);color:#fff;cursor:pointer;
+    flex:0 0 auto;border:none;border-radius:10px;background:var(--olive);color:var(--on-olive,#fff);cursor:pointer;
     padding:8px 12px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;
     min-height:var(--tap-min,44px);
   }
@@ -1085,7 +1085,7 @@
     background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;
     flex-shrink:0;cursor:pointer;font-weight:700;color:var(--olive);font-size:14px;
   }
-  .supp-check.checked{background:var(--olive);border-color:var(--olive);color:#fff;}
+  .supp-check.checked{background:var(--olive);border-color:var(--olive);color:var(--on-olive,#fff);}
   .supp-icon{font-size:26px;flex-shrink:0;line-height:1;}
   .supp-name{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15.5px;color:var(--pastel-text);margin:0;flex:1;}
   .supp-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
@@ -1396,7 +1396,7 @@
   }
   .session-timer-display{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--text-strong);}
   .session-timer-btn{
-    background:var(--olive);color:#fff;border:none;border-radius:14px;padding:9px 14px;
+    background:var(--olive);color:var(--on-olive,#fff);border:none;border-radius:14px;padding:9px 14px;
     font-family:'Baloo 2',sans-serif;font-weight:700;font-size:12.5px;cursor:pointer;
   }
   .session-timer-btn.running{background:var(--pink-deep);}
@@ -1678,7 +1678,6 @@
   <div id="frame-home">
     <div class="home-greeting" id="homeGreeting"></div>
     <div id="firstStepsHome"></div>
-    <div id="deloadHintHome"></div>
     <div id="installHintHome"></div>
     <div id="backupHintHome"></div>
     <div class="rank-card" id="homeXpCard" style="margin-bottom:14px;"></div>
@@ -2116,14 +2115,14 @@
           <p class="measure-label">Passwort</p>
           <div style="position:relative;">
             <input type="password" id="accountPasswordInput" placeholder="mind. 8 Zeichen" autocomplete="current-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
-            <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+            <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;color:var(--ink);font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
         </div>
         <div class="measure-group">
           <p class="measure-label">Passwort bestätigen</p>
           <div style="position:relative;">
             <input type="password" id="accountPasswordConfirmInput" placeholder="Passwort wiederholen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
-            <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+            <button type="button" class="pw-eye-btn" data-pw-toggle="accountPasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;color:var(--ink);font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
           <p class="rank-hint" style="margin:6px 0 0;">Nur nötig, wenn du oben auf „Konto erstellen“ tippst.</p>
         </div>
@@ -2132,7 +2131,7 @@
           <button class="btn btn-ghost" id="accountPasswordLoginBtn" style="flex:1;">Anmelden</button>
         </div>
         <p id="accountPasswordHint" class="rank-hint" style="margin:8px 0 0;"></p>
-        <p style="margin:6px 0 0;"><span id="accountForgotPasswordBtn" style="font-size:12.5px;color:var(--olive);text-decoration:underline;cursor:pointer;">Passwort vergessen?</span></p>
+        <p style="margin:6px 0 0;"><span id="accountForgotPasswordBtn" style="font-size:12.5px;color:var(--text-strong);text-decoration:underline;cursor:pointer;">Passwort vergessen?</span></p>
 
         <p style="font-size:11.5px;color:var(--ink-soft);margin:16px 0 6px;">— oder ohne Passwort per Link in deiner Mail —</p>
         <button class="btn btn-ghost" id="accountLoginBtn" style="width:100%;">Login-Link an obige E-Mail senden</button>
@@ -2144,14 +2143,14 @@
           <p class="measure-label">Neues Passwort</p>
           <div style="position:relative;">
             <input type="password" id="accountNewPasswordInput" placeholder="mind. 8 Zeichen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
-            <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+            <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;color:var(--ink);font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
         </div>
         <div class="measure-group">
           <p class="measure-label">Neues Passwort bestätigen</p>
           <div style="position:relative;">
             <input type="password" id="accountNewPasswordConfirmInput" placeholder="Passwort wiederholen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
-            <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+            <button type="button" class="pw-eye-btn" data-pw-toggle="accountNewPasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;color:var(--ink);font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
           </div>
         </div>
         <button class="btn btn-primary" id="accountSaveNewPasswordBtn" style="width:100%;">Neues Passwort speichern</button>
@@ -2343,14 +2342,14 @@
       <p class="measure-label">Passwort</p>
       <div style="position:relative;">
         <input type="password" id="welcomePasswordInput" placeholder="mind. 8 Zeichen" autocomplete="current-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
-        <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+        <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;color:var(--ink);font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
       </div>
     </div>
     <div class="measure-group">
       <p class="measure-label">Passwort bestätigen</p>
       <div style="position:relative;">
         <input type="password" id="welcomePasswordConfirmInput" placeholder="Passwort wiederholen" autocomplete="new-password" autocapitalize="off" autocorrect="off" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 44px 11px 13px;font-size:15px;background:var(--bg);color:var(--ink);box-sizing:border-box;">
-        <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
+        <button type="button" class="pw-eye-btn" data-pw-toggle="welcomePasswordConfirmInput" title="Passwort anzeigen" style="position:absolute;right:4px;top:0;bottom:0;background:none;border:none;color:var(--ink);font-size:18px;padding:0 10px;cursor:pointer;">👁️</button>
       </div>
       <p class="rank-hint" style="margin:6px 0 0;">Nur nötig, wenn du auf „Konto erstellen“ tippst.</p>
     </div>
@@ -3042,7 +3041,7 @@ const PPL_UL_PLAN = {
 const TIERS = ["Eisen","Bronze","Silber","Gold","Platin","Diamant","Meister","Großmeister","Challenger"];
 const TIER_COLORS = {
   "Eisen":"#8b8467","Bronze":"#a9713f","Silber":"#8f99a3","Gold":"#c98f2b",
-  "Platin":"#3f9e93","Diamant":"#4d79c9","Meister":"#8a4fd6","Großmeister":"#c94f92","Challenger":"#38351f"
+  "Platin":"#3f9e93","Diamant":"#6f9ae0","Meister":"#8a4fd6","Großmeister":"#CF5196","Challenger":"#38351f"
 };
 const LIFT_STANDARDS = {
   squat:    { label:"Kniebeugen",    match:n=>n.includes("Kniebeuge"), thresholds:[0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5] },
@@ -3492,76 +3491,6 @@ function renderBackupHint(){
     state.backupHintDismissedDate = todayKey();
     saveState();
     renderBackupHint();
-  };
-}
-
-/* --- Deload-Woche erkennen ---------------------------------------------------------------
-   Wenn die Leistung nicht in einer, sondern quer über mehrere Übungen zurückgeht, liegt das
-   selten an der Tagesform und meist an fehlender Erholung. Genau an diesem Punkt kippen die
-   meisten Pläne: Man steigert weiter, wird langsamer, steigert wieder. Eine leichtere Woche
-   bringt dort schneller weiter als die nächste Steigerung.
-
-   Bewusst konservativ: mindestens drei Übungen mit genug Verlauf müssen beurteilbar sein, und
-   mindestens die Hälfte davon muss zurückgehen. Der Hinweis ist ein Vorschlag, nichts wird
-   automatisch am Plan geändert. Einmal weggetippt, bleibt er für diese Woche weg.            */
-const DELOAD_MIN_UEBUNGEN = 3;
-
-// Alle Übungen aller Tage des aktiven Plans — der Rückgang zeigt sich über die ganze Woche,
-// nicht nur am heutigen Trainingstag.
-function alleUebungenDesPlans(){
-  const plan = getActivePlan();
-  const out = [];
-  if(!plan || !plan.days) return out;
-  Object.keys(plan.days).forEach(function(key){
-    const tag = plan.days[key];
-    if(!tag || !tag.groups) return;
-    tag.groups.forEach(function(g){
-      (g.exercises || []).forEach(function(ex){
-        const swap = state.exerciseSwaps && state.exerciseSwaps[ex.id];
-        out.push(swap ? Object.assign({}, ex, swap) : ex);
-      });
-    });
-  });
-  return out;
-}
-
-function deloadHintState(){
-  if(state.deloadHintDismissedWeek === aktuelleWochenKennung()) return null;
-  const beurteilbar = [];
-  const ruecklaeufig = [];
-  alleUebungenDesPlans().forEach(function(ex){
-    const hist = historyFor(ex);
-    if(hist.length < 3) return;   // zwei Einheiten reichen nicht, um einen Trend zu sehen
-    beurteilbar.push(ex);
-    if(istRuecklaeufig(hist, exerciseMode(ex))) ruecklaeufig.push(exerciseNameById(ex.id) || ex.name);
-  });
-  if(beurteilbar.length < DELOAD_MIN_UEBUNGEN) return null;
-  if(ruecklaeufig.length < Math.ceil(beurteilbar.length / 2)) return null;
-  return { anzahl: ruecklaeufig.length, gesamt: beurteilbar.length, namen: ruecklaeufig.slice(0, 3) };
-}
-
-// Kalenderwoche als Schlüssel, damit ein weggetippter Hinweis nächste Woche wieder auftaucht.
-function aktuelleWochenKennung(){
-  return ymd(mondayOf(new Date()));
-}
-
-function renderDeloadHint(){
-  const el = document.getElementById("deloadHintHome");
-  if(!el) return;
-  const befund = deloadHintState();
-  if(!befund){ el.innerHTML = ""; return; }
-  el.innerHTML = '<div class="progression-tip tip-deload" style="margin-bottom:14px;">' +
-    '<span class="tip-icon">' + icon("achtung") + '</span>' +
-    '<span>In ' + befund.anzahl + ' von ' + befund.gesamt + ' Übungen gehen deine Werte seit zwei Einheiten zurück (' +
-    escapeHtml(befund.namen.join(", ")) + (befund.anzahl > befund.namen.length ? " u. a." : "") +
-    '). Das ist meist ein Zeichen für zu wenig Erholung. Eine leichtere Woche — etwa 60&nbsp;% des Gewichts und die halbe Satzzahl — bringt dich hier erfahrungsgemäß schneller weiter als die nächste Steigerung.</span>' +
-    '<span class="set-del" id="deloadHintDismissBtn" title="Diese Woche nicht mehr">✕</span>' +
-  '</div>';
-  const dismiss = document.getElementById("deloadHintDismissBtn");
-  if(dismiss) dismiss.onclick = function(){
-    state.deloadHintDismissedWeek = aktuelleWochenKennung();
-    saveState();
-    renderDeloadHint();
   };
 }
 
@@ -5614,9 +5543,9 @@ const KOUKI_BILDER = [
 const KOUKI_SELTENHEIT = [
   { name:"Gewöhnlich",  farbe:"#8fa3bf" },
   { name:"Selten",      farbe:"#3fa9f5" },
-  { name:"Episch",      farbe:"#b07cf5" },
+  { name:"Episch",      farbe:"#bd91f7" },
   { name:"Legendär",    farbe:"#f5a93f" },
-  { name:"Mythisch",    farbe:"#f56d6d" },
+  { name:"Mythisch",    farbe:"#f88585" },
   { name:"Transzendent", farbe:"#4fd6c4" },
   { name:"Kosmisch",    farbe:"#ffe27a" },
 ];
@@ -6414,7 +6343,7 @@ function openDayDetail(dateStr){
 
   let html = '<div class="day-modal-head"><h3>' + formatDateLong(dateStr) + '</h3>' +
     (trained
-      ? '<span class="tag" style="background:var(--olive);color:#fff;">✓ Trainiert' + (info && info.label ? (' · ' + escapeHtml(info.label)) : '') + '</span>'
+      ? '<span class="tag" style="background:var(--olive);color:var(--on-olive,#fff);">✓ Trainiert' + (info && info.label ? (' · ' + escapeHtml(info.label)) : '') + '</span>'
       : '<span class="tag">Kein Eintrag</span>') +
     '<div class="day-modal-close" id="dayModalClose">✕</div></div>';
 
@@ -7074,17 +7003,31 @@ let lastCelebratePRs = null;
 // Weiß auf der Akzentfarbe erreicht je nach Farbthema nur 2.0:1 (Energy im Nachtmodus) bis
 // 14.8:1 (Natural am Tag). Für den Hauptknopf im Rekord-Dialog wird die Schriftfarbe deshalb
 // aus der Helligkeit des Knopfgrunds bestimmt, statt sie fest auf Weiß zu setzen.
+// Nimmt "rgb(…)"/"rgba(…)" ebenso wie "#rrggbb" und "#rgb" entgegen. Der Hex-Fall ist
+// entscheidend: getComputedStyle().backgroundColor liefert rgb(), der Wert einer
+// CSS-Variablen dagegen den Rohtext. Eine reine Ziffernsuche las "#8f99a3" als rgb(8,99,3)
+// und wählte damit prompt die falsche Schriftfarbe.
 function relativeHelligkeit(farbe){
-  const t = String(farbe).match(/[\d.]+/g);
-  if(!t || t.length < 3) return 1;
-  const f = function(v){ const c = parseFloat(v) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-  return 0.2126 * f(t[0]) + 0.7152 * f(t[1]) + 0.0722 * f(t[2]);
+  const text = String(farbe).trim();
+  let werte = null;
+  const hex = text.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if(hex){
+    const h = hex[1].length === 3 ? hex[1].replace(/(.)/g, "$1$1") : hex[1];
+    werte = [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  } else {
+    const t = text.match(/[\d.]+/g);
+    if(t && t.length >= 3) werte = [parseFloat(t[0]), parseFloat(t[1]), parseFloat(t[2])];
+  }
+  if(!werte || werte.some(isNaN)) return null;   // unbekannt: der Aufrufer entscheidet
+  const f = function(v){ const c = v / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(werte[0]) + 0.7152 * f(werte[1]) + 0.0722 * f(werte[2]);
 }
 function lesbareSchriftfarbe(hintergrund){
   // Nicht nach Schwellwert raten, sondern beide Möglichkeiten durchrechnen und die mit dem
   // größeren Kontrast nehmen — bei mittelhellen Akzenten wie #B98B4E liegt Dunkel vorn (6.2:1
   // statt 3.1:1 mit Weiß).
   const l = relativeHelligkeit(hintergrund);
+  if(l === null) return "#ffffff";                      // unbekannter Grund: wie bisher Weiß
   const hell = 1.05 / (l + 0.05);                       // Weiß auf dem Grund
   const dunkelL = relativeHelligkeit("rgb(20,20,15)");
   const dunkel = (l + 0.05) / (dunkelL + 0.05);         // Fast-Schwarz auf dem Grund
@@ -8608,7 +8551,7 @@ function renderRankCard(){
     item.className = "rank-item";
     if(!bw || !pr.weight){
       item.innerHTML = '<div class="lift-name">' + cfg.label + '</div>' +
-        '<div class="tier-badge" style="background:#8b8467">–</div>' +
+        '<div class="tier-badge" style="background:#8b8467;color:' + lesbareSchriftfarbe("#8b8467") + '">–</div>' +
         '<div class="ratio">' + (!bw ? "Körpergewicht fehlt" : "Noch kein PR") + '</div>';
     } else {
       const ratio = pr.weight / bw.weight;
@@ -8616,7 +8559,7 @@ function renderRankCard(){
       tierIdxs.push(idx);
       const tier = TIERS[idx];
       item.innerHTML = '<div class="lift-name">' + cfg.label + '</div>' +
-        '<div class="tier-badge" style="background:' + TIER_COLORS[tier] + '">' + tier + '</div>' +
+        '<div class="tier-badge" style="background:' + TIER_COLORS[tier] + ';color:' + lesbareSchriftfarbe(TIER_COLORS[tier]) + '">' + tier + '</div>' +
         '<div class="ratio">' + pr.weight + 'kg · ' + ratio.toFixed(2) + 'x KG</div>' +
         '<div class="ratio" style="margin-top:2px;">seit ' + formatDate(pr.date) + '</div>';
     }
@@ -8628,9 +8571,11 @@ function renderRankCard(){
     const overallTier = TIERS[avgIdx];
     overallEl.textContent = overallTier;
     overallEl.style.background = TIER_COLORS[overallTier];
+    overallEl.style.color = lesbareSchriftfarbe(TIER_COLORS[overallTier]);
   } else {
     overallEl.textContent = "–";
     overallEl.style.background = "#8b8467";
+    overallEl.style.color = lesbareSchriftfarbe("#8b8467");
   }
 }
 
@@ -10825,7 +10770,7 @@ function renderFirstSteps(){
   const head = document.createElement("div");
   head.className = "rank-head";
   head.innerHTML = '<span class="rank-title">🚀 Erste Schritte</span>' +
-    '<span class="rank-overall" style="background:var(--olive);">' + erledigt + '/' + items.length + '</span>';
+    '<span class="rank-overall" style="background:var(--olive);color:var(--on-olive,#fff);">' + erledigt + '/' + items.length + '</span>';
   card.appendChild(head);
 
   const sub = document.createElement("p");
@@ -10842,7 +10787,7 @@ function renderFirstSteps(){
     const mark = document.createElement("span");
     mark.style.cssText = "flex-shrink:0;width:26px;height:26px;border-radius:50%;display:flex;" +
       "align-items:center;justify-content:center;font-size:14px;" +
-      (item.done ? "background:var(--olive);color:#fff;" : "background:var(--bg);border:1px solid var(--line);");
+      (item.done ? "background:var(--olive);color:var(--on-olive,#fff);" : "background:var(--bg);border:1px solid var(--line);");
     mark.textContent = item.done ? "✓" : item.icon;
     row.appendChild(mark);
 
@@ -10895,7 +10840,6 @@ function renderHome(){
     greetEl.textContent = hour < 11 ? "Guten Morgen! ☀️" : hour < 18 ? "Hey, schön dass du da bist 👋" : "Guten Abend! 🌙";
   }
   renderFirstSteps();
-  renderDeloadHint();
   renderInstallHint();
   renderBackupHint();
 
@@ -11202,10 +11146,10 @@ const THEME_NAMES = [
   { key:"dark",    label:"Dark",    swatch:["#121212","#1D1D1D","#B98B4E"] },
 ];
 const THEME_VARS = {
-  natural:{ "--bg":"#F6F3EC", "--surface":"#ffffff", "--ink":"#24231F", "--ink-soft":"#8A887C", "--line":"#eae6da", "--olive":"#292820", "--olive-2":"#4a473c", "--text-strong":"#24231F", "--done":"#6f8a4a", "--warn":"#c1544a", "--yellow":"#f2e08f", "--yellow-deep":"#e0c85f", "--lilac":"#dccbf2", "--lilac-deep":"#b79ce0", "--pink":"#f4cdd2", "--pink-deep":"#e6a3ac", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
-  energy:{ "--bg":"#EAF2EC", "--surface":"#F7FBF8", "--ink":"#26302a", "--ink-soft":"#748077", "--line":"#d8e6dc", "--olive":"#2f9d5c", "--olive-2":"#237a47", "--text-strong":"#1E2420", "--done":"#2f9d5c", "--warn":"#c1544a", "--yellow":"#dcedb0", "--yellow-deep":"#b9d47f", "--lilac":"#bfe9d4", "--lilac-deep":"#84cba8", "--pink":"#ffd6bd", "--pink-deep":"#f3a67e", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
-  ocean:{ "--bg":"#E7F2F5", "--surface":"#FAFDFE", "--ink":"#23343a", "--ink-soft":"#72888e", "--line":"#d4e6ea", "--olive":"#1B7F96", "--olive-2":"#166477", "--text-strong":"#1c2a2d", "--done":"#2f9d6c", "--warn":"#c1544a", "--yellow":"#bee6dd", "--yellow-deep":"#7dc9b8", "--lilac":"#bfdef2", "--lilac-deep":"#7fb8de", "--pink":"#a9c9e8", "--pink-deep":"#6e9bc7", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
-  sunset:{ "--bg":"#FBEDE5", "--surface":"#FFF9F6", "--ink":"#4a352e", "--ink-soft":"#9c8178", "--line":"#f2ddd0", "--olive":"#E2664A", "--olive-2":"#b94f38", "--text-strong":"#2b211d", "--done":"#6f8a4a", "--warn":"#c1544a", "--yellow":"#fbcb88", "--yellow-deep":"#f0a94a", "--lilac":"#f0c4d6", "--lilac-deep":"#de8fac", "--pink":"#ffc2a3", "--pink-deep":"#f28e62", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
+  natural:{ "--bg":"#F6F3EC", "--surface":"#ffffff", "--ink":"#24231F", "--ink-soft":"#716F65", "--line":"#eae6da", "--olive":"#292820", "--olive-2":"#4a473c", "--text-strong":"#24231F", "--done":"#6f8a4a", "--warn":"#BD5248", "--yellow":"#f2e08f", "--yellow-deep":"#e0c85f", "--lilac":"#dccbf2", "--lilac-deep":"#b79ce0", "--pink":"#f4cdd2", "--pink-deep":"#e6a3ac", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
+  energy:{ "--bg":"#EAF2EC", "--surface":"#F7FBF8", "--ink":"#26302a", "--ink-soft":"#657068", "--line":"#d8e6dc", "--olive":"#2f9d5c", "--olive-2":"#237a47", "--text-strong":"#1E2420", "--done":"#2f9d5c", "--warn":"#BD5248", "--yellow":"#dcedb0", "--yellow-deep":"#b9d47f", "--lilac":"#bfe9d4", "--lilac-deep":"#84cba8", "--pink":"#ffd6bd", "--pink-deep":"#f3a67e", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
+  ocean:{ "--bg":"#E7F2F5", "--surface":"#FAFDFE", "--ink":"#23343a", "--ink-soft":"#5E6F74", "--line":"#d4e6ea", "--olive":"#1B7F96", "--olive-2":"#166477", "--text-strong":"#1c2a2d", "--done":"#2f9d6c", "--warn":"#BD5248", "--yellow":"#bee6dd", "--yellow-deep":"#7dc9b8", "--lilac":"#bfdef2", "--lilac-deep":"#7fb8de", "--pink":"#a9c9e8", "--pink-deep":"#6e9bc7", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
+  sunset:{ "--bg":"#FBEDE5", "--surface":"#FFF9F6", "--ink":"#4a352e", "--ink-soft":"#7F6861", "--line":"#f2ddd0", "--olive":"#E2664A", "--olive-2":"#b94f38", "--text-strong":"#2b211d", "--done":"#6f8a4a", "--warn":"#BD5248", "--yellow":"#fbcb88", "--yellow-deep":"#f0a94a", "--lilac":"#f0c4d6", "--lilac-deep":"#de8fac", "--pink":"#ffc2a3", "--pink-deep":"#f28e62", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
   dark:{ "--bg":"#121212", "--surface":"#1D1D1D", "--ink":"#F5F5F5", "--ink-soft":"#A7A7A7", "--line":"#2A2A2A", "--olive":"#B98B4E", "--olive-2":"#8f6c3c", "--text-strong":"#F5F5F5", "--done":"#5fa876", "--warn":"#e0685c", "--yellow":"#4d4314", "--yellow-deep":"#685b22", "--lilac":"#2e1b46", "--lilac-deep":"#3f2a60", "--pink":"#48191f", "--pink-deep":"#62272f", "--pastel-text":"#F0EDE4", "--pastel-text-soft":"#B8B3A5", "--pastel-overlay":"rgba(255,255,255,.12)", "--pastel-border":"rgba(255,255,255,.16)" },
 };
 const THEME_DARK_ACCENT = {
@@ -11283,6 +11227,22 @@ function applyTheme(){
       THEME_DARK_PASTEL_TEXT);
     Object.keys(dunkel).forEach(function(k){ koerper.setProperty(k, dunkel[k]); });
   }
+
+  /* Überall dort, wo Text direkt auf der Akzentfarbe steht — Hauptknöpfe, aktive Chips, die
+     untere Leiste, abgehakte Satzzeilen — stand bisher fest Weiß. Das trägt nur, solange der
+     Akzent dunkel genug ist: gemessen reichte Weiß auf --olive von 14.8:1 (Natural am Tag) bis
+     hinunter auf 2.0:1 (Energy im Nachtmodus). Statt jede Stelle einzeln zu behandeln, wird die
+     lesbarere der beiden Möglichkeiten einmal zentral bestimmt und als Variable verteilt. */
+  const aktuellerAkzent = getComputedStyle(document.body).getPropertyValue("--olive").trim();
+  const aufAkzent = lesbareSchriftfarbe(aktuellerAkzent);
+  const hell = aufAkzent === "#ffffff";
+  koerper.setProperty("--on-olive", aufAkzent);
+  koerper.setProperty("--on-olive-soft", hell ? "rgba(255,255,255,.78)" : "rgba(20,20,15,.75)");
+  koerper.setProperty("--on-olive-blass", hell ? "rgba(255,255,255,.6)" : "rgba(20,20,15,.58)");
+  koerper.setProperty("--on-olive-hauch", hell ? "rgba(255,255,255,.14)" : "rgba(20,20,15,.12)");
+  // Dasselbe für die Warnfarbe: im Nachtmodus ist sie deutlich heller als am Tag.
+  koerper.setProperty("--on-warn",
+    lesbareSchriftfarbe(getComputedStyle(document.body).getPropertyValue("--warn").trim()));
 
   const themeToggleBtn = document.getElementById("themeToggle");
   if(themeToggleBtn) themeToggleBtn.innerHTML = icon(dark ? "sonne" : "mond");
