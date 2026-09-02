@@ -477,13 +477,35 @@
     font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
     color:var(--pastel-text-soft);
   }
+  /* Die Felder waren nur 16px hoch — der Großteil der Zeile war gar nicht antippbar, und wer
+     danebentraf, setzte den Cursor vor die Zahl. Die Polsterung bringt sie auf gut 34px, die
+     Zeile damit auf rund 46px. */
   .set-input{
     width:100%;background:transparent;border:none;outline:none;color:var(--pastel-text);
     font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13.5px;text-align:right;
-    -moz-appearance:textfield;padding:0;
+    -moz-appearance:textfield;padding:9px 0;border-radius:8px;
+    /* min-height, damit die kleiner gesetzten Felder für Wiederholungen und RIR nicht
+       niedriger ausfallen als das Gewichtsfeld. */
+    min-height:34px;box-sizing:border-box;
   }
+  /* Neutrales Grau statt Schwarz oder Weiß: die Satz-Zeile ist mal hell-, mal dunkelviolett
+     und im abgehakten Zustand oliv — ein Grauschleier hebt sich von allen dreien ab. */
+  .set-input:focus{background:rgba(128,128,128,.25);}
   .set-input::-webkit-outer-spin-button,
   .set-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  /* Erscheint unter der Zeile, die gerade bearbeitet wird: Gewicht in Scheiben-Schritten
+     ändern, ohne die Zahl neu tippen zu müssen. */
+  .set-stepper{
+    display:grid;gap:6px;padding:6px;margin-top:-2px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  }
+  .set-step{
+    min-height:38px;padding:0 4px;border:1px solid var(--line);border-radius:10px;
+    background:var(--bg);color:var(--text-strong);cursor:pointer;
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13.5px;
+    transition:transform .1s, background .15s;
+  }
+  .set-step:active{transform:scale(.94);background:var(--pastel-overlay);}
   .reps-input{font-size:13px !important;}
   .rir-input{font-size:11px !important;}
   .set-unit{font-family:'Inter',sans-serif;font-size:10px;color:var(--pastel-text-soft);text-align:left;}
@@ -3827,6 +3849,93 @@ function setSetNote(ex, idx, v){
   getEntry(ex).sets[idx].note = v;
   saveState();
 }
+
+/* --- Werte im Satz ändern -------------------------------------------------------------
+   Die Satzfelder sind schmal und rechtsbündig. Beim Antippen landete der Cursor deshalb
+   fast immer links vor der Zahl, und aus "45" wurde beim Tippen von 5 die "545". Zwei
+   Maßnahmen dagegen:
+   1. Beim Fokussieren wird der ganze Wert markiert — Tippen ersetzt ihn also direkt.
+      setSelectionRange() wirft bei type="number" einen InvalidStateError, select() nicht.
+   2. Unter der gerade bearbeiteten Zeile erscheint eine Reihe großer Plus/Minus-Knöpfe.
+      Damit lässt sich das Gewicht ohne Tastatur in Hantelscheiben-Schritten ändern.       */
+let setStepperEl = null;
+
+function versteckeSetStepper(){
+  if(setStepperEl && setStepperEl.parentNode) setStepperEl.parentNode.removeChild(setStepperEl);
+  setStepperEl = null;
+}
+
+// Beim Fokussieren den kompletten Wert markieren. Der zweite Aufruf im Timeout fängt
+// mobile Browser ab, die die Markierung direkt im focus-Handler wieder verwerfen.
+function markiereFeldinhalt(input){
+  try{ input.select(); }catch(e){}
+  setTimeout(function(){
+    if(document.activeElement === input){ try{ input.select(); }catch(e){} }
+  }, 0);
+}
+
+// Leeres Feld: der Platzhalter zeigt den Wert der letzten Einheit. Von dem aus weiterzählen
+// ist genau das, was man beim Steigern will — +2,5 auf die 45 von letzter Woche.
+function setStepperBasis(input){
+  const wert = parseFloat(String(input.value).replace(",", "."));
+  if(!isNaN(wert)) return wert;
+  const vorschlag = parseFloat(String(input.placeholder).replace(",", "."));
+  return isNaN(vorschlag) ? 0 : vorschlag;
+}
+
+function setStepperSchritte(art){
+  if(art === "weight") return [-5, -2.5, 2.5, 5];
+  if(art === "reps") return [-2, -1, 1, 2];
+  return [-1, 1];
+}
+
+function setStepperGrenzen(art, exMode, wert){
+  if(art === "rir") return Math.min(10, Math.max(0, wert));
+  if(art === "reps") return Math.max(0, wert);
+  // Im Gewichtsmodus gibt es keine negative Last. Bei Körpergewichtsübungen schon:
+  // dort steht ein negativer Wert für Bandunterstützung.
+  return exMode === "weight" ? Math.max(0, wert) : wert;
+}
+
+function zeigeSetStepper(input, art, exMode){
+  versteckeSetStepper();
+  const zeile = input.closest(".set-row");
+  if(!zeile || !zeile.parentNode) return;
+  const schritte = setStepperSchritte(art);
+  const box = document.createElement("div");
+  box.className = "set-stepper";
+  box.style.gridTemplateColumns = "repeat(" + schritte.length + ",1fr)";
+  schritte.forEach(function(delta){
+    const knopf = document.createElement("button");
+    knopf.type = "button";
+    knopf.className = "set-step";
+    // Minuszeichen statt Bindestrich, und Komma als Dezimaltrennzeichen — nur für die
+    // Beschriftung, gerechnet wird mit dem Zahlenwert.
+    knopf.textContent = (delta > 0 ? "+" : "−") + String(Math.abs(delta)).replace(".", ",");
+    // Verhindert, dass der Knopf den Fokus aus dem Feld zieht: sonst schlösse sich die
+    // Tastatur und der blur-Handler würde die Karte bei jedem Tipp neu zeichnen.
+    knopf.onmousedown = function(e){ e.preventDefault(); };
+    knopf.onclick = function(){
+      const roh = setStepperBasis(input) + delta;
+      const neu = setStepperGrenzen(art, exMode, Math.round(roh * 100) / 100);
+      input.value = String(neu);
+      // Über das input-Ereignis, damit die vorhandene Speicherlogik greift statt sie zu kopieren
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    box.appendChild(knopf);
+  });
+  zeile.parentNode.insertBefore(box, zeile.nextSibling);
+  setStepperEl = box;
+}
+
+// Hängt Markieren und Stepper an ein Satzfeld. onblur/oninput der Felder bleiben unberührt.
+function ruesteSatzfeld(input, art, exMode){
+  input.addEventListener("focus", function(){
+    markiereFeldinhalt(input);
+    zeigeSetStepper(input, art, exMode);
+  });
+  input.addEventListener("blur", versteckeSetStepper);
+}
 function toggleSetNote(exId, idx){
   const key = exId + ":" + idx;
   openSetNote[key] = !openSetNote[key];
@@ -6229,11 +6338,16 @@ function buildExerciseCard(ex, dayColor, el){
           const carried = carryWeightToFollowingSets(ex, sIdx);
           if(maybeAutoCheckSet(ex, sIdx) || carried){ renderContent(); renderProgressRing(); }
         };
+        ruesteSatzfeld(weightInput, "weight", exMode);
         row.appendChild(weightInput);
 
         const kgUnit = document.createElement("span");
         kgUnit.className = "set-unit";
         kgUnit.textContent = exMode === "weight" ? "kg" : "+kg";
+        // Die Einheit neben dem Feld gehört zur selben Angabe — ein Tipp darauf trifft
+        // damit auch, wenn man das schmale Zahlenfeld selbst verfehlt.
+        kgUnit.style.cursor = "text";
+        kgUnit.onclick = function(){ weightInput.focus(); };
         row.appendChild(kgUnit);
 
         const xSep = document.createElement("span");
@@ -6249,6 +6363,7 @@ function buildExerciseCard(ex, dayColor, el){
         repsInput.value = s.reps || "";
         repsInput.oninput = function(){ setSetReps(ex, sIdx, repsInput.value); };
         repsInput.onblur = function(){ if(maybeAutoCheckSet(ex, sIdx)){ renderContent(); renderProgressRing(); } };
+        ruesteSatzfeld(repsInput, "reps", exMode);
         row.appendChild(repsInput);
 
         const repsUnit = document.createElement("span");
@@ -6268,6 +6383,7 @@ function buildExerciseCard(ex, dayColor, el){
           rirInput.title = "RIR = Reps in Reserve (noch mögliche Wiederholungen)";
           rirInput.value = s.rir || "";
           rirInput.oninput = function(){ setSetRir(ex, sIdx, rirInput.value); };
+          ruesteSatzfeld(rirInput, "rir", exMode);
           row.appendChild(rirInput);
         }
 
