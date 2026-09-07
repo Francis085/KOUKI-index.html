@@ -2536,16 +2536,30 @@ const EXERCISE_LIBRARY = {
 
    Daraus folgt für drei Ganzkörpertage: je Muskel und Einheit 2–4 Sätze, macht über die Woche
    6–12 Sätze — im wirksamen Bereich und unter der Grenze, ab der es kaum noch etwas bringt.
-   Ergebnis: 7 Übungen und 19–20 Sätze pro Einheit statt 9–10 Übungen.
+   Ergebnis: 7–8 Übungen und 20–23 Sätze pro Einheit statt 9–10 Übungen.
 
-   Wochensätze der Neufassung (direkt, ohne indirekte Beteiligung):
+   Nachbesserung an den Armen: In der ersten Fassung standen Bizeps und Trizeps bei je 2 Sätzen
+   und wurden nur einmal pro Woche direkt trainiert — als einzige Muskeln, alle anderen 2–3×.
+   Begründet war das mit der indirekten Beteiligung an den Zug- und Druckübungen. Das trägt
+   fürs reine Volumen, lässt aber zwei Portionen unbesetzt, die von keiner Verbundübung des
+   Plans erreicht werden:
+   - Brachialis: supiniert nicht, braucht neutralen Griff. Im Plan gab es keinen einzigen.
+   - Langer Trizepskopf: läuft über das Schultergelenk, wird nur überkopf gedehnt. Alles
+     Drücken im Plan findet mit dem Arm vorn oder seitlich statt.
+   Dafür sind Hammercurls (Mo) und Überkopf-Trizeps (Mi) dazugekommen, die Sätze der beiden
+   vorhandenen Armübungen stehen auf 3. Face Pulls sind auf Wunsch entfallen; die hintere
+   Schulter hält deshalb über Reverse Flys mit 4 statt 3 Sätzen dagegen.
+
+   Wochensätze (direkt, ohne indirekte Beteiligung):
      Brust 11 · Rücken 9 · Quadrizeps 9 · Beinbeuger/Gesäß 5 · Seitliche Schulter 6
-     Hintere Schulter 6 · Nacken/Trapez 5 · Waden 4 · Bizeps 2 · Trizeps 2 · Bauch 2
-   Bizeps und Trizeps stehen bewusst niedrig: Sie arbeiten bei allen Zug- und Druckübungen
-   kräftig mit, was rechnerisch weitere 4–6 Sätze je Woche ergibt.
+     Hintere Schulter 4 · Nacken/Trapez 2 · Waden 4 · Ellenbogenbeuger 6 · Trizeps 6 · Bauch 2
+   Die Arme kommen damit auf je 6 direkte Sätze an je zwei Tagen, jeweils mit zwei
+   verschiedenen Winkeln bzw. Griffen — plus die indirekte Arbeit aus den Verbundübungen.
 
    Die Übungs-IDs bestehender Übungen bleiben unverändert, auch wenn eine Übung den Tag
-   wechselt — daran hängen Sätze, Verlauf und Rekorde.
+   wechselt — daran hängen Sätze, Verlauf und Rekorde. Eine wieder aufgenommene Übung
+   (fri_ohtricep) behält ID UND Namen aus ihrer früheren Fassung, damit der gespeicherte
+   Verlauf wieder sichtbar wird statt verwaist liegen zu bleiben.
    Ebenso bleiben ihre NAMEN unverändert: historyFor() ordnet Verlaufseinträge über den Namen
    zu (um getauschte Übungen auseinanderzuhalten). Eine Umbenennung würde den bisherigen
    Verlauf dieser Übung aus ihrer eigenen Ansicht und aus dem Progressionsvorschlag
@@ -2575,10 +2589,19 @@ const DEFAULT_PLAN = {
           { id: "mon_lateral", name: "Seitheben", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
         ]},
         { name: "Schultern", exercises: [
-          { id: "mon_reardelt", name: "Reverse Flys", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+          // Ein Satz mehr als vorher: Face Pulls am Mittwoch sind entfallen, damit ist das
+          // hier die einzige verbliebene Arbeit für die hintere Schulter.
+          { id: "mon_reardelt", name: "Reverse Flys", sets: "4x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
         ]},
         { name: "Rücken", exercises: [
           { id: "mon_shrug", name: "Shrugs mit Kurzhanteln", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
+        ]},
+        // Neutraler Griff: der Brachialis supiniert nicht und wird von normalen Curls nur
+        // mittelbar getroffen. Er liegt unter dem Bizeps und schiebt ihn beim Wachsen nach
+        // oben — ohne Hammergriff fehlte diese Portion im Plan komplett. Steht am Montag,
+        // weil die Beuger von den Klimmzügen schon vorbelastet sind.
+        { name: "Bizeps", exercises: [
+          { id: "mon_hammer", name: "Hammercurls", sets: "3x8-12", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
       ]
     },
@@ -2600,11 +2623,18 @@ const DEFAULT_PLAN = {
         { name: "Brust", exercises: [
           { id: "wed_butterfly", name: "Butterfly", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
-        { name: "Schultern", exercises: [
-          { id: "wed_facepull", name: "Face Pulls", sets: "3x12-20", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
+        // Der lange Trizepskopf läuft über das Schultergelenk und wird nur überkopf richtig
+        // gedehnt. Maeo et al. (2023) haben beide Varianten 12 Wochen lang am selben Menschen
+        // verglichen: 19,9 % Wachstum überkopf gegen 13,9 % beim Drücken am Kabel. Alles
+        // Drücken im Plan (Bank, Schrägbank, Schulterdrücken, Dips) findet mit dem Arm vorn
+        // oder seitlich statt — dieser Winkel fehlte bisher ganz.
+        // ID und Name entsprechen exakt der Übung aus dem Plan vor der Kürzung: Damit tauchen
+        // Verlauf und Rekorde aller Nutzer, die sie damals trainiert haben, wieder auf.
+        { name: "Trizeps", exercises: [
+          { id: "fri_ohtricep", name: "Überkopf-Trizeps", sets: "3x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
         { name: "Bizeps", exercises: [
-          { id: "fri_curl", name: "Bizepscurls", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
+          { id: "fri_curl", name: "Bizepscurls", sets: "3x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
       ]
     },
@@ -2627,7 +2657,7 @@ const DEFAULT_PLAN = {
           { id: "fri_calfraise", name: "Wadenheben sitzend", sets: "4x10-20", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
         { name: "Trizeps", exercises: [
-          { id: "wed_tricep", name: "Trizepsdrücken am Kabel", sets: "2x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
+          { id: "wed_tricep", name: "Trizepsdrücken am Kabel", sets: "3x8-15", type: "isolation", rirTarget: "1–2", restSeconds: 105 },
         ]},
         { name: "Bauch", exercises: [
           { id: "mon_crunch", name: "Kabel-Crunch", sets: "2x10-15", type: "isolation", rirTarget: "1–2", restSeconds: 90 },
