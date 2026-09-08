@@ -11734,12 +11734,43 @@ async function requestPasswordReset(){
     hint.textContent = mapAuthErrorMessage(e, "reset");
   }
 }
+/* Merker für die laufende Passwort-Wiederherstellung.
+   Ohne ihn ging der gemeldete Fehler so: Der Link stellt eine Sitzung her, initAccountSession()
+   zeigt das Formular — und unmittelbar danach meldet Supabase über onAuthStateChange denselben
+   Nutzer als "angemeldet". onAccountLoggedIn() blendet das Formular dann wieder aus, weil es
+   das im Normalfall zu Recht tut. Ergebnis: eingeloggt, aber kein Weg zu einem neuen Passwort.
+   Der Merker sagt onAccountLoggedIn(), dass hier gerade ein Sonderfall läuft. */
+let passwortRuecksetzungLaeuft = false;
+
 function showPasswordResetForm(){
+  passwortRuecksetzungLaeuft = true;
   const loginRow = document.getElementById("accountLoginRow");
   const resetRow = document.getElementById("accountResetRow");
   if(loginRow) loginRow.style.display = "none";
   if(resetRow) resetRow.style.display = "block";
   setAccountStatus("Neues Passwort festlegen");
+  /* Zweiter Teil des Fehlers: Das Formular liegt im Profil-Bereich, und der ist beim Start
+     ausgeblendet. Es auf "block" zu setzen reichte also nicht — der Nutzer landete auf der
+     Startseite und sah nie etwas davon. Deshalb hier ausdrücklich in den Profil-Bereich
+     wechseln und zum Formular scrollen. */
+  try{
+    /* Start-Bildschirm und Kurzerklärung wegräumen. Wer sein Passwort zurücksetzt, tut das
+       oft auf einem NEUEN Gerät — dort liefe sonst die Erstinstallation an und legte sich
+       als Overlay genau über dieses Formular. Beide sind hier nur aufgeschoben: Das Flag
+       state.onboardingSeen wird bewusst nicht gesetzt, die Kurzerklärung kommt also beim
+       nächsten Start noch. */
+    if(typeof dismissWelcomeGateToApp === "function") dismissWelcomeGateToApp();
+    const erklaerung = document.getElementById("onboardingOverlay");
+    if(erklaerung) erklaerung.classList.remove("show");
+
+    if(typeof showGroup === "function") showGroup("navProfileGroup", 0);
+    setTimeout(function(){
+      const ziel = document.getElementById("accountResetRow");
+      if(ziel && ziel.scrollIntoView) ziel.scrollIntoView({ block: "center" });
+      const feld = document.getElementById("accountNewPasswordInput");
+      if(feld) feld.focus();
+    }, 120);
+  }catch(e){ console.error("Zum Passwort-Formular konnte nicht gewechselt werden", e); }
 }
 async function saveNewPassword(){
   const hint = document.getElementById("accountResetHint");
@@ -11755,9 +11786,17 @@ async function saveNewPassword(){
     const { data, error } = await client.auth.updateUser({ password: pw });
     if(error) throw error;
     hint.textContent = "";
+    passwortRuecksetzungLaeuft = false;
     document.getElementById("accountResetRow").style.display = "none";
     document.getElementById("accountNewPasswordInput").value = "";
     document.getElementById("accountNewPasswordConfirmInput").value = "";
+    /* Die Kennung "type=recovery" aus der Adresse nehmen: Sonst zeigt die App bei jedem
+       Neuladen wieder das Formular für ein neues Passwort, obwohl längst eines gesetzt ist. */
+    try{
+      if(window.history && window.history.replaceState){
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }catch(e){ /* ohne History-API bleibt die Adresse stehen, das ist verkraftbar */ }
     if(data && data.user) await onAccountLoggedIn(data.user);
     showToast("Neues Passwort gespeichert — du bist jetzt angemeldet");
   }catch(e){
@@ -11812,6 +11851,7 @@ async function deleteCloudAccount(){
 }
 
 function onAccountLoggedOut(){
+  passwortRuecksetzungLaeuft = false;
   currentUserId = null;
   currentUserEmail = null;
   cloudSyncEnabled = false;
@@ -11852,7 +11892,10 @@ async function onAccountLoggedIn(user){
   const deleteBtn = document.getElementById("accountDeleteBtn");
   const deleteHint = document.getElementById("accountDeleteHint");
   if(row) row.style.display = "none";
-  if(resetRow) resetRow.style.display = "none";
+  // Während einer laufenden Passwort-Wiederherstellung bleibt das Formular stehen. Supabase
+  // meldet direkt nach dem Einlösen des Links einen ganz normalen Login — ohne diese Ausnahme
+  // würde genau dieser Login das eben erst geöffnete Formular wieder zuklappen.
+  if(resetRow && !passwortRuecksetzungLaeuft) resetRow.style.display = "none";
   if(logoutBtn) logoutBtn.style.display = "block";
   if(deleteBtn) deleteBtn.style.display = "block";
   if(deleteHint) deleteHint.style.display = "block";
@@ -12613,6 +12656,12 @@ setInterval(checkReminders, 30 * 60 * 1000);
 window.addEventListener("pageshow", function(){ reconcileRestBarOnResume(); });
 function showOnboardingIfNeeded(){
   if(state.onboardingSeen) return;
+  /* Während einer Passwort-Wiederherstellung nicht dazwischenfunken. Wer den Link auf einem
+     neuen Gerät öffnet, hat sonst diesen Bildschirm vor dem Formular für das neue Passwort —
+     genau das war der gemeldete Fehler. Es wird nur aufgeschoben: state.onboardingSeen bleibt
+     unberührt, beim nächsten Start kommt der Bildschirm ganz normal. */
+  if(passwortRuecksetzungLaeuft) return;
+
   const overlay = document.getElementById("onboardingOverlay");
   if(overlay) overlay.classList.add("show");
 }
@@ -12635,6 +12684,12 @@ if(onboardingCloseBtnEl){
 // selbst wird weiterhin erst durch deren eigenen "Los geht's"-Button gesetzt.
 function showWelcomeGateIfNeeded(){
   if(state.onboardingSeen) return;
+  /* Während einer Passwort-Wiederherstellung nicht dazwischenfunken. Wer den Link auf einem
+     neuen Gerät öffnet, hat sonst diesen Bildschirm vor dem Formular für das neue Passwort —
+     genau das war der gemeldete Fehler. Es wird nur aufgeschoben: state.onboardingSeen bleibt
+     unberührt, beim nächsten Start kommt der Bildschirm ganz normal. */
+  if(passwortRuecksetzungLaeuft) return;
+
   const overlay = document.getElementById("welcomeGateOverlay");
   if(!overlay) return;
   const logoImg = document.getElementById("welcomeGateLogo");
