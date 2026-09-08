@@ -12215,6 +12215,45 @@ if(leaderboardNickInputEl){
 }
 
 let authListenerRegistered = false;
+/* Liest einen Wert aus der Adresse — egal ob er in der Query-String (?a=b) oder hinter der
+   Raute (#a=b) steht. Supabase benutzt je nach Ablauf und Fehlerfall mal die eine, mal die
+   andere Stelle. */
+function leseAdressWert(name){
+  const quellen = [window.location.search || "", (window.location.hash || "").replace(/^#/, "?")];
+  for(const q of quellen){
+    try{
+      const wert = new URLSearchParams(q.replace(/^\?/, "")).get(name);
+      if(wert) return wert;
+    }catch(e){ /* unbrauchbare Adresse — nächste Quelle versuchen */ }
+  }
+  return null;
+}
+
+/* Wenn ein Link aus der E-Mail nicht zum Ziel führt, darf die App NICHT einfach schweigen.
+   Genau das war der gemeldete Fehler: Der Nutzer tippt auf "Passwort zurücksetzen", die App
+   geht auf, und dann passiert — nichts. Kein Formular, keine Anmeldung, keine Erklärung.
+   Hier landet jeder dieser Fälle mit einer Meldung, die sagt was los ist und was zu tun ist. */
+function zeigeLinkProblem(text){
+  try{
+    if(typeof dismissWelcomeGateToApp === "function") dismissWelcomeGateToApp();
+    const erklaerung = document.getElementById("onboardingOverlay");
+    if(erklaerung) erklaerung.classList.remove("show");
+    if(typeof showGroup === "function") showGroup("navProfileGroup", 0);
+    // Das Anmelde-Formular offen lassen: Von dort kann man sofort einen neuen Link anfordern.
+    const loginRow = document.getElementById("accountLoginRow");
+    if(loginRow) loginRow.style.display = "block";
+    const resetRow = document.getElementById("accountResetRow");
+    if(resetRow) resetRow.style.display = "none";
+    const hinweis = document.getElementById("accountPasswordHint");
+    if(hinweis) hinweis.textContent = text;
+    setAccountStatus("Der Link aus der E-Mail hat nicht funktioniert");
+    setTimeout(function(){
+      const ziel = document.getElementById("accountLoginRow");
+      if(ziel && ziel.scrollIntoView) ziel.scrollIntoView({ block: "center" });
+    }, 120);
+  }catch(e){ console.error("Hinweis zum Link konnte nicht angezeigt werden", e); }
+}
+
 async function initAccountSession(){
   const client = getSupabaseClient();
   if(!client) return;
@@ -12226,9 +12265,46 @@ async function initAccountSession(){
   // statt erst ein neues Passwort abzufragen.
   const isRecoveryLink = /type=recovery/.test((window.location.hash || "") + (window.location.search || ""));
   try{
+    /* 1) Supabase schreibt Fehler direkt in die Adresse — abgelaufener Link, bereits benutzter
+          Link, falsches Projekt. Bisher wurden die schlicht ignoriert und der Nutzer stand vor
+          einer App, die so tat, als sei nichts gewesen. */
+    const fehlerText = leseAdressWert("error_description") || leseAdressWert("error");
+    if(fehlerText){
+      zeigeLinkProblem("Der Link aus der E-Mail ist nicht mehr gültig (" + fehlerText +
+        "). Fordere unten bitte einen neuen an — Links laufen nach kurzer Zeit ab und lassen " +
+        "sich nur einmal verwenden.");
+      return;
+    }
+
+    /* 2) Neueres Link-Format: ?code=… Dieses muss ausdrücklich gegen eine Sitzung eingetauscht
+          werden. Das SDK erledigt das nur im PKCE-Modus von selbst; hier läuft es im
+          Standard-Modus "implicit", der ausschließlich auf Tokens hinter der Raute schaut.
+          Ein ?code=-Link blieb dadurch komplett wirkungslos: keine Sitzung, kein Formular,
+          keine Meldung — genau das gemeldete Verhalten. */
+    const code = leseAdressWert("code");
+    if(code && client.auth && typeof client.auth.exchangeCodeForSession === "function"){
+      try{
+        const { error } = await client.auth.exchangeCodeForSession(code);
+        if(error) throw error;
+      }catch(e){
+        console.error("Link konnte nicht eingelöst werden", e);
+        zeigeLinkProblem("Dieser Link konnte in diesem Browser nicht eingelöst werden. Das " +
+          "passiert, wenn er woanders geöffnet wird als dort, wo du ihn angefordert hast — " +
+          "zum Beispiel angefordert in der installierten App, geöffnet aber im Browser. " +
+          "Fordere den Link bitte hier unten neu an und öffne ihn dann in genau diesem Fenster.");
+        return;
+      }
+    }
+
     const { data } = await client.auth.getSession();
     if(isRecoveryLink && data && data.session && data.session.user){
       showPasswordResetForm();
+    } else if(isRecoveryLink){
+      /* 3) Kennung für die Passwort-Wiederherstellung da, aber keine Sitzung zustande gekommen.
+            Vorher endete der Ablauf hier stillschweigend. */
+      zeigeLinkProblem("Der Link hat dich nicht anmelden können — vermutlich ist er abgelaufen " +
+        "oder wurde schon einmal benutzt. Fordere unten bitte einen neuen an und öffne ihn in " +
+        "genau diesem Fenster.");
     } else if(data && data.session && data.session.user){
       try{ await onAccountLoggedIn(data.session.user); }
       catch(e){ console.error("Login-Verarbeitung fehlgeschlagen", e); }
