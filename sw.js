@@ -193,8 +193,11 @@ self.addEventListener("fetch", function(event){
     return;
   }
 
-  // Das Supabase-JS-SDK (unpkg.com) ist reiner, versionsfixierter Programmcode — kein
-  // Nutzerdaten-Endpunkt. Ohne dieses Skript funktioniert die Anmeldung überhaupt nicht,
+  // Das Supabase-JS-SDK (unpkg.com) ist reiner Programmcode — kein Nutzerdaten-Endpunkt.
+  // Der Kommentar behauptete hier "versionsfixiert", das stimmte nicht: die URL lautete
+  // "@2" und damit lieferte unpkg die jeweils neueste 2.x aus. Inzwischen steht in
+  // index.html eine exakte Version, jetzt trifft die Aussage zu.
+  // Ohne dieses Skript funktioniert die Anmeldung überhaupt nicht,
   // deshalb stale-while-revalidate wie beim App-Schell: sobald es einmal geladen wurde,
   // steht es auch bei wackliger/blockierter Verbindung zu unpkg.com sofort aus dem Cache
   // zur Verfügung, statt dass jede Anmeldung von diesem einen externen Request abhängt.
