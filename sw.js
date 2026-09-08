@@ -132,7 +132,16 @@ self.addEventListener("notificationclick", function(event){
 // --- Offline-Caching: App-Shell zwischenspeichern, damit KOUKI auch ganz ohne
 // Internetverbindung startet und nutzbar bleibt (z. B. im Gym ohne Empfang). ---
 const APP_CACHE_NAME = "kouki-app-cache-v1";
-const APP_SHELL_URLS = ["./", "./index.html"];
+/* Die Logos gehören zur App-Schale, nicht zu den Inhalten: Splash-Bild, Kopfzeile und das
+   Symbol der installierten App müssen auch beim allerersten Start ohne Netz da sein. Sie
+   lagen früher als base64 im Dokument (dreimal dieselbe Kopie) und waren dadurch automatisch
+   verfügbar — als eigene Dateien müssen sie hier ausdrücklich mit vorab geladen werden. */
+const APP_SHELL_URLS = [
+  "./", "./index.html",
+  "./bilder/kouki-icon.png",
+  "./bilder/kouki-logo.png",
+  "./bilder/kouki-icon-maskable.png",
+];
 
 /* Die 50 Rezeptfotos lagen früher als base64 direkt in index.html — 3 MB, die bei jedem
    Start mitgeladen wurden, auch von jemandem, der nie ein Rezept ansieht. Jetzt sind es
