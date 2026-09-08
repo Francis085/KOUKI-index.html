@@ -303,7 +303,17 @@
     font-size:clamp(18px, 5.6vw, 28px);
     margin:0;line-height:1.15;color:var(--text-strong);overflow-wrap:break-word;
   }
-  h1 .brand-kouki, .reward-panel h3 .brand-kouki{color:var(--pink-deep);}
+  /* Der Schriftzug lief über --pink-deep, also über die Pastellfarbe der Übungskacheln —
+     nicht über die Farbe des Themas. In "Energy" ist das Thema grün, --pink-deep aber
+     orange: der Schriftzug blieb als einziges Element orange stehen.
+     Jetzt gibt es --brand je Thema. Es folgt der Themenfarbe (grün in Energy, blau in
+     Ocean, orange in Sunset, gold im Dunkelmodus) — nur "Natural" behält bewusst sein
+     Rosa als Markenzeichen, allerdings kräftiger.
+     Nebenbei behoben: in JEDEM Thema lag der Schriftzug unter der nötigen Lesbarkeit
+     (1,86:1 bis 2,57:1 statt 3:1 für große fette Schrift), im Dunkelmodus stand er als
+     dunkles Rot auf fast Schwarz. Aufgefallen ist das nie, weil mein Farbaudit nur den
+     Inhaltsbereich geprüft hat und die Kopfzeile ausserhalb davon liegt. */
+  h1 .brand-kouki, .reward-panel h3 .brand-kouki{color:var(--brand,var(--pink-deep));}
 
   /* Bug: der dynamische Bildschirmtitel (#frameTitle, z.B. "Ernährung · Supplemente") konnte
      bei längeren Titeln auf schmalen Displays über den Bildschirmrand hinauslaufen — Ursache
@@ -863,7 +873,14 @@
     color:var(--on-olive-blass,rgba(255,255,255,.6));
   }
   .nav-btn.active .nav-icon{background:var(--on-olive,#fff);}
-  .nav-btn.active .nav-label{color:var(--yellow);}
+  /* Die aktive Beschriftung stand in --yellow, einem hellen Pastellton, auf der Akzentfarbe.
+     Bei 8,5px Schriftgröße reichte das nicht: gemessen 2,75:1 in Energy, nötig sind 4,5:1 —
+     ausgerechnet beim Eintrag, den man lesen will. --on-olive wird in applyTheme() genau
+     dafür bestimmt: die lesbarere der beiden Möglichkeiten auf der jeweiligen Akzentfarbe.
+     Damit "aktiv" trotzdem sofort erkennbar bleibt, trägt der Eintrag jetzt volle Deckkraft
+     und mehr Schriftstärke gegenüber den gedimmten Nachbarn — plus den gefüllten
+     Symbolkreis, den er ohnehin schon hatte. */
+  .nav-btn.active .nav-label{color:var(--on-olive,#fff);font-weight:700;}
 
   @keyframes popIn{0%{transform:scale(.3) rotate(-15deg);opacity:0;}60%{transform:scale(1.18) rotate(5deg);opacity:1;}100%{transform:scale(1) rotate(0);opacity:1;}}
   @keyframes floatUp{0%{transform:translate(-50%,-50%) scale(1);opacity:1;}100%{transform:translate(-50%,-140%) scale(1.5);opacity:0;}}
@@ -11356,17 +11373,21 @@ const THEME_NAMES = [
   { key:"dark",    label:"Dark",    swatch:["#121212","#1D1D1D","#B98B4E"] },
 ];
 const THEME_VARS = {
-  natural:{ "--bg":"#F6F3EC", "--surface":"#ffffff", "--ink":"#24231F", "--ink-soft":"#716F65", "--line":"#eae6da", "--olive":"#292820", "--olive-2":"#4a473c", "--text-strong":"#24231F", "--done":"#6f8a4a", "--warn":"#BD5248", "--yellow":"#f2e08f", "--yellow-deep":"#e0c85f", "--lilac":"#dccbf2", "--lilac-deep":"#b79ce0", "--pink":"#f4cdd2", "--pink-deep":"#e6a3ac", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
-  energy:{ "--bg":"#EAF2EC", "--surface":"#F7FBF8", "--ink":"#26302a", "--ink-soft":"#657068", "--line":"#d8e6dc", "--olive":"#2f9d5c", "--olive-2":"#237a47", "--text-strong":"#1E2420", "--done":"#2f9d5c", "--warn":"#BD5248", "--yellow":"#dcedb0", "--yellow-deep":"#b9d47f", "--lilac":"#bfe9d4", "--lilac-deep":"#84cba8", "--pink":"#ffd6bd", "--pink-deep":"#f3a67e", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
-  ocean:{ "--bg":"#E7F2F5", "--surface":"#FAFDFE", "--ink":"#23343a", "--ink-soft":"#5E6F74", "--line":"#d4e6ea", "--olive":"#1B7F96", "--olive-2":"#166477", "--text-strong":"#1c2a2d", "--done":"#2f9d6c", "--warn":"#BD5248", "--yellow":"#bee6dd", "--yellow-deep":"#7dc9b8", "--lilac":"#bfdef2", "--lilac-deep":"#7fb8de", "--pink":"#a9c9e8", "--pink-deep":"#6e9bc7", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
-  sunset:{ "--bg":"#FBEDE5", "--surface":"#FFF9F6", "--ink":"#4a352e", "--ink-soft":"#7F6861", "--line":"#f2ddd0", "--olive":"#E2664A", "--olive-2":"#b94f38", "--text-strong":"#2b211d", "--done":"#6f8a4a", "--warn":"#BD5248", "--yellow":"#fbcb88", "--yellow-deep":"#f0a94a", "--lilac":"#f0c4d6", "--lilac-deep":"#de8fac", "--pink":"#ffc2a3", "--pink-deep":"#f28e62", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
-  dark:{ "--bg":"#121212", "--surface":"#1D1D1D", "--ink":"#F5F5F5", "--ink-soft":"#A7A7A7", "--line":"#2A2A2A", "--olive":"#B98B4E", "--olive-2":"#8f6c3c", "--text-strong":"#F5F5F5", "--done":"#5fa876", "--warn":"#e0685c", "--yellow":"#4d4314", "--yellow-deep":"#685b22", "--lilac":"#2e1b46", "--lilac-deep":"#3f2a60", "--pink":"#48191f", "--pink-deep":"#62272f", "--pastel-text":"#F0EDE4", "--pastel-text-soft":"#B8B3A5", "--pastel-overlay":"rgba(255,255,255,.12)", "--pastel-border":"rgba(255,255,255,.16)" },
+  natural:{ "--brand":"#d56372", "--bg":"#F6F3EC", "--surface":"#ffffff", "--ink":"#24231F", "--ink-soft":"#716F65", "--line":"#eae6da", "--olive":"#292820", "--olive-2":"#4a473c", "--text-strong":"#24231F", "--done":"#6f8a4a", "--warn":"#BD5248", "--yellow":"#f2e08f", "--yellow-deep":"#e0c85f", "--lilac":"#dccbf2", "--lilac-deep":"#b79ce0", "--pink":"#f4cdd2", "--pink-deep":"#e6a3ac", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
+  energy:{ "--brand":"#2d9557", "--bg":"#EAF2EC", "--surface":"#F7FBF8", "--ink":"#26302a", "--ink-soft":"#657068", "--line":"#d8e6dc", "--olive":"#2f9d5c", "--olive-2":"#237a47", "--text-strong":"#1E2420", "--done":"#2f9d5c", "--warn":"#BD5248", "--yellow":"#dcedb0", "--yellow-deep":"#b9d47f", "--lilac":"#bfe9d4", "--lilac-deep":"#84cba8", "--pink":"#ffd6bd", "--pink-deep":"#f3a67e", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
+  ocean:{ "--brand":"#1B7F96", "--bg":"#E7F2F5", "--surface":"#FAFDFE", "--ink":"#23343a", "--ink-soft":"#5E6F74", "--line":"#d4e6ea", "--olive":"#1B7F96", "--olive-2":"#166477", "--text-strong":"#1c2a2d", "--done":"#2f9d6c", "--warn":"#BD5248", "--yellow":"#bee6dd", "--yellow-deep":"#7dc9b8", "--lilac":"#bfdef2", "--lilac-deep":"#7fb8de", "--pink":"#a9c9e8", "--pink-deep":"#6e9bc7", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
+  sunset:{ "--brand":"#e05b3d", "--bg":"#FBEDE5", "--surface":"#FFF9F6", "--ink":"#4a352e", "--ink-soft":"#7F6861", "--line":"#f2ddd0", "--olive":"#E2664A", "--olive-2":"#b94f38", "--text-strong":"#2b211d", "--done":"#6f8a4a", "--warn":"#BD5248", "--yellow":"#fbcb88", "--yellow-deep":"#f0a94a", "--lilac":"#f0c4d6", "--lilac-deep":"#de8fac", "--pink":"#ffc2a3", "--pink-deep":"#f28e62", "--pastel-text":"#38351f", "--pastel-text-soft":"#524c30", "--pastel-overlay":"rgba(255,255,255,.6)", "--pastel-border":"rgba(51,47,30,.35)" },
+  dark:{ "--brand":"#B98B4E", "--bg":"#121212", "--surface":"#1D1D1D", "--ink":"#F5F5F5", "--ink-soft":"#A7A7A7", "--line":"#2A2A2A", "--olive":"#B98B4E", "--olive-2":"#8f6c3c", "--text-strong":"#F5F5F5", "--done":"#5fa876", "--warn":"#e0685c", "--yellow":"#4d4314", "--yellow-deep":"#685b22", "--lilac":"#2e1b46", "--lilac-deep":"#3f2a60", "--pink":"#48191f", "--pink-deep":"#62272f", "--pastel-text":"#F0EDE4", "--pastel-text-soft":"#B8B3A5", "--pastel-overlay":"rgba(255,255,255,.12)", "--pastel-border":"rgba(255,255,255,.16)" },
 };
 const THEME_DARK_ACCENT = {
-  natural:{ "--olive":"#B98B4E", "--olive-2":"#8f6c3c" },
-  energy:{ "--olive":"#43cf85", "--olive-2":"#2f9d5c" },
-  ocean:{ "--olive":"#3ec2e0", "--olive-2":"#2497b3" },
-  sunset:{ "--olive":"#ff9478", "--olive-2":"#e2664a" },
+    // Der Akzent von "Natural" wechselt im Dunkelmodus auf Gold, weil sein helles
+  // Fast-Schwarz dort nicht funktioniert. Der Schriftzug macht diesen Wechsel bewusst
+  // NICHT mit: er trägt in jedem anderen Thema durchgehend denselben Farbton, und das
+  // Rosa ist das Markenzeichen von Natural. Auf dem dunklen Grund steht es mit 9,1:1.
+  natural:{ "--brand":"#e6a3ac", "--olive":"#B98B4E", "--olive-2":"#8f6c3c" },
+  energy:{ "--brand":"#43cf85", "--olive":"#43cf85", "--olive-2":"#2f9d5c" },
+  ocean:{ "--brand":"#3ec2e0", "--olive":"#3ec2e0", "--olive-2":"#2497b3" },
+  sunset:{ "--brand":"#ff9478", "--olive":"#ff9478", "--olive-2":"#e2664a" },
   dark:{}
 };
 // Dunkle Varianten der Pastell-Akzentfarben (Übungs-/Rezept-/Supplement-Karten, Kalender-Tage)
