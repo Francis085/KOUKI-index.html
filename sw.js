@@ -134,6 +134,22 @@ self.addEventListener("notificationclick", function(event){
 const APP_CACHE_NAME = "kouki-app-cache-v1";
 const APP_SHELL_URLS = ["./", "./index.html"];
 
+/* Die 50 Rezeptfotos lagen früher als base64 direkt in index.html — 3 MB, die bei jedem
+   Start mitgeladen wurden, auch von jemandem, der nie ein Rezept ansieht. Jetzt sind es
+   eigene Dateien unter bilder/.
+   Damit die App dadurch nicht schlechter wird, werden sie im Hintergrund nachgeholt:
+   Sobald der Service Worker aktiv ist, wandern sie nach und nach in den Cache. Das
+   blockiert nichts — die App ist längst bedienbar — und stellt den Zustand von vorher
+   wieder her: alle Rezepte vollständig offline verfügbar.
+   Bewusst NICHT in install(): dort würde ein fehlgeschlagener Download die gesamte
+   Installation des Service Workers scheitern lassen und damit das Offline-Caching der
+   App selbst mitreißen. */
+const REZEPT_BILDER = (function(){
+  const raus = [];
+  for(let i = 1; i <= 50; i++) raus.push("./bilder/rezept-r" + i + ".jpg");
+  return raus;
+})();
+
 self.addEventListener("install", function(event){
   event.waitUntil(
     caches.open(APP_CACHE_NAME).then(function(cache){
@@ -145,6 +161,21 @@ self.addEventListener("activate", function(event){
   event.waitUntil(
     caches.keys().then(function(names){
       return Promise.all(names.filter(function(n){ return n !== APP_CACHE_NAME; }).map(function(n){ return caches.delete(n); }));
+    }).then(function(){
+      // Nacharbeit, ohne die Aktivierung aufzuhalten: einzeln statt addAll, damit ein
+      // fehlendes Bild die anderen 49 nicht mitreißt.
+      return caches.open(APP_CACHE_NAME).then(function(cache){
+        return REZEPT_BILDER.reduce(function(kette, url){
+          return kette.then(function(){
+            return cache.match(url).then(function(schon){
+              if(schon) return;
+              return fetch(url).then(function(antwort){
+                if(antwort && antwort.ok) return cache.put(url, antwort);
+              }).catch(function(){ /* kein Netz — beim nächsten Mal wieder */ });
+            });
+          });
+        }, Promise.resolve());
+      });
     })
   );
 });
@@ -169,6 +200,25 @@ self.addEventListener("fetch", function(event){
   const req = event.request;
   if(req.method !== "GET") return; // Schreibende Anfragen (z. B. an Supabase) nie aus dem Cache beantworten
   const url = new URL(req.url);
+
+  // Rezeptfotos: cache-first. Sie ändern sich nie (der Dateiname gehört fest zum Rezept),
+  // also wäre das Nachladen im Hintergrund von stale-while-revalidate reine Verschwendung
+  // von Datenvolumen — bei 50 Bildern à ~60 KB jedes Mal, wenn jemand durch die Rezepte
+  // scrollt. Ein geändertes Foto bekäme einen neuen Dateinamen.
+  if(url.origin === self.location.origin && url.pathname.indexOf("/bilder/") !== -1){
+    event.respondWith(
+      caches.open(APP_CACHE_NAME).then(function(cache){
+        return cache.match(req).then(function(cached){
+          if(cached) return cached;
+          return fetch(req).then(function(antwort){
+            if(antwort && antwort.ok) cache.put(req, antwort.clone());
+            return antwort;
+          });
+        });
+      })
+    );
+    return;
+  }
 
   // Die App selbst (gleiche Origin): stale-while-revalidate.
   if(url.origin === self.location.origin){
