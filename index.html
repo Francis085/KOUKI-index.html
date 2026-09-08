@@ -265,13 +265,31 @@
     padding-right:calc(18px + var(--safe-right));
   }
 
-  header{padding:30px 0 6px;}
+  /* Die Kopfzeile stand mit 30px Innenabstand, einer 12px-Zeile in Großbuchstaben und einer
+     bis zu 34px großen Überschrift auf bis zu 158px Höhe — und das auf JEDEM Bildschirm, über
+     dem eigentlichen Inhalt. Im Trainingsplan war das der größte Einzelposten auf dem Weg zum
+     ersten Eingabefeld. Gemessen auf einem iPhone SE musste man 429px scrollen, bevor man den
+     ersten Satz eintragen konnte; auf einem iPhone 8 noch 178px.
+     Alles bleibt stehen, nur enger: weniger Innenabstand, die Begleitzeile eine Spur kleiner
+     und einzeilig, die Überschrift etwas kleiner. */
+  header{padding:14px 0 6px;}
   .eyebrow{
-    font-family:var(--font-text);font-weight:600;font-size:12px;
-    letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 4px;
+    font-family:var(--font-text);font-weight:600;
+    /* Neben Logo und den beiden Knöpfen bleiben auf einem 320px-Display nur rund 136px.
+       "GESUNDHEITSBEGLEITER" ist ein einziges langes Wort: bei fester Größe lief es unter
+       den Info-Knopf, mit nowrap+Ellipse stand dort "DEIN GESUNDHEITS…" — beides sieht
+       kaputt aus. Die Größe wandert deshalb mit der Displaybreite mit, und break-word ist
+       die letzte Sicherung, damit nie etwas über den Rand ragt. */
+    font-size:clamp(9px, 2.7vw, 10.5px);
+    letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 2px;
+    overflow-wrap:break-word;
   }
   h1{
-    font-family:var(--font-titel);font-weight:800;font-size:var(--font-xxl);
+    font-family:var(--font-titel);font-weight:800;
+    /* Untergrenze 18px statt 21px: bei 21px passte "Trainingsplan" auf einem 320px-Display
+       nicht mehr in die verbleibende Breite und wurde mitten im Wort getrennt ("Trainingspla
+       / n"). Bei 18px passt es in eine Zeile. */
+    font-size:clamp(18px, 5.6vw, 28px);
     margin:0;line-height:1.15;color:var(--text-strong);overflow-wrap:break-word;
   }
   h1 .brand-kouki, .reward-panel h3 .brand-kouki{color:var(--pink-deep);}
@@ -305,9 +323,13 @@
     display:flex;align-items:center;justify-content:center;
   }
 
-  .day-select{display:flex;gap:8px;margin:16px 0 20px;flex-wrap:wrap;}
+  .day-select{display:flex;gap:8px;margin:12px 0 14px;flex-wrap:wrap;}
+  /* min-width lag bei 96px: drei Tage plus zwei Lücken ergaben 304px, auf einem 320px-Display
+     stehen nach dem Seitenrand aber nur 284px zur Verfügung — die Tagesauswahl brach also auf
+     zwei Reihen um und war dort 120px statt 56px hoch. 84px passen auch auf dem schmalsten
+     Gerät in eine Reihe, ohne dass die Beschriftung zu eng wird. */
   .day-btn{
-    flex:1;min-width:96px;background:var(--surface);border:1px solid var(--line);
+    flex:1;min-width:84px;background:var(--surface);border:1px solid var(--line);
     border-radius:22px;padding:12px 8px;text-align:center;cursor:pointer;
     font-family:var(--font-titel);font-weight:600;font-size:14px;color:var(--ink-soft);
     transition:all .15s;
@@ -1435,20 +1457,24 @@
   .home-pr-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);padding:7px 0;border-bottom:1px solid var(--line);}
   .home-pr-row:last-child{border-bottom:none;}
   .home-pr-row strong{color:var(--text-strong);}
-  .streak-row{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0;}
+  .streak-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;}
   .streak-badge{
     background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 14px;
     font-family:var(--font-titel);font-weight:700;font-size:12.5px;color:var(--text-strong);
     display:flex;align-items:center;gap:6px;
   }
+  /* Auf 320px-Displays brach diese Zeile um und war 100px statt 59px hoch. Engere Innen-
+     abstände und ein kleinerer Zwischenraum bringen alle drei Elemente auch dort in eine
+     Reihe; flex-wrap bleibt als Rückfall stehen, falls eine Beschriftung doch länger wird. */
   .session-timer-row{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
-    background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;margin:12px 0 0;
+    display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;
+    background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;margin:10px 0 0;
   }
   .session-timer-display{font-family:var(--font-zahl);font-weight:700;font-size:18px;color:var(--text-strong);}
   .session-timer-btn{
-    background:var(--olive);color:var(--on-olive,#fff);border:none;border-radius:14px;padding:9px 14px;
+    background:var(--olive);color:var(--on-olive,#fff);border:none;border-radius:14px;padding:9px 12px;
     font-family:var(--font-titel);font-weight:700;font-size:12.5px;cursor:pointer;
+    white-space:nowrap;
   }
   .session-timer-btn.running{background:var(--pink-deep);}
   .vol-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
@@ -11191,8 +11217,12 @@ function showGroup(group, subtabIndex){
   setActiveNavGroup(group);
   renderSubtabRow(group);
   renderFrameHint(activeFrameId);
-  document.getElementById("frameTitle").textContent = subtabs.length > 1 ?
-    (NAV_GROUPS[group].label + " · " + subtabs[activeSubtabIndex].label) : NAV_GROUPS[group].label;
+  /* Stand hier früher "Fortschritt · Rang", brach die Überschrift auf schmalen Displays auf
+     zwei Zeilen um und die Kopfzeile wuchs von 131px auf über 250px — und zwar für eine
+     Information, die direkt darunter ohnehin steht: die Unterreiter-Leiste zeigt den aktiven
+     Bereich als hervorgehobenen Chip. Also nur noch der Gruppenname; wo man genau ist, sagt
+     der Chip. */
+  document.getElementById("frameTitle").textContent = NAV_GROUPS[group].label;
   closeDayDetail();
   if(activeFrameId === "frame-recipes"){ renderRecipes(); renderMealPlan(); }
   if(activeFrameId === "frame-supplements") renderSupplements();
