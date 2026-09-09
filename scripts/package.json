@@ -1,0 +1,11 @@
+{
+  "name": "kouki-scripts",
+  "private": true,
+  "description": "Hilfsskripte fuer KOUKI (Website-Check). Kein Build-Schritt fuer die App selbst.",
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  },
+  "scripts": {
+    "check": "node check-site.js ../index.html"
+  }
+}
