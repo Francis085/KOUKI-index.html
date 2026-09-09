@@ -12281,11 +12281,36 @@ if(leaderboardNickInputEl){
 }
 
 let authListenerRegistered = false;
+/* Die Adresse GENAU SO festhalten, wie die App aufgerufen wurde — bevor irgendetwas sie
+   anfassen kann.
+
+   Das ist der Kern des gemeldeten Fehlers. Der Supabase-Client wird mit der Voreinstellung
+   detectSessionInUrl:true erzeugt. Beim Erzeugen liest er die Tokens hinter der Raute aus,
+   legt die Sitzung an — und räumt die Adresse anschließend per history.replaceState auf.
+   Danach steht "type=recovery" nirgends mehr.
+
+   Die App las die Adresse aber erst NACH dem Erzeugen des Clients. Wer den Link antippte,
+   wurde dadurch ganz normal angemeldet, statt das Formular für ein neues Passwort zu sehen:
+   Die Sitzung war da, die Kennung war weg. Genau das beschreibt die Meldung "ich logge mich
+   direkt ein, aber ich kann kein neues Passwort festlegen".
+
+   Besonders sicher danebengegriffen hat der zweite Anlauf: initAccountSession() wird nach
+   drei Sekunden ein weites Mal aufgerufen, wenn noch niemand angemeldet ist — und während
+   einer Wiederherstellung ist genau das der Fall, weil dabei bewusst kein Login gemeldet
+   wird. Zu diesem Zeitpunkt war die Adresse garantiert schon leergeräumt.
+
+   Diese Momentaufnahme entsteht beim Ausführen des Skripts, also lange vor dem ersten
+   createClient — sie kann gar nicht zu spät kommen. */
+const ADRESSE_BEIM_START = {
+  search: window.location.search || "",
+  hash: window.location.hash || "",
+};
 /* Liest einen Wert aus der Adresse — egal ob er in der Query-String (?a=b) oder hinter der
    Raute (#a=b) steht. Supabase benutzt je nach Ablauf und Fehlerfall mal die eine, mal die
-   andere Stelle. */
+   andere Stelle. Gelesen wird aus der Momentaufnahme von oben, nicht aus der aktuellen
+   Adresse: Letztere ist zu diesem Zeitpunkt womöglich schon vom SDK bereinigt worden. */
 function leseAdressWert(name){
-  const quellen = [window.location.search || "", (window.location.hash || "").replace(/^#/, "?")];
+  const quellen = [ADRESSE_BEIM_START.search, ADRESSE_BEIM_START.hash.replace(/^#/, "?")];
   for(const q of quellen){
     try{
       const wert = new URLSearchParams(q.replace(/^\?/, "")).get(name);
@@ -12301,6 +12326,10 @@ function leseAdressWert(name){
    Hier landet jeder dieser Fälle mit einer Meldung, die sagt was los ist und was zu tun ist. */
 function zeigeLinkProblem(text){
   try{
+    /* Hier ist die Wiederherstellung gescheitert — der Merker muss weg. Bliebe er stehen,
+       würden Start-Bildschirm und Kurzerklärung dauerhaft unterdrückt, weil beide sich
+       während einer laufenden Wiederherstellung bewusst zurückhalten. */
+    passwortRuecksetzungLaeuft = false;
     if(typeof dismissWelcomeGateToApp === "function") dismissWelcomeGateToApp();
     const erklaerung = document.getElementById("onboardingOverlay");
     if(erklaerung) erklaerung.classList.remove("show");
@@ -12329,7 +12358,7 @@ async function initAccountSession(){
   // bei neu angelegten Projekten der Standard). Deshalb hier beide Stellen prüfen, nicht nur die
   // Raute — sonst würde bei PKCE-Projekten ein Tipp auf den Link im Postfach einfach einloggen,
   // statt erst ein neues Passwort abzufragen.
-  const isRecoveryLink = /type=recovery/.test((window.location.hash || "") + (window.location.search || ""));
+  const isRecoveryLink = /type=recovery/.test(ADRESSE_BEIM_START.hash + ADRESSE_BEIM_START.search);
   try{
     /* 1) Supabase schreibt Fehler direkt in die Adresse — abgelaufener Link, bereits benutzter
           Link, falsches Projekt. Bisher wurden die schlicht ignoriert und der Nutzer stand vor
@@ -12361,6 +12390,12 @@ async function initAccountSession(){
         return;
       }
     }
+
+    /* Den Merker schon hier setzen, nicht erst in showPasswordResetForm(). Sonst kann das
+       Anmelde-Ereignis, das Supabase beim Einlösen des Links auslöst, schneller sein als der
+       Aufruf weiter unten — und onAccountLoggedIn() klappt das Formular wieder zu, bevor es
+       überhaupt zu sehen war. */
+    if(isRecoveryLink) passwortRuecksetzungLaeuft = true;
 
     const { data } = await client.auth.getSession();
     if(isRecoveryLink && data && data.session && data.session.user){
