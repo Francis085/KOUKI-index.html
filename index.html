@@ -11645,6 +11645,34 @@ function mapAuthErrorMessage(e, context){
   return (label + " fehlgeschlagen: " + (msg || "unbekannter Fehler"));
 }
 
+/* Wohin ein Link aus der E-Mail zurückführen soll: die nackte Adresse der App, ohne Raute
+   und ohne Query-String.
+
+   Vorher stand hier überall window.location.href — und das war ein echter Fehler. Nach einem
+   fehlgeschlagenen Versuch steht in der Adresse nämlich Supabases Fehlermeldung:
+
+     .../KOUKI-index.html/#error=access_denied&error_code=otp_expired&error_description=...
+
+   Wer von dieser Seite aus einen neuen Link anfordert, bekommt genau diese Adresse als
+   Rückkehrziel eingebacken. Im Server-Log des Projekts ist das so zu sehen:
+
+     redirect_to=...KOUKI-index.html%2F%23error%3Daccess_denied%26error_code%3Dotp_expired...
+
+   Supabase hängt seine Tokens dann hinten an die bestehende Raute an. Die App fand beim
+   Öffnen also den ALTEN Fehler und die NEUEN Tokens gleichzeitig vor — und weil der Fehler
+   zuerst geprüft wird, meldete sie "Der Link ist nicht mehr gültig", obwohl die Anmeldung
+   im selben Moment geklappt hatte. Ab dann war jeder weitere Versuch vergiftet, weil der
+   Fehler in der Adresse stehen blieb und ins nächste Rückkehrziel wanderte.
+
+   Ein sauberes Ziel bricht diese Kette. */
+function sauberesRueckkehrZiel(){
+  try{
+    return window.location.origin + window.location.pathname;
+  }catch(e){
+    return window.location.href.split("#")[0].split("?")[0];
+  }
+}
+
 async function sendLoginLink(){
   const client = await getSupabaseClientWithRetry();
   if(!client){ setAccountStatus("Cloud-Funktion konnte nicht geladen werden — bitte Internetverbindung prüfen und die Seite neu laden."); return; }
@@ -11653,7 +11681,7 @@ async function sendLoginLink(){
   if(!email){ setAccountStatus("Bitte zuerst eine E-Mail-Adresse eingeben."); return; }
   setAccountStatus("Link wird gesendet …");
   try{
-    const { error } = await client.auth.signInWithOtp({ email: email, options: { emailRedirectTo: window.location.href } });
+    const { error } = await client.auth.signInWithOtp({ email: email, options: { emailRedirectTo: sauberesRueckkehrZiel() } });
     if(error) throw error;
     setAccountStatus("Link verschickt! Bitte E-Mail-Postfach öffnen und den Link antippen.");
   }catch(e){
@@ -11684,7 +11712,7 @@ async function signUpWithPassword(ids){
     // vergessen: ein neuer Nutzer landete beim Antippen des Bestätigungslinks auf einer
     // GitHub-Pages-404-Seite, weil die im Dashboard hinterlegte Site URL nicht (mehr) mit der
     // echten App-Adresse übereinstimmte.
-    const { data, error } = await client.auth.signUp({ email: email, password: password, options: { emailRedirectTo: window.location.href } });
+    const { data, error } = await client.auth.signUp({ email: email, password: password, options: { emailRedirectTo: sauberesRueckkehrZiel() } });
     if(error) throw error;
     // Wichtiger Sonderfall: Existiert die E-Mail bereits, antwortet Supabase aus Sicherheits-
     // gründen (kein "User enumeration") NICHT mit einem Fehler, sondern mit einem User-Objekt
@@ -11739,7 +11767,7 @@ async function requestPasswordReset(){
   if(!email){ hint.textContent = "Bitte zuerst deine E-Mail-Adresse oben eingeben, dann auf „Passwort vergessen?“ tippen."; return; }
   hint.textContent = "Link wird gesendet …";
   try{
-    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: sauberesRueckkehrZiel() });
     if(error) throw error;
     // Bewusst nicht bestätigend formuliert, ob die Adresse existiert (wie bei Supabase selbst) —
     // sonst könnte man über diese Meldung erraten, welche E-Mail-Adressen registriert sind.
@@ -12330,6 +12358,14 @@ function zeigeLinkProblem(text){
        würden Start-Bildschirm und Kurzerklärung dauerhaft unterdrückt, weil beide sich
        während einer laufenden Wiederherstellung bewusst zurückhalten. */
     passwortRuecksetzungLaeuft = false;
+    /* Die Fehlermeldung aus der Adresszeile nehmen. Sonst steht sie dort weiter, überlebt
+       jedes Neuladen und tauchte früher sogar im Rückkehrziel des nächsten Links wieder auf.
+       Die App selbst liest ohnehin aus ADRESSE_BEIM_START, hier geht also nichts verloren. */
+    try{
+      if(window.history && window.history.replaceState){
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }catch(e){ /* ohne History-API bleibt die Adresse stehen, das ist verkraftbar */ }
     if(typeof dismissWelcomeGateToApp === "function") dismissWelcomeGateToApp();
     const erklaerung = document.getElementById("onboardingOverlay");
     if(erklaerung) erklaerung.classList.remove("show");
@@ -12364,7 +12400,14 @@ async function initAccountSession(){
           Link, falsches Projekt. Bisher wurden die schlicht ignoriert und der Nutzer stand vor
           einer App, die so tat, als sei nichts gewesen. */
     const fehlerText = leseAdressWert("error_description") || leseAdressWert("error");
-    if(fehlerText){
+    /* Ein Fehler in der Adresse zählt nur, wenn daneben KEIN brauchbares Token steht.
+       Genau daran ist der gemeldete Fall gescheitert: Weil das Rückkehrziel die alte
+       Fehlermeldung mitschleppte, standen Fehler und frische Tokens gleichzeitig in der
+       Adresse. Die App las den Fehler zuerst, brach ab und zeigte "Link nicht mehr gültig"
+       — während die Anmeldung im selben Moment erfolgreich war (Server-Log: /verify → 303,
+       action "login"). Ein vorhandenes Token schlägt den Fehler also. */
+    const tokenDa = !!(leseAdressWert("access_token") || leseAdressWert("code"));
+    if(fehlerText && !tokenDa){
       zeigeLinkProblem("Der Link aus der E-Mail ist nicht mehr gültig (" + fehlerText +
         "). Fordere unten bitte einen neuen an — Links laufen nach kurzer Zeit ab und lassen " +
         "sich nur einmal verwenden.");
