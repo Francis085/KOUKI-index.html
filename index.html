@@ -999,6 +999,12 @@
   .bmr-goal.g-maintain{background:var(--yellow);}
   .bmr-goal.g-lose{background:var(--pink);}
   .bmr-goal.g-gain{background:var(--lilac);}
+  .abgleich-block{margin-top:4px;border:1px solid var(--line);border-radius:var(--radius-md);
+    padding:12px 14px;background:var(--bg);}
+  .abgleich-titel{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--ink-soft);margin:0 0 8px;}
+  .abgleich-tipp{font-size:13px;line-height:1.5;color:var(--ink);margin:8px 0 0;
+    border-left:3px solid var(--olive);padding-left:10px;}
   .bmr-goal-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
   .bmr-goal-head .g-title{font-family:var(--font-titel);font-weight:700;font-size:14px;color:var(--pastel-text);}
   .bmr-goal-head .g-kcal{font-family:var(--font-zahl);font-weight:700;font-size:14px;color:var(--pastel-text);}
@@ -8301,6 +8307,130 @@ function computeDailyEnergy(goalKey){
   };
 }
 
+/* ===== Abgleich mit dem echten Gewichtsverlauf =============================================
+   Grundumsatz und Gesamtumsatz oben sind eine FORMEL-Schätzung (Mifflin-St Jeor mal
+   Aktivitätsfaktor). Die Formel kennt aber weder den individuellen Stoffwechsel noch, wie
+   viel sich jemand außerhalb des Trainings bewegt — Abweichungen von 200-300 kcal sind
+   normal. Wer sich stur an ein zu hoch geschätztes Ziel hält, nimmt beim "Abnehmen" nicht ab
+   und sucht den Fehler bei sich.
+
+   Deshalb hier der Gegencheck an der Wirklichkeit: Was ist über die letzten Wochen mit dem
+   Körpergewicht passiert? Beide Datenquellen liegen bereits vor — state.bodyweight und
+   state.nutritionLog. Ausgerechnet wird nichts Neues erhoben.                               */
+
+const KCAL_PRO_KG = 7700;          // grober Energiegehalt von 1 kg Körpermasse
+const ABGLEICH_MIN_TAGE = 14;      // kürzere Zeiträume sind reines Wasserrauschen
+const ABGLEICH_MIN_PUNKTE = 4;
+const ABGLEICH_MIN_LOGTAGE = 10;   // so viele protokollierte Tage für die Aufnahme-Rechnung
+
+/* Steigung per linearer Regression statt "letzter minus erster Wert". Tagesgewicht schwankt
+   durch Wasser und Darminhalt um bis zu 2 kg; zwei herausgegriffene Werte können daher jedes
+   beliebige Ergebnis liefern. Die Ausgleichsgerade nutzt alle Punkte. */
+function gewichtsTrendProWoche(tage){
+  const eintraege = (state.bodyweight || []).filter(function(b){
+    return b && b.date && typeof b.weight === "number" && isFinite(b.weight);
+  });
+  if(eintraege.length < ABGLEICH_MIN_PUNKTE) return null;
+  const grenze = Date.now() - tage * 86400000;
+  const punkte = eintraege.map(function(b){
+    return { t: new Date(b.date + "T12:00:00").getTime(), w: b.weight };
+  }).filter(function(p){ return isFinite(p.t) && p.t >= grenze; });
+  if(punkte.length < ABGLEICH_MIN_PUNKTE) return null;
+  const spanneTage = (punkte[punkte.length-1].t - punkte[0].t) / 86400000;
+  if(spanneTage < ABGLEICH_MIN_TAGE) return null;
+
+  const t0 = punkte[0].t;
+  let sx=0, sy=0, sxx=0, sxy=0;
+  const n = punkte.length;
+  punkte.forEach(function(p){
+    const x = (p.t - t0) / 86400000;   // Tage seit dem ersten Punkt
+    sx += x; sy += p.w; sxx += x*x; sxy += x*p.w;
+  });
+  const nenner = n*sxx - sx*sx;
+  if(!nenner) return null;
+  const steigungProTag = (n*sxy - sx*sy) / nenner;
+  if(!isFinite(steigungProTag)) return null;
+  return { kgProWoche: steigungProTag * 7, punkte: n, tage: Math.round(spanneTage) };
+}
+
+/* Mittlere Kalorienaufnahme über denselben Zeitraum. Tage ohne Eintrag werden ausgelassen
+   statt als 0 gezählt — ein vergessener Tag würde den Schnitt sonst nach unten reißen und
+   einen viel zu niedrigen Bedarf vortäuschen. Sehr kleine Summen (unter 800 kcal) gelten
+   als unvollständig protokolliert. */
+function mittlereAufnahme(tage){
+  const grenze = Date.now() - tage * 86400000;
+  const werte = [];
+  Object.keys(state.nutritionLog || {}).forEach(function(k){
+    const t = new Date(k + "T12:00:00").getTime();
+    if(!isFinite(t) || t < grenze) return;
+    const summe = (state.nutritionLog[k] || []).reduce(function(a, it){ return a + (it.kcal || 0); }, 0);
+    if(summe >= 800) werte.push(summe);
+  });
+  if(werte.length < ABGLEICH_MIN_LOGTAGE) return { tage: werte.length, schnitt: null };
+  return { tage: werte.length, schnitt: werte.reduce(function(a,b){ return a+b; }, 0) / werte.length };
+}
+
+/* Führt beides zusammen. Zwei Aussagekraft-Stufen, bewusst getrennt gehalten:
+   - "gemessen": Es liegen genug protokollierte Tage vor. Dann lässt sich der tatsächliche
+     Gesamtumsatz direkt ausrechnen: Aufnahme minus das, was als Körpermasse dazukam.
+     Das ist die belastbare Variante.
+   - "trend": Nur der Gewichtsverlauf ist da. Dann wird lediglich die Abweichung von der
+     erwarteten Rate in eine Kalorienempfehlung übersetzt — schwächer, aber besser als nichts.
+   Ohne ausreichende Daten wird null zurückgegeben und gar nichts behauptet. */
+function energieAbgleich(goalKey, tage){
+  tage = tage || 28;
+  const energie = computeDailyEnergy(goalKey);
+  if(!energie) return null;
+  const trend = gewichtsTrendProWoche(tage);
+  if(!trend) return null;
+
+  const goal = BMR_GOALS.find(function(g){ return g.key === goalKey; }) || BMR_GOALS[0];
+  const erwartetKgProWoche = goal.adjust * 7 / KCAL_PRO_KG;
+  const aufnahme = mittlereAufnahme(tage);
+
+  let art, echterTdee, empfehlung;
+  if(aufnahme.schnitt !== null){
+    art = "gemessen";
+    echterTdee = aufnahme.schnitt - (trend.kgProWoche * KCAL_PRO_KG / 7);
+    empfehlung = echterTdee + goal.adjust;
+  } else {
+    art = "trend";
+    const abweichungKcalProTag = (trend.kgProWoche - erwartetKgProWoche) * KCAL_PRO_KG / 7;
+    echterTdee = energie.tdee - abweichungKcalProTag;
+    empfehlung = energie.targetKcal - abweichungKcalProTag;
+  }
+  if(!isFinite(echterTdee) || !isFinite(empfehlung)) return null;
+
+  /* Sicherheitsnetz. Ein Ausreißer beim Wiegen — einmal nach dem Sport, einmal nach dem
+     Essen — darf nicht zu einer absurden Empfehlung führen. Die Formel liegt realistisch um
+     höchstens etwa ein Viertel daneben, bei 2400 kcal also rund 600. Ein Rahmen von 1000 kcal
+     nach oben wie nach unten lässt jede berechtigte Korrektur zu und begrenzt zugleich den
+     Schaden aus fehlerhaften Daten. Unter 1200 kcal wird grundsätzlich nichts vorgeschlagen. */
+  const RAHMEN = 1000;
+  empfehlung = Math.min(empfehlung, energie.tdee + RAHMEN);
+  empfehlung = Math.max(empfehlung, energie.tdee - RAHMEN);
+  empfehlung = Math.max(1200, empfehlung);
+
+  const differenz = Math.round(empfehlung - energie.targetKcal);
+  return {
+    art: art,
+    kgProWoche: trend.kgProWoche,
+    erwartetKgProWoche: erwartetKgProWoche,
+    punkte: trend.punkte,
+    tage: trend.tage,
+    logTage: aufnahme.tage,
+    aufnahmeSchnitt: aufnahme.schnitt,
+    formelTdee: energie.tdee,
+    echterTdee: echterTdee,
+    aktuellesZiel: energie.targetKcal,
+    empfehlung: Math.round(empfehlung),
+    differenz: differenz,
+    /* Unter 100 kcal Unterschied wird nichts empfohlen: Das liegt innerhalb dessen, was
+       Messungenauigkeit und Schätzfehler beim Protokollieren ohnehin ausmachen. */
+    relevant: Math.abs(differenz) >= 100,
+  };
+}
+
 function todayStepCalories(){
   const steps = state.stepsLog[todayKey()] || 0;
   const bw = latestBodyweight();
@@ -9101,6 +9231,46 @@ function renderBmr(){
         '<div><span class="m-val">' + carbG + 'g</span><span class="m-lbl">Kohlenhydrate</span></div>' +
       '</div></div>';
   });
+  /* Gegencheck an der Wirklichkeit. Erscheint nur, wenn genug Wiege-Daten vorliegen —
+     lieber gar nichts sagen als auf Basis von drei Werten eine Zahl behaupten. */
+  const abgleich = energieAbgleich(state.activeGoal);
+  if(abgleich){
+    const zielName = (BMR_GOALS.find(function(g){ return g.key === state.activeGoal; }) || BMR_GOALS[0]).label.toLowerCase();
+    const rate = abgleich.kgProWoche;
+    const richtung = Math.abs(rate) < 0.05 ? "hält sich" : (rate > 0 ? "steigt" : "sinkt");
+    const rateText = Math.abs(rate) < 0.05
+      ? "dein Gewicht hält sich"
+      : ("dein Gewicht " + richtung + " um " + Math.abs(rate).toFixed(2).replace(".", ",") + " kg pro Woche");
+
+    let text = '<p class="bmr-hint" style="margin:0 0 6px;">Über die letzten ' + abgleich.tage +
+      ' Tage (' + abgleich.punkte + ' Messungen): ' + rateText + '.</p>';
+
+    if(abgleich.art === "gemessen"){
+      text += '<p class="bmr-hint" style="margin:0 0 6px;">Bei durchschnittlich ' +
+        Math.round(abgleich.aufnahmeSchnitt) + ' kcal an ' + abgleich.logTage +
+        ' protokollierten Tagen liegt dein tatsächlicher Gesamtumsatz damit bei rund <strong>' +
+        Math.round(abgleich.echterTdee) + ' kcal</strong> — die Formel oben schätzt ' +
+        Math.round(abgleich.formelTdee) + ' kcal.</p>';
+    } else {
+      text += '<p class="bmr-hint" style="margin:0 0 6px;">Zum Ziel „' + zielName +
+        '" wären rund ' + abgleich.erwartetKgProWoche.toFixed(2).replace(".", ",") +
+        ' kg pro Woche zu erwarten. Für eine genauere Rechnung fehlen protokollierte Ess-Tage (' +
+        abgleich.logTage + ' von ' + ABGLEICH_MIN_LOGTAGE + ').</p>';
+    }
+
+    if(abgleich.relevant){
+      const vz = abgleich.differenz > 0 ? "+" : "−";
+      text += '<p class="abgleich-tipp">Vorschlag: Tagesziel auf <strong>' + abgleich.empfehlung +
+        ' kcal</strong> setzen (' + vz + Math.abs(abgleich.differenz) + ' kcal gegenüber den ' +
+        Math.round(abgleich.aktuellesZiel) + ' kcal oben).</p>';
+    } else {
+      text += '<p class="abgleich-tipp">Das passt zusammen — dein Ziel oben braucht keine Korrektur.</p>';
+    }
+    text += '<p class="bmr-hint" style="margin:6px 0 0;font-size:11px;">Der Wert ersetzt die Schätzung oben nicht automatisch. Passe bei Bedarf deinen Aktivitätsfaktor an, bis der Gesamtumsatz ungefähr hinkommt.</p>';
+
+    html += '<div class="abgleich-block"><p class="abgleich-titel">Abgleich mit deinem echten Verlauf</p>' + text + '</div>';
+  }
+
   results.innerHTML = html;
 
   const histArea = document.getElementById("bmrHistoryArea");
