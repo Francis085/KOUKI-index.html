@@ -537,6 +537,14 @@
   }
   .icon-btn:active{transform:scale(.9);}
 
+  .technik-block{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;}
+.technik-titel{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-soft);margin:10px 0 4px;}
+.technik-titel:first-child{margin-top:0;}
+.technik-liste{margin:0 0 2px;padding-left:16px;}
+.technik-liste li{font-size:13px;line-height:1.5;color:var(--ink);margin-bottom:3px;}
+  /* Der Video-Knopf folgt direkt auf den letzten Aufzählungspunkt und klebte sonst daran. */
+  .technik-block + .btn{margin-top:12px;}
   .history-panel{
     display:block;background:var(--surface);border:1px solid var(--line);
     border-radius:var(--radius-md);padding:14px 16px;margin:-2px 0 12px;color:var(--ink-soft);
@@ -2574,6 +2582,18 @@ const EXERCISE_LIBRARY = {
     {name:"Reverse Lunges", type:"grund"},
     {name:"Step-Ups", type:"grund"},
     {name:"Glute Bridge", type:"grund"},
+    {name:"Frontkniebeuge", type:"grund"},
+    {name:"Box Squats", type:"grund"},
+    {name:"Zercher Squats", type:"grund"},
+    {name:"Sissy Squats", type:"isolation"},
+    {name:"Walking Lunges", type:"grund"},
+    {name:"Trap-Bar-Kreuzheben", type:"grund"},
+    {name:"Good Mornings", type:"grund"},
+    {name:"Adduktoren-Maschine", type:"isolation"},
+    {name:"Abduktoren-Maschine", type:"isolation"},
+    {name:"Beinpresse einbeinig", type:"grund"},
+    {name:"Hüftstoßen einbeinig", type:"grund"},
+    {name:"Wadenheben in der Beinpresse", type:"isolation"},
   ],
   "Brust": [
     {name:"Bankdrücken", type:"grund"},
@@ -2594,6 +2614,14 @@ const EXERCISE_LIBRARY = {
     {name:"Pec-Deck (Maschine)", type:"isolation"},
     {name:"Negativ-Bankdrücken", type:"grund"},
     {name:"Liegestütze breit", type:"grund", mode:"bodyweight", bwFactor:0.64},
+    {name:"Enge Liegestütze", type:"grund", mode:"bodyweight", bwFactor:0.64},
+    {name:"Erhöhte Liegestütze", type:"grund", mode:"bodyweight", bwFactor:0.5},
+    {name:"Deficit-Liegestütze", type:"grund", mode:"bodyweight", bwFactor:0.7},
+    {name:"Archer Push-ups", type:"grund", mode:"bodyweight", bwFactor:0.75, perSide:true},
+    {name:"Schrägbank-Fliegende", type:"isolation"},
+    {name:"Low Cable Fly", type:"isolation"},
+    {name:"Svend Press", type:"isolation"},
+    {name:"Landmine Press", type:"grund"},
   ],
   "Rücken": [
     {name:"Kreuzheben", type:"grund"},
@@ -2612,6 +2640,15 @@ const EXERCISE_LIBRARY = {
     {name:"Shrugs", type:"isolation"},
     {name:"Klimmzüge eng/Untergriff", type:"grund", mode:"bodyweight", bwFactor:1.0},
     {name:"Superman", type:"isolation", mode:"bodyweight", bwFactor:0.25},
+    {name:"Rack Pulls", type:"grund"},
+    {name:"Meadows Row", type:"grund"},
+    {name:"Seal Row", type:"grund"},
+    {name:"Kroc Rows", type:"grund"},
+    {name:"Überzüge", type:"isolation"},
+    {name:"Latzug eng", type:"grund"},
+    {name:"Latzug weit", type:"grund"},
+    {name:"Hyperextensions", type:"isolation", mode:"bodyweight", bwFactor:0.45},
+    {name:"Dead Hang", type:"isolation", mode:"hold", bwFactor:1.0},
   ],
   "Schultern": [
     {name:"Schulterdrücken", type:"grund"},
@@ -2622,6 +2659,13 @@ const EXERCISE_LIBRARY = {
     {name:"Military Press", type:"grund"},
     {name:"Aufrechtes Rudern", type:"isolation"},
     {name:"Kabel-Seitheben", type:"isolation"},
+    {name:"Reverse Butterfly", type:"isolation"},
+    {name:"Kurzhantel-Schulterdrücken", type:"grund"},
+    {name:"Pike Push-ups", type:"grund", mode:"bodyweight", bwFactor:0.7},
+    {name:"Handstand (Halten)", type:"isolation", mode:"hold", bwFactor:1.0},
+    {name:"Y-Raises", type:"isolation"},
+    {name:"Cuban Press", type:"isolation"},
+    {name:"Kabel-Frontheben", type:"isolation"},
   ],
   "Bizeps": [
     {name:"SZ-Curls", type:"isolation"},
@@ -2632,6 +2676,11 @@ const EXERCISE_LIBRARY = {
     {name:"Konzentrationscurls", type:"isolation"},
     {name:"21er-Curls", type:"isolation"},
     {name:"Kabel-Curls", type:"isolation"},
+    {name:"Langhantel-Curls", type:"isolation"},
+    {name:"Reverse Curls", type:"isolation"},
+    {name:"Spider Curls", type:"isolation"},
+    {name:"Zottman-Curls", type:"isolation"},
+    {name:"Schrägbank-Curls", type:"isolation"},
   ],
   "Trizeps": [
     {name:"Trizepsdrücken", type:"isolation"},
@@ -2641,6 +2690,11 @@ const EXERCISE_LIBRARY = {
     {name:"Enges Bankdrücken", type:"grund"},
     {name:"French Press", type:"isolation"},
     {name:"Diamond Push-ups", type:"grund", mode:"bodyweight", bwFactor:0.64},
+    {name:"Trizepsdrücken am Seil", type:"isolation"},
+    {name:"Bankdips", type:"grund", mode:"bodyweight", bwFactor:0.6},
+    {name:"JM Press", type:"grund"},
+    {name:"Overhead-Kabel-Extension", type:"isolation"},
+    {name:"Einarm-Trizepsdrücken", type:"isolation"},
   ],
   "Bauch": [
     {name:"Crunches", type:"isolation"},
@@ -2655,6 +2709,29 @@ const EXERCISE_LIBRARY = {
     {name:"Bicycle Crunches", type:"isolation"},
     {name:"Ab Wheel Rollout", type:"isolation"},
     {name:"Sit-ups", type:"isolation"},
+    {name:"Hollow Hold", type:"isolation", mode:"hold", bwFactor:1.0},
+    {name:"Side Plank", type:"isolation", mode:"hold", bwFactor:1.0},
+    {name:"Toes to Bar", type:"isolation", mode:"bodyweight", bwFactor:1.0},
+    {name:"Dead Bug", type:"isolation", mode:"bodyweight", bwFactor:0.3},
+    {name:"Pallof Press", type:"isolation"},
+    {name:"Mountain Climbers", type:"isolation", mode:"bodyweight", bwFactor:0.4},
+    {name:"V-Ups", type:"isolation", mode:"bodyweight", bwFactor:0.5},
+    {name:"Wood Chops", type:"isolation"},
+  ],
+  "Unterarme & Griff": [
+    {name:"Farmer's Walk", type:"grund"},
+    {name:"Handgelenk-Curls", type:"isolation"},
+    {name:"Reverse Handgelenk-Curls", type:"isolation"},
+    {name:"Plate Pinch (Halten)", type:"isolation", mode:"hold", bwFactor:0.2},
+  ],
+  "Ganzkörper": [
+    {name:"Kettlebell Swings", type:"grund"},
+    {name:"Thrusters", type:"grund"},
+    {name:"Clean & Press", type:"grund"},
+    {name:"Burpees", type:"grund", mode:"bodyweight", bwFactor:0.6},
+    {name:"Turkish Get-Up", type:"grund"},
+    {name:"Wall Balls", type:"grund"},
+    {name:"Bear Crawl", type:"grund", mode:"bodyweight", bwFactor:0.5},
   ],
 };
 
@@ -5300,6 +5377,73 @@ function renderProgressRing(){
 }
 
 const MUSCLE_DB = [
+  // --- Muskelinfos zu den neu aufgenommenen Übungen. Wie oben gilt: Der erste Treffer
+  // per name.includes(kw) gewinnt, deshalb stehen längere/spezifischere Namen vorn.
+  { kw:"Frontkniebeuge", primary:"Quadrizeps", secondary:"Gesäß, Rumpf, oberer Rücken", diagram:{ view:"front", active:["quadL","quadR","absCore"] } },
+  { kw:"Box Squats", primary:"Quadrizeps, Gesäß", secondary:"hintere Oberschenkel", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Zercher Squats", primary:"Quadrizeps, Gesäß", secondary:"Rumpf, oberer Rücken", diagram:{ view:"front", active:["quadL","quadR","absCore"] } },
+  { kw:"Sissy Squats", primary:"Quadrizeps", secondary:"Rumpf", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Walking Lunges", primary:"Quadrizeps, Gesäß", secondary:"Beinbeuger, Rumpf", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Trap-Bar-Kreuzheben", primary:"Quadrizeps, Gesäß", secondary:"Rücken, Griffkraft", diagram:{ view:"back", active:["gluteL","gluteR","lowerBackL","lowerBackR","hamL","hamR"] } },
+  { kw:"Good Mornings", primary:"hintere Oberschenkel, Gesäß", secondary:"unterer Rücken", diagram:{ view:"back", active:["hamL","hamR","gluteL","gluteR","lowerBackL","lowerBackR"] } },
+  { kw:"Adduktoren-Maschine", primary:"Adduktoren (Oberschenkelinnenseite)", secondary:"–", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Abduktoren-Maschine", primary:"Gesäßmuskulatur (seitlich)", secondary:"–", diagram:{ view:"back", active:["gluteL","gluteR"] } },
+  { kw:"Beinpresse einbeinig", primary:"Quadrizeps, Gesäß", secondary:"Rumpf (Stabilität)", diagram:{ view:"front", active:["quadL","quadR"] } },
+  { kw:"Hüftstoßen einbeinig", primary:"Gesäß", secondary:"hintere Oberschenkel, Rumpf", diagram:{ view:"back", active:["gluteL","gluteR","hamL","hamR"] } },
+  { kw:"Wadenheben in der Beinpresse", primary:"Wadenmuskulatur", secondary:"–", diagram:{ view:"back", active:["calfL","calfR"] } },
+  { kw:"Enge Liegestütze", primary:"Trizeps", secondary:"Brust, vordere Schulter", diagram:{ view:"back", active:["tricepL","tricepR"] } },
+  { kw:"Erhöhte Liegestütze", primary:"untere Brust", secondary:"Trizeps, vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Deficit-Liegestütze", primary:"Brust", secondary:"Trizeps, vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Archer Push-ups", primary:"Brust", secondary:"Trizeps, Rumpf", diagram:{ view:"front", active:["pecL","pecR","absCore"] } },
+  { kw:"Schrägbank-Fliegende", primary:"obere Brust", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Low Cable Fly", primary:"obere Brust", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Svend Press", primary:"innere Brust", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Landmine Press", primary:"obere Brust, vordere Schulter", secondary:"Trizeps, Rumpf", diagram:{ view:"front", active:["pecL","pecR","deltL","deltR"] } },
+  { kw:"Rack Pulls", primary:"oberer Rücken, Kapuzenmuskel", secondary:"Gesäß, Griffkraft", diagram:{ view:"back", active:["traps","latL","latR","lowerBackL","lowerBackR"] } },
+  { kw:"Meadows Row", primary:"Latissimus, oberer Rücken", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["latL","latR","traps"] } },
+  { kw:"Seal Row", primary:"mittlerer Rücken", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["latL","latR","traps"] } },
+  { kw:"Kroc Rows", primary:"Latissimus", secondary:"Bizeps, Griffkraft", diagram:{ view:"back", active:["latL","latR","forearmL","forearmR"] } },
+  { kw:"Überzüge", primary:"Latissimus", secondary:"Brust, Trizeps (langer Kopf)", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Latzug eng", primary:"Latissimus", secondary:"Bizeps, unterer Trapez", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Latzug weit", primary:"Latissimus (Breite)", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Hyperextensions", primary:"unterer Rücken", secondary:"Gesäß, hintere Oberschenkel", diagram:{ view:"back", active:["lowerBackL","lowerBackR","gluteL","gluteR"] } },
+  { kw:"Dead Hang", primary:"Griffkraft, Unterarme", secondary:"Latissimus, Schultergürtel", diagram:{ view:"back", active:["forearmL","forearmR","latL","latR"] } },
+  { kw:"Reverse Butterfly", primary:"hintere Schulter", secondary:"oberer Rücken", diagram:{ view:"back", active:["deltL","deltR","traps"] } },
+  { kw:"Kurzhantel-Schulterdrücken", primary:"vordere/seitliche Schulter", secondary:"Trizeps, Rumpf", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Pike Push-ups", primary:"Schultern", secondary:"Trizeps, oberer Rücken", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Handstand (Halten)", primary:"Schultern", secondary:"Rumpf, Unterarme", diagram:{ view:"front", active:["deltL","deltR","absCore"] } },
+  { kw:"Y-Raises", primary:"unterer Trapez, hintere Schulter", secondary:"oberer Rücken", diagram:{ view:"back", active:["traps","deltL","deltR"] } },
+  { kw:"Cuban Press", primary:"Rotatorenmanschette, Schultern", secondary:"oberer Rücken", diagram:{ view:"back", active:["deltL","deltR","traps"] } },
+  { kw:"Kabel-Frontheben", primary:"vordere Schulter", secondary:"obere Brust", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Langhantel-Curls", primary:"Bizeps", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR"] } },
+  { kw:"Reverse Curls", primary:"Unterarmstrecker, Brachialis", secondary:"Bizeps", diagram:{ view:"front", active:["forearmL","forearmR","bicepL","bicepR"] } },
+  { kw:"Spider Curls", primary:"Bizeps (kurzer Kopf)", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR"] } },
+  { kw:"Zottman-Curls", primary:"Bizeps, Unterarme", secondary:"Brachialis", diagram:{ view:"front", active:["bicepL","bicepR","forearmL","forearmR"] } },
+  { kw:"Schrägbank-Curls", primary:"Bizeps (langer Kopf)", secondary:"Unterarme", diagram:{ view:"front", active:["bicepL","bicepR"] } },
+  { kw:"Trizepsdrücken am Seil", primary:"Trizeps", secondary:"–", diagram:{ view:"back", active:["tricepL","tricepR"] } },
+  { kw:"Bankdips", primary:"Trizeps", secondary:"vordere Schulter, Brust", diagram:{ view:"back", active:["tricepL","tricepR"] } },
+  { kw:"JM Press", primary:"Trizeps", secondary:"Brust, vordere Schulter", diagram:{ view:"back", active:["tricepL","tricepR"] } },
+  { kw:"Overhead-Kabel-Extension", primary:"Trizeps (langer Kopf)", secondary:"Rumpf", diagram:{ view:"back", active:["tricepL","tricepR"] } },
+  { kw:"Einarm-Trizepsdrücken", primary:"Trizeps", secondary:"–", diagram:{ view:"back", active:["tricepL","tricepR"] } },
+  { kw:"Hollow Hold", primary:"Rumpf (gesamt)", secondary:"Hüftbeuger", diagram:{ view:"front", active:["absCore","obliqueL","obliqueR"] } },
+  { kw:"Side Plank", primary:"seitliche Bauchmuskeln", secondary:"Schulter, Gesäß", diagram:{ view:"front", active:["obliqueL","obliqueR"] } },
+  { kw:"Toes to Bar", primary:"unterer Bauch, Hüftbeuger", secondary:"Griffkraft, Latissimus", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"Dead Bug", primary:"tiefe Rumpfmuskulatur", secondary:"Hüftbeuger", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"Pallof Press", primary:"seitliche Bauchmuskeln (Anti-Rotation)", secondary:"Rumpf", diagram:{ view:"front", active:["obliqueL","obliqueR","absCore"] } },
+  { kw:"Mountain Climbers", primary:"Rumpf", secondary:"Hüftbeuger, Schultern", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"V-Ups", primary:"gerader Bauchmuskel", secondary:"Hüftbeuger", diagram:{ view:"front", active:["absCore"] } },
+  { kw:"Wood Chops", primary:"seitliche Bauchmuskeln", secondary:"Rumpf, Schultern", diagram:{ view:"front", active:["obliqueL","obliqueR"] } },
+  { kw:"Farmer's Walk", primary:"Griffkraft, Unterarme", secondary:"Kapuzenmuskel, Rumpf", diagram:{ view:"back", active:["forearmL","forearmR","traps"] } },
+  { kw:"Handgelenk-Curls", primary:"Unterarmbeuger", secondary:"Griffkraft", diagram:{ view:"front", active:["forearmL","forearmR"] } },
+  { kw:"Reverse Handgelenk-Curls", primary:"Unterarmstrecker", secondary:"Griffkraft", diagram:{ view:"front", active:["forearmL","forearmR"] } },
+  { kw:"Plate Pinch (Halten)", primary:"Griffkraft (Finger)", secondary:"Unterarme", diagram:{ view:"front", active:["forearmL","forearmR"] } },
+  { kw:"Kettlebell Swings", primary:"Gesäß, hintere Oberschenkel", secondary:"Rumpf, Rücken", diagram:{ view:"back", active:["gluteL","gluteR","hamL","hamR","lowerBackL","lowerBackR"] } },
+  { kw:"Thrusters", primary:"Quadrizeps, Schultern", secondary:"Gesäß, Rumpf, Trizeps", diagram:{ view:"front", active:["quadL","quadR","deltL","deltR"] } },
+  { kw:"Clean & Press", primary:"Ganzkörper (Hüfte, Schultern)", secondary:"Rücken, Rumpf", diagram:{ view:"back", active:["gluteL","gluteR","traps","deltL","deltR"] } },
+  { kw:"Burpees", primary:"Ganzkörper", secondary:"Brust, Beine, Rumpf", diagram:{ view:"front", active:["pecL","pecR","quadL","quadR","absCore"] } },
+  { kw:"Turkish Get-Up", primary:"Schulterstabilität, Rumpf", secondary:"Ganzkörper", diagram:{ view:"front", active:["deltL","deltR","absCore","obliqueL","obliqueR"] } },
+  { kw:"Wall Balls", primary:"Quadrizeps, Schultern", secondary:"Gesäß, Rumpf", diagram:{ view:"front", active:["quadL","quadR","deltL","deltR"] } },
+  { kw:"Bear Crawl", primary:"Rumpf", secondary:"Schultern, Quadrizeps", diagram:{ view:"front", active:["absCore","deltL","deltR"] } },
   // --- Neu hinzugefügte Übungen + Genauigkeits-Fixes für bereits vorhandene Übungen ohne
   // eigenen Eintrag (z.B. Calisthenics-Haltepositionen). Bewusst VOR den ursprünglichen
   // Einträgen platziert: muscleInfoFor() nimmt den ersten Treffer per name.includes(kw), und
@@ -5395,6 +5539,206 @@ const MUSCLE_DB = [
   { kw:"Plank", primary:"Rumpf (gesamt)", secondary:"–", diagram:{ view:"front", active:["absCore","obliqueL","obliqueR"] } },
   { kw:"Beinheben", primary:"unterer Bauch, Hüftbeuger", secondary:"–", diagram:{ view:"front", active:["absCore"] } },
 ];
+
+/* Technikhinweise pro Übung. Bis hierher zeigte die App nur einen Muskel und einen Link auf
+   eine YouTube-SUCHE — wer eine Übung nicht kannte, bekam von KOUKI selbst keine Hilfe.
+   Aufgebaut wie MUSCLE_DB über Schlüsselwörter, damit auch eigene Übungsnamen greifen
+   ("Bankdrücken breit" findet "Bankdrücken").
+
+   Wichtiger Unterschied zu MUSCLE_DB: Dort gewinnt der ERSTE Treffer, weshalb die Reihenfolge
+   der Einträge von Hand stimmen muss — ein bekannter Stolperstein, der oben eigens kommentiert
+   ist. Hier gewinnt stattdessen das LÄNGSTE passende Schlüsselwort. Damit schlägt
+   "Enges Bankdrücken" automatisch "Bankdrücken", ganz gleich wie die Liste sortiert ist. */
+const TECHNIK_DB = [
+  /* ---------- Bestehende Übungen: Beine ---------- */
+  { kw:"Kniebeuge", setup:["Stange auf dem Kapuzenmuskel, nicht auf den Halswirbeln","Füße schulterbreit, Zehen 15–30° nach außen","Vor dem Absitzen tief einatmen und den Bauch fest machen"], ablauf:["Hüfte und Knie gleichzeitig beugen, Hüfte leicht nach hinten","Mindestens bis die Oberschenkel waagerecht sind","Knie zeigen in Richtung der Fußspitzen"], fehler:["Knie fallen nach innen — bewusst nach außen drücken","Rundrücken im untersten Punkt","Fersen heben ab — Stand oder Beweglichkeit prüfen"] },
+  { kw:"Hack Squat", setup:["Rücken und Schultern fest am Polster","Füße mittig auf der Platte, hüftbreit"], ablauf:["Kontrolliert bis 90° oder tiefer absenken","Über die ganze Fußsohle hochdrücken"], fehler:["Knie im obersten Punkt ganz durchdrücken","Gesäß hebt vom Polster ab"] },
+  { kw:"Beinpresse", setup:["Rücken vollständig am Polster, Gesäß bleibt unten","Füße schulterbreit, mittig auf der Platte"], ablauf:["Bis etwa 90° Kniebeugung absenken","Über die ganze Fußsohle drücken, oben nicht durchstrecken"], fehler:["Gesäß rollt vom Polster — Wirbelsäule unter Druck","Zu tief mit rundem unteren Rücken","Knie fallen nach innen"] },
+  { kw:"Ausfallschritte", setup:["Aufrechter Oberkörper, Blick geradeaus","Schrittlänge so, dass beide Knie 90° erreichen"], ablauf:["Hinteres Knie Richtung Boden senken","Über die Ferse des vorderen Fußes abdrücken"], fehler:["Vorderes Knie schiebt weit über die Fußspitze","Oberkörper kippt nach vorn"] },
+  { kw:"Bulgarian Split Squats", setup:["Hinterer Fuß auf der Bank, Rist oder Zehen aufgelegt","Abstand so, dass das vordere Knie senkrecht bleibt"], ablauf:["Senkrecht absinken, vorderes Bein trägt","Über die Ferse hochdrücken"], fehler:["Zu kurzer Abstand — Knie wird stark belastet","Becken kippt zur Seite"] },
+  { kw:"Rumänisches Kreuzheben", setup:["Stange dicht am Körper, Knie leicht gebeugt und fixiert","Schulterblätter zusammen, Rücken flach"], ablauf:["Hüfte nach hinten schieben, Stange gleitet an den Beinen entlang","Nur so tief, wie der Rücken gerade bleibt"], fehler:["Bewegung aus dem Rücken statt aus der Hüfte","Stange wandert vom Körper weg","Knie beugen und strecken wie beim Kreuzheben"] },
+  { kw:"Hüftstoßen", setup:["Schulterblätter auf der Bankkante, Füße hüftbreit","Kinn leicht angezogen, Rippen unten"], ablauf:["Hüfte strecken bis Oberkörper und Oberschenkel eine Linie bilden","Oben eine Sekunde das Gesäß fest anspannen"], fehler:["Ins Hohlkreuz drücken statt die Hüfte zu strecken","Füße zu weit vorn — dann arbeiten die Beinbeuger"] },
+  { kw:"Beinstrecker", setup:["Drehpunkt auf Kniehöhe einstellen","Rücken am Polster, Griffe festhalten"], ablauf:["Kontrolliert strecken, oben kurz anspannen","Langsam ablassen, Gewicht nicht ablegen"], fehler:["Gewicht hochschleudern","Gesäß hebt bei jeder Wiederholung"] },
+  { kw:"Beinbeuger", setup:["Drehpunkt auf Kniehöhe, Polster über der Achillessehne","Hüfte bleibt am Polster"], ablauf:["Fersen zum Gesäß ziehen, kurz halten","Kontrolliert zurücklassen"], fehler:["Hüfte hebt ab — Schwung statt Muskelarbeit","Nur halber Bewegungsumfang"] },
+  { kw:"Wadenheben", setup:["Fußballen auf der Kante, Fersen frei","Knie fast gestreckt (stehend) bzw. 90° (sitzend)"], ablauf:["Ferse tief sinken lassen, dann voll durchdrücken","Oben ein bis zwei Sekunden halten"], fehler:["Nur halber Bewegungsumfang","Wippen statt kontrolliert arbeiten"] },
+  { kw:"Pistol Squats", setup:["Ein Bein gestreckt nach vorn, Arme als Gegengewicht","Anfangs an einem Pfosten festhalten"], ablauf:["Langsam auf einem Bein absinken","Über die ganze Fußsohle hochdrücken"], fehler:["Ferse hebt ab","Ins Runde fallen lassen statt kontrolliert absenken"] },
+  { kw:"Nordic Curls", setup:["Knien, Fersen fest fixiert, Hüfte gestreckt","Hände zum Abfangen bereit"], ablauf:["So langsam wie möglich nach vorn absenken","Mit den Händen abfangen und hochdrücken"], fehler:["Hüfte knickt ein — Übung verliert den Reiz","Zu früh ohne Hilfe versuchen"] },
+  { kw:"Goblet Squats", setup:["Kurzhantel oder Kettlebell vor der Brust","Ellbogen zeigen nach unten"], ablauf:["Aufrecht tief absitzen, Ellbogen zwischen die Knie","Über die ganze Fußsohle hochdrücken"], fehler:["Gewicht sinkt ab und zieht nach vorn","Fersen heben"] },
+  { kw:"Sumo-Kreuzheben", setup:["Sehr breiter Stand, Zehen deutlich nach außen","Hände greifen innerhalb der Beine"], ablauf:["Hüfte tief, Brust raus, dann Boden wegdrücken","Knie nach außen drücken"], fehler:["Hüfte schießt zuerst hoch","Stange wandert vom Körper weg"] },
+  { kw:"Reverse Lunges", setup:["Aufrechter Stand, Rumpf fest","Blick geradeaus"], ablauf:["Einen großen Schritt nach hinten, Knie Richtung Boden","Über die Ferse des vorderen Fußes zurückdrücken"], fehler:["Zu kleiner Schritt","Oberkörper kippt nach vorn"] },
+  { kw:"Step-Ups", setup:["Kastenhöhe so, dass der Oberschenkel waagerecht ist","Aufrechter Oberkörper"], ablauf:["Ganzen Fuß aufsetzen, über die Ferse hochdrücken","Kontrolliert wieder absteigen"], fehler:["Mit dem hinteren Bein abdrücken","Sich nach oben schwingen"] },
+  { kw:"Glute Bridge", setup:["Rückenlage, Füße hüftbreit nah am Gesäß","Rippen unten, Bauch fest"], ablauf:["Hüfte strecken, Gesäß bewusst anspannen","Oben kurz halten"], fehler:["Ins Hohlkreuz drücken","Fersen zu weit weg — Beinbeuger übernehmen"] },
+
+  /* ---------- Bestehende Übungen: Brust ---------- */
+  { kw:"Bankdrücken", setup:["Schulterblätter zusammenziehen und nach unten fixieren","Füße fest am Boden, natürliches Hohlkreuz","Griff etwa 1,5-fache Schulterbreite"], ablauf:["Stange kontrolliert zur unteren Brust senken","Ellbogen etwa 45° zum Körper","Aus der Brust drücken, Schulterblätter bleiben unten"], fehler:["Ellbogen 90° abgespreizt — hohe Schulterbelastung","Gesäß hebt von der Bank","Stange von der Brust abfedern lassen"] },
+  { kw:"Schrägbankdrücken mit Kurzhanteln", setup:["Bank auf 30–45°, steiler wird es eine Schulterübung","Schulterblätter zusammen und unten"], ablauf:["Hanteln auf Höhe der oberen Brust senken","Nach oben-innen drücken, nicht zusammenschlagen"], fehler:["Bank zu steil eingestellt","Hanteln zu weit außen abgesenkt"] },
+  { kw:"Schrägbank-Kurzhantel-Drücken", setup:["Bank auf 30–45°","Schulterblätter zusammen und unten"], ablauf:["Auf Höhe der oberen Brust senken","Nach oben-innen drücken"], fehler:["Bank zu steil","Zu tief für die Schulter"] },
+  { kw:"Schrägbankdrücken", setup:["Bank auf 30–45° einstellen","Schulterblätter zusammen, Füße fest am Boden"], ablauf:["Stange zur oberen Brust senken","Kontrolliert hochdrücken"], fehler:["Bank zu steil — dann arbeitet die Schulter","Stange zum Hals senken"] },
+  { kw:"Kurzhantel-Bankdrücken", setup:["Hanteln mit den Knien in Position bringen","Schulterblätter zusammen und unten"], ablauf:["Bis auf Brusthöhe senken, leichte Dehnung","Nach oben-innen drücken"], fehler:["Zu tief absenken — Schulter unter Zug","Hanteln oben zusammenschlagen"] },
+  { kw:"Brustpresse", setup:["Griffe auf Höhe der mittleren Brust einstellen","Rücken und Schultern am Polster"], ablauf:["Kontrolliert nach vorn drücken","Langsam zurücklassen, Spannung halten"], fehler:["Schultern nach vorn rollen lassen","Ellbogen ganz durchdrücken"] },
+  { kw:"Dips", setup:["Griffe schulterbreit, Schultern nach unten ziehen","Oberkörper leicht nach vorn für die Brust, aufrecht für den Trizeps"], ablauf:["Bis etwa 90° Ellbogenbeugung senken","Kontrolliert hochdrücken"], fehler:["Zu tief absenken — starke Schulterbelastung","Schultern hochziehen"] },
+  { kw:"1-Arm-Liegestütze", setup:["Füße weit auseinander für Stabilität","Freie Hand hinter dem Rücken"], ablauf:["Langsam absenken, Hüfte möglichst gerade halten","Kontrolliert hochdrücken"], fehler:["Hüfte dreht stark weg","Zu früh ohne Vorstufen versuchen"] },
+  { kw:"Handstand-Liegestütze", setup:["An der Wand, Hände etwas breiter als schulterbreit","Rumpf fest, Rippen unten"], ablauf:["Kopf Richtung Boden senken","Senkrecht hochdrücken"], fehler:["Ins Hohlkreuz kippen","Ohne Wandhilfe zu früh üben"] },
+  { kw:"Tuck-Planche", setup:["Hände am Boden oder auf Parallettes, Schultern nach vorn","Knie eng angezogen"], ablauf:["Zeit halten, Schulterblätter geschoben","Gleichmäßig atmen"], fehler:["Hüfte hängt tief","Handgelenke nicht aufgewärmt"] },
+  { kw:"Kurzhantel-Fliegende", setup:["Leichte Ellbogenbeugung fixieren","Schulterblätter zusammen und unten"], ablauf:["Arme im weiten Bogen öffnen","Wie eine Umarmung zusammenführen"], fehler:["Ellbogen beugen und strecken — wird zum Drücken","Zu tief öffnen"] },
+  { kw:"Butterfly", setup:["Griffe auf Brusthöhe, Rücken am Polster","Leichte Ellbogenbeugung"], ablauf:["Arme kontrolliert zusammenführen","Vorn kurz anspannen"], fehler:["Zu weit öffnen","Schultern nach vorn rollen"] },
+  { kw:"Cable Crossover", setup:["Kabel auf Schulterhöhe oder höher, Schritt nach vorn","Leichte Ellbogenbeugung fixieren"], ablauf:["Nach vorn-unten zusammenführen","Am Endpunkt Brust anspannen"], fehler:["Aus dem Oberkörper mitschwingen","Arme durchstrecken"] },
+  { kw:"Pec-Deck", setup:["Sitzhöhe so, dass die Griffe auf Brusthöhe liegen","Rücken am Polster"], ablauf:["Kontrolliert zusammenführen, vorn anspannen","Langsam öffnen"], fehler:["Zu weit öffnen","Mit Schwung arbeiten"] },
+  { kw:"Negativ-Bankdrücken", setup:["Beine fixiert, Schulterblätter zusammen","Griff etwas enger als beim Flachbankdrücken"], ablauf:["Zur unteren Brust senken","Kontrolliert hochdrücken"], fehler:["Ohne Partner sehr schwer aufzunehmen","Kopf zu tief — Blutdruck beachten"] },
+  { kw:"Liegestütze breit", setup:["Hände deutlich breiter als schulterbreit","Körper bildet eine Linie"], ablauf:["Brust Richtung Boden senken","Kontrolliert hochdrücken"], fehler:["Zu breit — Schulter unter Zug","Hüfte hängt durch"] },
+  { kw:"Liegestütze", setup:["Hände etwa schulterbreit unter der Brust","Körper bildet eine Linie von Kopf bis Ferse"], ablauf:["Bis kurz über den Boden senken, Ellbogen ~45°","Kontrolliert hochdrücken, Rumpf bleibt fest"], fehler:["Hüfte hängt durch oder schiebt hoch","Ellbogen 90° abgespreizt","Nur halbe Bewegung"] },
+
+  /* ---------- Bestehende Übungen: Rücken ---------- */
+  { kw:"Kreuzheben", setup:["Stange über dem Mittelfuß, Schienbein fast an der Stange","Hüfte tief, Brust raus, Latissimus angespannt","Vor dem Zug einatmen und den Bauch fest machen"], ablauf:["Boden wegdrücken statt die Stange hochzuziehen","Stange bleibt am Körper, Hüfte und Schultern steigen gleichzeitig","Oben Hüfte strecken, nicht nach hinten lehnen"], fehler:["Hüfte schießt zuerst hoch — Last wandert in den Rücken","Rundrücken beim Ansetzen","Stange wandert vom Körper weg"] },
+  { kw:"Klimmzüge (Kraftausdauer)", setup:["Schulterbreiter Obergriff, Schultern aktiv","Rumpf fest, Beine ruhig"], ablauf:["Gleichmäßiges Tempo, Kinn über die Stange","Kontrolliert ganz ablassen"], fehler:["Mit Schwung arbeiten, wenn es schwer wird","Nur halbe Wiederholungen zählen"] },
+  { kw:"Klimmzüge eng/Untergriff", setup:["Untergriff, Hände schulterbreit","Brust raus, Schultern nach unten"], ablauf:["Brust zur Stange ziehen","Langsam ganz ablassen"], fehler:["Nur halb ablassen","Ellbogen nach vorn kippen"] },
+  { kw:"Klimmzüge", setup:["Obergriff etwas breiter als schulterbreit","Schulterblätter zuerst nach unten ziehen"], ablauf:["Ellbogen nach unten-hinten ziehen, Brust zur Stange","Kontrolliert bis zur fast gestreckten Position ablassen"], fehler:["Mit den Beinen schwingen","Nur halber Bewegungsumfang","Schultern bleiben oben hängen"] },
+  { kw:"Ring Rows", setup:["Ringe oder Stange auf Hüft- bis Brusthöhe","Körper gestreckt, Fersen am Boden"], ablauf:["Brust zu den Ringen ziehen, Schulterblätter zusammen","Kontrolliert ablassen"], fehler:["Hüfte hängt durch","Nur mit den Armen ziehen"] },
+  { kw:"Front Lever", setup:["Hängen an der Stange, Schultern aktiv","Rumpf und Gesäß fest angespannt"], ablauf:["Körper waagerecht halten, Zeit stoppen","Mit Vorstufen arbeiten (angewinkelte Beine)"], fehler:["Hüfte sinkt ab","Zu früh die volle Position versuchen"] },
+  { kw:"Langhantelrudern", setup:["Oberkörper etwa 45° vorgebeugt, Rücken flach","Stange hängt unter den Schultern"], ablauf:["Zum unteren Brustkorb ziehen, Ellbogen nah am Körper","Am Endpunkt Schulterblätter zusammenziehen"], fehler:["Oberkörper richtet sich beim Ziehen auf","Rundrücken","Mit Schwung reißen"] },
+  { kw:"Brustgestütztes Rudern", setup:["Brust fest am Polster, Füße stabil","Arme hängen senkrecht"], ablauf:["Ellbogen nach hinten ziehen, Schulterblätter zusammen","Kontrolliert ablassen"], fehler:["Brust hebt vom Polster","Nur halber Bewegungsumfang"] },
+  { kw:"T-Bar Rudern", setup:["Fester Stand über der Stange, Rücken flach","Hüfte nach hinten, Brust raus"], ablauf:["Zum Bauch ziehen, Ellbogen eng","Kurz halten, kontrolliert ablassen"], fehler:["Oberkörper aufrichten beim Ziehen","Rundrücken unter der Last"] },
+  { kw:"Einarmiges Kurzhantelrudern", setup:["Knie und Hand auf der Bank, Rücken waagerecht","Hantel hängt senkrecht"], ablauf:["Ellbogen zur Hüfte ziehen, nicht nach außen","Oben kurz halten"], fehler:["Oberkörper rotiert mit","Nur mit dem Arm ziehen"] },
+  { kw:"Kabelrudern", setup:["Aufrecht sitzen, leichte Knieebeugung","Brust raus, Rücken gerade"], ablauf:["Griff zum Bauchnabel ziehen, Ellbogen eng","Schulterblätter zusammen, kontrolliert zurück"], fehler:["Oberkörper weit nach hinten lehnen","Rundrücken beim Zurückführen"] },
+  { kw:"Rudern", setup:["Rücken gerade, Brust raus","Schultern nach unten"], ablauf:["Ellbogen nach hinten ziehen, Schulterblätter zusammen","Kontrolliert zurückführen"], fehler:["Mit Schwung arbeiten","Schultern hochziehen"] },
+  { kw:"Reverse Flys", setup:["Vorgebeugt oder am Gerät, leichte Ellbogenbeugung","Rücken flach"], ablauf:["Arme nach außen-hinten öffnen","Schulterblätter zusammenziehen"], fehler:["Zu schwer — dann übernimmt der Kapuzenmuskel","Ellbogen strecken und beugen"] },
+  { kw:"Shrugs", setup:["Hanteln oder Stange neben dem Körper, Arme lang","Aufrecht stehen, Kinn leicht angezogen"], ablauf:["Schultern senkrecht Richtung Ohren ziehen","Oben kurz halten, langsam ablassen"], fehler:["Schultern kreisen","Mit den Armen mitziehen"] },
+  { kw:"Superman", setup:["Bauchlage, Arme nach vorn gestreckt","Blick zum Boden"], ablauf:["Arme und Beine gleichzeitig anheben","Kurz halten, kontrolliert ablegen"], fehler:["Kopf in den Nacken legen","Ruckartig hochreißen"] },
+
+  /* ---------- Bestehende Übungen: Schultern ---------- */
+  { kw:"Schulterdrücken", setup:["Aufrecht sitzen oder stehen, Rumpf fest","Stange oder Hanteln auf Ohrhöhe"], ablauf:["Senkrecht nach oben drücken, Kopf leicht zurücknehmen","Oben nicht komplett durchdrücken"], fehler:["Ins Hohlkreuz ausweichen","Hinter den Kopf drücken"] },
+  { kw:"Military Press", setup:["Stehend, Füße hüftbreit, Gesäß und Bauch fest","Stange auf den vorderen Schultern"], ablauf:["Senkrecht drücken, Kopf kurz zurück","Oben Kopf wieder durchschieben"], fehler:["Ins Hohlkreuz lehnen","Mit den Beinen nachhelfen"] },
+  { kw:"Kabel-Seitheben", setup:["Kabel unten, Körper leicht zur Gegenseite geneigt","Arm fast gestreckt"], ablauf:["Bis Schulterhöhe heben, kleiner Finger leicht höher","Langsam ablassen"], fehler:["Aus der Hüfte schwingen","Über Schulterhöhe hinausheben"] },
+  { kw:"Seitheben", setup:["Leichte Vorlage, Ellbogen minimal gebeugt","Schultern bleiben unten"], ablauf:["Bis Schulterhöhe heben, Ellbogen führt","Kontrolliert ablassen, Spannung halten"], fehler:["Zu schwer — Nacken und Schwung übernehmen","Über Schulterhöhe heben"] },
+  { kw:"Frontheben", setup:["Aufrecht stehen, Rumpf fest","Hanteln oder Scheibe vor den Oberschenkeln"], ablauf:["Bis Schulterhöhe heben, Arm fast gestreckt","Kontrolliert ablassen"], fehler:["Aus der Hüfte schwingen","Zu weit über Schulterhöhe"] },
+  { kw:"Face Pulls", setup:["Seil auf Gesichtshöhe, Schritt nach hinten","Arme gestreckt, Daumen zeigen nach hinten"], ablauf:["Zum Gesicht ziehen, Hände öffnen sich nach außen","Schulterblätter zusammen, kurz halten"], fehler:["Zu schwer — wird zum Rudern","Schultern zu den Ohren ziehen"] },
+  { kw:"Arnold Press", setup:["Hanteln vor dem Körper, Handflächen zum Gesicht","Aufrecht sitzen"], ablauf:["Beim Drücken nach außen drehen","Auf demselben Weg zurück"], fehler:["Zu schnell rotieren","Ins Hohlkreuz ausweichen"] },
+  { kw:"Aufrechtes Rudern", setup:["Griff etwa schulterbreit, nicht enger","Aufrecht stehen"], ablauf:["Ellbogen nach oben-außen führen, nur bis Brusthöhe","Kontrolliert ablassen"], fehler:["Zu enger Griff und zu hoch ziehen — Schulterenge","Mit Schwung arbeiten"] },
+
+  /* ---------- Bestehende Übungen: Bizeps ---------- */
+  { kw:"SZ-Curls", setup:["SZ-Stange an der schrägen Stelle greifen","Ellbogen am Körper fixiert"], ablauf:["Nur der Unterarm bewegt sich","Oben anspannen, langsam ablassen"], fehler:["Oberkörper wippt mit","Ellbogen wandern nach vorn"] },
+  { kw:"Hammercurls", setup:["Neutralgriff, Daumen zeigen nach oben","Ellbogen am Körper"], ablauf:["Kontrolliert hochcurlen, Handhaltung bleibt neutral","Langsam ablassen"], fehler:["Schulter zieht mit","Hanteln fallen lassen"] },
+  { kw:"Kurzhantel-Curls", setup:["Aufrecht stehen oder sitzen, Ellbogen am Körper","Schultern unten"], ablauf:["Hochcurlen, oben leicht nach außen drehen","Langsam und vollständig ablassen"], fehler:["Oberkörper zurücklehnen","Nur halber Bewegungsumfang"] },
+  { kw:"Scott-Curls", setup:["Oberarme vollständig auf dem Polster","Schultern bleiben unten"], ablauf:["Kontrolliert hochcurlen","Fast ganz strecken, aber Spannung halten"], fehler:["Ruckartig aus der Streckung starten","Gesäß hebt vom Sitz"] },
+  { kw:"Konzentrationscurls", setup:["Sitzend, Ellbogen an der Oberschenkelinnenseite","Oberkörper leicht vorgebeugt"], ablauf:["Langsam hochcurlen, oben kurz halten","Kontrolliert ablassen"], fehler:["Mit dem Oberkörper mitziehen","Zu schwer gewählt"] },
+  { kw:"21er-Curls", setup:["Leichteres Gewicht als bei normalen Curls","Ellbogen am Körper"], ablauf:["7 mal untere Hälfte, 7 mal obere Hälfte, 7 mal ganz","Ohne Pause durchziehen"], fehler:["Zu schwer — die letzten 7 gehen dann nicht sauber","Bereiche vermischen"] },
+  { kw:"Kabel-Curls", setup:["Kabel unten, Schritt nach hinten für konstante Spannung","Ellbogen am Körper"], ablauf:["Gleichmäßig hochcurlen","Langsam ablassen, Spannung bleibt"], fehler:["Oberkörper wippt","Ellbogen wandern"] },
+  { kw:"Bizepscurls", setup:["Aufrecht stehen, Ellbogen am Körper fixiert","Schultern unten und hinten"], ablauf:["Nur der Unterarm bewegt sich","Oben anspannen, langsam ablassen"], fehler:["Schwung aus dem Rücken","Ellbogen wandern nach vorn"] },
+
+  /* ---------- Bestehende Übungen: Trizeps ---------- */
+  { kw:"Trizepsdrücken am Kabel", setup:["Stange oder Seil am oberen Kabel","Ellbogen eng am Körper fixiert"], ablauf:["Nach unten strecken, unten kurz anspannen","Kontrolliert zurückführen"], fehler:["Ellbogen wandern nach hinten","Mit dem Oberkörper drücken"] },
+  { kw:"Trizepsdrücken", setup:["Ellbogen eng am Körper fixiert","Leichte Vorlage, Rumpf fest"], ablauf:["Nach unten strecken, unten anspannen","Langsam zurückführen"], fehler:["Ellbogen wandern","Oberkörper drückt mit"] },
+  { kw:"Überkopf-Trizeps", setup:["Gewicht hinter dem Kopf, Ellbogen zeigen nach oben","Rippen unten, Bauch fest"], ablauf:["Nach oben strecken, Ellbogen bleiben still","Kontrolliert absenken"], fehler:["Ellbogen weit nach außen spreizen","Ins Hohlkreuz fallen"] },
+  { kw:"Kickbacks", setup:["Oberkörper vorgebeugt, Oberarm waagerecht","Ellbogen bleibt fixiert"], ablauf:["Unterarm nach hinten strecken","Am Endpunkt kurz anspannen"], fehler:["Oberarm bewegt sich mit","Zu schwer — Schwung übernimmt"] },
+  { kw:"Enges Bankdrücken", setup:["Griff etwa schulterbreit, nicht enger","Ellbogen bleiben nah am Körper"], ablauf:["Zur unteren Brust senken","Gerade hochdrücken"], fehler:["Griff zu eng — Handgelenke unter Druck","Ellbogen spreizen"] },
+  { kw:"French Press", setup:["Liegend oder sitzend, Ellbogen zeigen nach oben","Rumpf fest"], ablauf:["Gewicht zur Stirn absenken, Ellbogen still","Strecken ohne Schwung"], fehler:["Ellbogen spreizen","Zu schwer für die Ellbogengelenke"] },
+  { kw:"Diamond Push-ups", setup:["Hände unter der Brust, Zeigefinger und Daumen berühren sich","Körper in einer Linie"], ablauf:["Ellbogen eng am Körper nach hinten","Bis knapp über die Hände senken"], fehler:["Ellbogen spreizen","Hüfte hängt durch"] },
+
+  /* ---------- Bestehende Übungen: Bauch ---------- */
+  { kw:"Cable Crunches", setup:["Knien vor dem Kabelturm, Seil neben dem Kopf","Hüfte bleibt an Ort und Stelle"], ablauf:["Mit dem Brustkorb Richtung Becken einrollen","Langsam zurücklassen"], fehler:["Aus der Hüfte ziehen statt einrollen","Mit den Armen arbeiten"] },
+  { kw:"Kabel-Crunch", setup:["Knien vor dem Kabelturm, Seil neben dem Kopf","Hüfte fixiert"], ablauf:["Brustkorb Richtung Becken einrollen","Kontrolliert zurück"], fehler:["Hüftbewegung statt Bauchbewegung","Zu schwer gewählt"] },
+  { kw:"Hanging Leg Raises", setup:["Hängen an der Stange, Schultern aktiv","Rumpf vorgespannt"], ablauf:["Becken einrollen, Beine anheben","Kontrolliert absenken, kein Pendeln"], fehler:["Nur die Hüftbeuger arbeiten — Becken bleibt starr","Schwingen"] },
+  { kw:"Russian Twists", setup:["Sitzend, Oberkörper zurückgelehnt, Rücken gerade","Füße am Boden oder angehoben"], ablauf:["Oberkörper kontrolliert zur Seite drehen","Blick folgt den Händen"], fehler:["Rücken rundet stark","Nur die Arme bewegen sich"] },
+  { kw:"Seitliche Crunches", setup:["Rückenlage, Knie angewinkelt zur Seite gekippt","Hände an den Schläfen"], ablauf:["Schulterblatt vom Boden lösen, seitlich einrollen","Kontrolliert ablegen"], fehler:["Am Kopf ziehen","Mit Schwung arbeiten"] },
+  { kw:"Bicycle Crunches", setup:["Rückenlage, unterer Rücken am Boden","Hände locker an den Schläfen"], ablauf:["Ellbogen und gegenüberliegendes Knie annähern","Langsam und kontrolliert wechseln"], fehler:["Am Kopf ziehen","Zu schnell — Bauchspannung geht verloren"] },
+  { kw:"Ab Wheel Rollout", setup:["Knien, Rad unter den Schultern","Rumpf fest, Rippen unten"], ablauf:["So weit ausrollen, wie der Rücken gerade bleibt","Mit dem Bauch zurückziehen"], fehler:["Ins Hohlkreuz durchhängen","Zu weit ausrollen ohne Kraft zurück"] },
+  { kw:"Sit-ups", setup:["Knie angewinkelt, Füße am Boden","Hände vor der Brust"], ablauf:["Wirbel für Wirbel aufrollen","Kontrolliert ablegen"], fehler:["Mit Schwung hochreißen","Am Nacken ziehen"] },
+  { kw:"L-Sit", setup:["Auf Parallettes oder am Boden, Arme gestreckt","Schultern nach unten gedrückt"], ablauf:["Beine waagerecht halten, Zeit stoppen","Gleichmäßig atmen"], fehler:["Schultern hochziehen","Rücken rundet stark"] },
+  { kw:"Crunches", setup:["Rückenlage, Knie angewinkelt","Hände locker an den Schläfen, nicht ziehen"], ablauf:["Schulterblätter vom Boden lösen und einrollen","Kontrolliert ablegen"], fehler:["Am Kopf ziehen","Kompletten Rücken abheben — das wird ein Sit-up"] },
+  { kw:"Plank", setup:["Ellbogen unter den Schultern, Körper in einer Linie","Gesäß und Bauch fest"], ablauf:["Zeit halten, ruhig weiteratmen","Becken leicht nach hinten kippen"], fehler:["Hüfte sinkt ins Hohlkreuz","Gesäß schiebt nach oben"] },
+  { kw:"Beinheben", setup:["Rückenlage oder hängend, unterer Rücken stabil","Rumpf vorgespannt"], ablauf:["Beine kontrolliert anheben","Langsam absenken, ohne abzulegen"], fehler:["Unterer Rücken hebt ab","Mit Schwung arbeiten"] },
+  /* ---------- Beine ---------- */
+  { kw:"Frontkniebeuge", setup:["Stange vorn auf den Schultern, Ellbogen hoch","Füße schulterbreit, Zehen leicht nach außen"], ablauf:["Oberkörper bleibt aufrecht, Ellbogen oben halten","Tief absitzen, Knie folgen der Fußrichtung"], fehler:["Ellbogen sinken ab — Stange rollt nach vorn","Fersen heben — Beweglichkeit fehlt, tiefer erst später"] },
+  { kw:"Box Squats", setup:["Box so hoch, dass der Oberschenkel waagerecht ist","Stand etwas breiter als bei freien Kniebeugen"], ablauf:["Hüfte zuerst nach hinten schieben, dann absenken","Kurz auf der Box entspannen, dann explosiv hoch"], fehler:["Auf die Box fallen lassen — Belastung für die Wirbelsäule","Rundrücken beim Aufsetzen"] },
+  { kw:"Zercher Squats", setup:["Stange in der Ellbogenbeuge, Handtuch dämpft den Druck","Rumpf fest, Brust raus"], ablauf:["Aufrecht absitzen, Ellbogen bleiben eng am Körper","Aus den Fersen hochdrücken"], fehler:["Rundrücken unter der Last","Stange rutscht Richtung Handgelenke"] },
+  { kw:"Sissy Squats", setup:["Fersen erhöht, Halt an einer Stange suchen","Hüfte bleibt gestreckt"], ablauf:["Knie nach vorn schieben, Oberkörper nach hinten neigen","Nur so weit, wie die Knie schmerzfrei bleiben"], fehler:["Hüfte knickt ein — dann ist es eine normale Kniebeuge","Zu schnell zu tief, Knie werden stark belastet"] },
+  { kw:"Walking Lunges", setup:["Aufrechter Oberkörper, Blick geradeaus","Schrittlänge so, dass beide Knie 90° erreichen"], ablauf:["Hinteres Knie Richtung Boden senken, nicht aufsetzen","Über die Ferse des vorderen Fußes abdrücken"], fehler:["Zu kurze Schritte — Knie schiebt weit über den Fuß","Oberkörper kippt nach vorn"] },
+  { kw:"Trap-Bar-Kreuzheben", setup:["Mittig in der Trap-Bar stehen, Füße hüftbreit","Hüfte tief, Brust raus, Arme lang"], ablauf:["Boden wegdrücken statt die Stange hochziehen","Hüfte und Schultern gleichzeitig strecken"], fehler:["Hüfte schießt zuerst hoch — Last wandert in den Rücken","Rundrücken beim Ansetzen"] },
+  { kw:"Good Mornings", setup:["Stange tief auf dem Kapuzenmuskel, nicht im Nacken","Knie leicht gebeugt und dort fixiert"], ablauf:["Hüfte nach hinten schieben, Rücken bleibt gerade","Nur so weit, wie der Rücken gerade bleibt"], fehler:["Deutlich zu schwer gewählt — sehr rückenlastige Übung","Rundrücken in der Endposition"] },
+  { kw:"Adduktoren", setup:["Aufrecht sitzen, Rücken am Polster","Bewegungsumfang am Gerät passend einstellen"], ablauf:["Beine kontrolliert zusammenführen","Kurz halten, langsam zurücklassen"], fehler:["Gewicht zurückschnellen lassen","Zu großer Bewegungsumfang in der Dehnung"] },
+  { kw:"Abduktoren", setup:["Aufrecht sitzen, Rücken am Polster","Leichte Vorlage betont den oberen Gesäßmuskel"], ablauf:["Beine kontrolliert nach außen drücken","Am Endpunkt kurz anspannen"], fehler:["Mit Schwung arbeiten","Becken hebt von der Sitzfläche"] },
+  { kw:"Beinpresse einbeinig", setup:["Fuß mittig auf der Platte, Hüfte stabil","Nicht durchstrecken im obersten Punkt"], ablauf:["Kontrolliert absenken, bis der Oberschenkel ~90° erreicht","Über die ganze Fußsohle drücken"], fehler:["Becken kippt zur Seite","Knie fällt nach innen"] },
+  { kw:"Hüftstoßen einbeinig", setup:["Schulterblätter auf der Bank, ein Fuß aufgestellt","Anderes Bein angewinkelt in der Luft"], ablauf:["Hüfte strecken, Gesäß bewusst anspannen","Oben kurz halten, Rippen unten lassen"], fehler:["Ins Hohlkreuz drücken statt die Hüfte zu strecken","Becken kippt zur freien Seite"] },
+  { kw:"Wadenheben in der Beinpresse", setup:["Fußballen an der Plattenkante, Knie fast gestreckt","Sicherung eingerastet lassen"], ablauf:["Ferse tief sinken lassen, dann voll durchdrücken","Oben eine Sekunde halten"], fehler:["Nur halber Bewegungsumfang","Knie beugen und mitdrücken"] },
+
+  /* ---------- Brust ---------- */
+  { kw:"Enge Liegestütze", setup:["Hände etwa schulterbreit unter der Brust","Körper bildet eine Linie von Kopf bis Ferse"], ablauf:["Ellbogen eng am Körper nach hinten führen","Bis kurz über den Boden senken"], fehler:["Ellbogen spreizen nach außen — dann arbeitet die Brust statt Trizeps","Hüfte hängt durch"] },
+  { kw:"Erhöhte Liegestütze", setup:["Hände auf Bank oder Kante, Körper gestreckt","Je höher die Auflage, desto leichter"], ablauf:["Brust zur Kante senken, Ellbogen ~45°","Kontrolliert hochdrücken"], fehler:["Hüfte knickt ab","Nur halbe Bewegung"] },
+  { kw:"Deficit-Liegestütze", setup:["Hände auf Griffen oder Büchern, Brust kann tiefer","Rumpf fest angespannt"], ablauf:["Tiefer als bodennah absenken, Dehnung spüren","Ohne Schwung hochdrücken"], fehler:["Zu tief bei kalten Schultern","Schulterblätter kippen nach vorn"] },
+  { kw:"Archer Push-ups", setup:["Hände deutlich breiter als schulterbreit","Ein Arm bleibt beim Absenken fast gestreckt"], ablauf:["Gewicht zu einer Seite verlagern, dort absenken","Seitenwechsel nach jeder Wiederholung"], fehler:["Gestreckter Arm knickt ein — Übung verliert den Sinn","Hüfte dreht mit"] },
+  { kw:"Schrägbank-Fliegende", setup:["Bank auf 30–45°, Kurzhanteln über der Brust","Leichte Ellbogenbeugung fixieren"], ablauf:["Arme im weiten Bogen öffnen, Dehnung in der Brust","Wie eine Umarmung zusammenführen"], fehler:["Ellbogen beugen und strecken — wird zum Drücken","Zu tief öffnen, Schulter unter Zug"] },
+  { kw:"Low Cable Fly", setup:["Kabel unten, Schritt nach vorn, Brust raus","Leichte Ellbogenbeugung fixieren"], ablauf:["Griffe nach oben-innen zusammenführen","Am Endpunkt Brust bewusst anspannen"], fehler:["Aus der Hüfte mitschwingen","Arme durchstrecken"] },
+  { kw:"Svend Press", setup:["Hantelscheibe zwischen den Handflächen vor der Brust","Scheibe fest zusammendrücken"], ablauf:["Arme nach vorn strecken, Druck halten","Langsam zurückführen"], fehler:["Druck auf die Scheibe nachlassen","Schultern hochziehen"] },
+  { kw:"Landmine Press", setup:["Stangenende in der Ecke, anderes Ende in einer Hand","Leichte Schrittstellung, Rumpf fest"], ablauf:["Schräg nach oben-vorn drücken","Schulterblatt bewegt sich mit"], fehler:["Oberkörper wegdrehen","Ins Hohlkreuz ausweichen"] },
+
+  /* ---------- Rücken ---------- */
+  { kw:"Rack Pulls", setup:["Stange in Höhe Knie oder knapp darunter ablegen","Hüfte tief, Brust raus, Latissimus angespannt"], ablauf:["Boden wegdrücken, Hüfte nach vorn strecken","Oben nicht ins Hohlkreuz lehnen"], fehler:["Rundrücken durch zu hohe Last","Stange von den Beinen weg — Hebel wird länger"] },
+  { kw:"Meadows Row", setup:["Seitlich zur Landmine, Hand am Stangenende","Hüfte nach hinten, Rücken flach"], ablauf:["Ellbogen nach hinten-oben ziehen","Am Endpunkt Schulterblatt zusammenziehen"], fehler:["Oberkörper mit hochreißen","Nur mit dem Arm ziehen"] },
+  { kw:"Seal Row", setup:["Bauchlage auf erhöhter Bank, Brust aufgelegt","Arme hängen senkrecht"], ablauf:["Zur Bank ziehen, Ellbogen dicht am Körper","Kurz halten, langsam ablassen"], fehler:["Brust hebt von der Bank — Schwung","Nur halber Bewegungsumfang"] },
+  { kw:"Kroc Rows", setup:["Schwere Kurzhantel, Hand abgestützt","Leichter Schwung ist hier erlaubt"], ablauf:["Hoch wiederholen, Ellbogen zur Hüfte ziehen","Kontrolle beim Ablassen behalten"], fehler:["Rücken rundet unter der Last","Ausschließlich Schwung, keine Muskelarbeit"] },
+  { kw:"Überzüge", setup:["Quer oder längs auf der Bank, Hüfte tief","Kurzhantel mit beiden Händen über der Brust"], ablauf:["Arme fast gestreckt über den Kopf senken","Dehnung im Latissimus, dann zurückziehen"], fehler:["Ins Hohlkreuz fallen","Ellbogen stark beugen"] },
+  { kw:"Latzug eng", setup:["Enger Griff, Brust raus, leichte Rücklage","Oberschenkel unter dem Polster fixiert"], ablauf:["Griff zur oberen Brust ziehen","Schulterblätter zuerst nach unten"], fehler:["Mit dem Oberkörper pumpen","Griff in den Nacken ziehen"] },
+  { kw:"Latzug weit", setup:["Griff deutlich außerhalb der Schultern","Brust raus, Blick leicht nach oben"], ablauf:["Ellbogen nach unten-außen zur Brust ziehen","Oben kontrolliert dehnen lassen"], fehler:["Nur die Arme arbeiten","Rücken rundet in der Dehnung"] },
+  { kw:"Hyperextensions", setup:["Beckenkante auf dem Polster, Füße fixiert","Rücken in neutraler Haltung"], ablauf:["Aus der Hüfte absenken, Rücken bleibt gerade","Bis zur Körperlinie strecken, nicht darüber"], fehler:["Über die Körperlinie ins Hohlkreuz schwingen","Bewegung aus dem Rücken statt der Hüfte"] },
+  { kw:"Dead Hang", setup:["Schulterbreiter Obergriff, Daumen umschließt","Schultern aktiv, nicht komplett hängen lassen"], ablauf:["Zeit halten, ruhig atmen","Körper ruhig, kein Pendeln"], fehler:["Völlig passiv in den Schultern hängen","Luft anhalten"] },
+  /* ---------- Schultern ---------- */
+  { kw:"Reverse Butterfly", setup:["Brust am Polster, Griffe auf Schulterhöhe","Leichte Ellbogenbeugung fixieren"], ablauf:["Arme nach hinten öffnen, Schulterblätter zusammen","Am Endpunkt kurz halten"], fehler:["Ellbogen strecken und beugen — wird zum Rudern","Schultern zu den Ohren ziehen"] },
+  { kw:"Kurzhantel-Schulterdrücken", setup:["Aufrecht sitzen, Rückenlehne stützt","Hanteln auf Ohrhöhe, Ellbogen leicht vor der Körperlinie"], ablauf:["Nach oben drücken, Hanteln nähern sich","Nicht komplett durchdrücken"], fehler:["Ins Hohlkreuz ausweichen","Ellbogen weit nach hinten — Schulter unter Zug"] },
+  { kw:"Pike Push-ups", setup:["Hüfte hoch, Körper bildet ein umgekehrtes V","Hände etwas breiter als schulterbreit"], ablauf:["Scheitel Richtung Boden senken","Senkrecht hochdrücken"], fehler:["Hüfte sinkt ab — wird zum Liegestütz","Kopf berührt nicht annähernd den Boden"] },
+  { kw:"Handstand (Halten)", setup:["Nur an der Wand üben, Hände schulterbreit","Rumpf fest, Rippen unten"], ablauf:["Zeit halten, gleichmäßig atmen","Blick zwischen die Hände"], fehler:["Ins Hohlkreuz kippen","Ohne Wand und ohne Erfahrung üben"] },
+  { kw:"Y-Raises", setup:["Vorgebeugt oder auf der Schrägbank, leichte Gewichte","Daumen zeigen nach oben"], ablauf:["Arme in Y-Form nach oben führen","Bewegung aus den Schulterblättern"], fehler:["Zu schwer — Nacken übernimmt","Mit Schwung arbeiten"] },
+  { kw:"Cuban Press", setup:["Sehr leichtes Gewicht, Ellbogen auf Schulterhöhe","Oberarme waagerecht"], ablauf:["Unterarme nach oben rotieren, dann drücken","Auf demselben Weg zurück"], fehler:["Zu schwer — Rotatorenmanschette ist empfindlich","Ellbogen fallen ab"] },
+  { kw:"Kabel-Frontheben", setup:["Kabel unten, Körper leicht vorgeneigt","Rumpf fest"], ablauf:["Bis Schulterhöhe heben, Arm fast gestreckt","Kontrolliert ablassen"], fehler:["Aus der Hüfte schwingen","Über Schulterhöhe hinausheben"] },
+
+  /* ---------- Bizeps ---------- */
+  { kw:"Langhantel-Curls", setup:["Schulterbreiter Untergriff, Ellbogen am Körper","Aufrecht stehen, Rumpf fest"], ablauf:["Nur der Unterarm bewegt sich","Oben kurz anspannen, langsam ablassen"], fehler:["Oberkörper wippt mit","Ellbogen wandern nach vorn"] },
+  { kw:"Reverse Curls", setup:["Obergriff, Handrücken zeigt nach oben","Ellbogen fixiert am Körper"], ablauf:["Kontrolliert hochcurlen, Handgelenk gerade","Langsam ablassen"], fehler:["Handgelenk knickt ab","Deutlich zu schwer gewählt"] },
+  { kw:"Spider Curls", setup:["Brust auf der Schrägbank, Arme hängen senkrecht","Ellbogen bleiben still"], ablauf:["Ohne Schwung hochcurlen","Oben eine Sekunde halten"], fehler:["Brust hebt von der Bank","Schwung aus der Schulter"] },
+  { kw:"Zottman-Curls", setup:["Untergriff beim Hochcurlen","Aufrecht stehen"], ablauf:["Hoch im Untergriff, oben drehen","Im Obergriff langsam ablassen"], fehler:["Ablassphase zu schnell — dort liegt der Reiz","Ellbogen wandern"] },
+  { kw:"Schrägbank-Curls", setup:["Rücklage auf 45–60°, Arme hängen frei","Schultern bleiben unten"], ablauf:["Aus der gedehnten Position curlen","Ellbogen bleiben hinter der Körperlinie"], fehler:["Ellbogen nach vorn ziehen","Nur halber Bewegungsumfang"] },
+
+  /* ---------- Trizeps ---------- */
+  { kw:"Trizepsdrücken am Seil", setup:["Seil am oberen Kabel, Ellbogen am Körper","Leichte Vorlage, Rumpf fest"], ablauf:["Nach unten strecken und Seil auseinanderziehen","Unten kurz anspannen"], fehler:["Ellbogen wandern nach hinten","Mit dem Oberkörper drücken"] },
+  { kw:"Bankdips", setup:["Hände auf der Bankkante hinter dem Körper","Füße vorn aufgestellt oder gestreckt"], ablauf:["Bis etwa 90° Ellbogenbeugung senken","Aus dem Trizeps hochdrücken"], fehler:["Zu tief — starke Schulterbelastung","Gesäß weit weg von der Bank"] },
+  { kw:"JM Press", setup:["Wie enges Bankdrücken, Griff schulterbreit","Ellbogen zeigen nach vorn"], ablauf:["Stange Richtung Hals-Kinn-Bereich senken","Auf halbem Weg abfangen und drücken"], fehler:["Ohne Erfahrung zu schwer","Stange sinkt unkontrolliert"] },
+  { kw:"Overhead-Kabel-Extension", setup:["Rücken zum Kabelturm, Seil über dem Kopf","Schrittstellung, Rumpf fest"], ablauf:["Arme nach vorn-oben strecken","Ellbogen bleiben auf der Stelle"], fehler:["Ellbogen spreizen weit nach außen","Ins Hohlkreuz fallen"] },
+  { kw:"Einarm-Trizepsdrücken", setup:["Einzelgriff am oberen Kabel, Ellbogen am Körper","Freie Hand stabilisiert am Gerät"], ablauf:["Kontrolliert strecken, unten anspannen","Langsam zurückführen"], fehler:["Schulter dreht mit","Ellbogen wandert nach außen"] },
+
+  /* ---------- Bauch ---------- */
+  { kw:"Hollow Hold", setup:["Rückenlage, unterer Rücken fest am Boden","Arme und Beine gestreckt"], ablauf:["Schultern und Beine leicht anheben, Zeit halten","Ruhig weiteratmen"], fehler:["Unterer Rücken hebt ab — Beine höher nehmen","Luft anhalten"] },
+  { kw:"Side Plank", setup:["Ellbogen unter der Schulter, Körper in einer Linie","Füße gestapelt oder versetzt"], ablauf:["Hüfte anheben und Zeit halten","Obere Schulter bleibt über der unteren"], fehler:["Hüfte sinkt ab","Körper rollt nach vorn"] },
+  { kw:"Toes to Bar", setup:["Hängen an der Stange, Schultern aktiv","Rumpf vorgespannt"], ablauf:["Beine gestreckt zur Stange führen","Kontrolliert absenken, Pendeln vermeiden"], fehler:["Reines Schwingen ohne Bauchspannung","Rücken fällt ins Hohlkreuz"] },
+  { kw:"Dead Bug", setup:["Rückenlage, Arme senkrecht, Knie über der Hüfte","Unterer Rücken bleibt am Boden"], ablauf:["Gegenüberliegenden Arm und Bein ausstrecken","Langsam zurück, Seite wechseln"], fehler:["Unterer Rücken hebt ab","Zu schnell ausgeführt"] },
+  { kw:"Pallof Press", setup:["Seitlich zum Kabel, Griff vor der Brust","Fester Stand, Rumpf angespannt"], ablauf:["Arme nach vorn strecken, Rotation widerstehen","Kontrolliert zurückführen"], fehler:["Oberkörper dreht sich mit","Zu schwer gewählt"] },
+  { kw:"Mountain Climbers", setup:["Liegestützposition, Körper in einer Linie","Hände unter den Schultern"], ablauf:["Knie abwechselnd zur Brust ziehen","Hüfte bleibt tief"], fehler:["Gesäß schiebt nach oben","Tempo auf Kosten der Haltung"] },
+  { kw:"V-Ups", setup:["Rückenlage, Arme über dem Kopf gestreckt","Rumpf vorgespannt"], ablauf:["Arme und Beine gleichzeitig zusammenführen","Kontrolliert ablegen"], fehler:["Mit Schwung hochreißen","Rücken rundet stark"] },
+  { kw:"Wood Chops", setup:["Kabel diagonal, Rumpf fest","Füße schulterbreit"], ablauf:["Diagonal nach unten-außen ziehen","Bewegung aus dem Rumpf, Arme bleiben gestreckt"], fehler:["Nur mit den Armen arbeiten","Rücken rundet in der Rotation"] },
+
+  /* ---------- Unterarme & Griff ---------- */
+  { kw:"Farmer's Walk", setup:["Schwere Hanteln neben dem Körper","Brust raus, Schultern hinten"], ablauf:["Aufrecht gehen, kurze kontrollierte Schritte","Griff bewusst fest halten"], fehler:["Zur Seite kippen","Schultern hängen nach vorn"] },
+  { kw:"Handgelenk-Curls", setup:["Unterarme auf den Oberschenkeln, Handflächen nach oben","Handgelenke ragen über die Knie hinaus"], ablauf:["Gewicht in die Fingerspitzen rollen lassen","Voll hochcurlen"], fehler:["Deutlich zu schwer","Unterarme heben mit"] },
+  { kw:"Reverse Handgelenk-Curls", setup:["Handflächen nach unten, Unterarme aufgelegt","Sehr leichtes Gewicht wählen"], ablauf:["Handrücken nach oben ziehen","Kontrolliert absenken"], fehler:["Zu schweres Gewicht","Ellbogen heben mit"] },
+  { kw:"Plate Pinch", setup:["Zwei Scheiben glatt gegeneinander, Finger außen","Aufrecht stehen"], ablauf:["Zeit halten, Griff fest","Über sicherem Untergrund üben"], fehler:["Über den Füßen halten","Zu schwer beim ersten Versuch"] },
+
+  /* ---------- Ganzkörper ---------- */
+  { kw:"Kettlebell Swings", setup:["Kettlebell vor den Füßen, Hüfte nach hinten","Rücken flach, Latissimus angespannt"], ablauf:["Hüfte explosiv strecken, Gewicht schwingt bis Brusthöhe","Arme bleiben passiv"], fehler:["Mit den Armen heben statt aus der Hüfte","Rundrücken beim Zurückschwingen"] },
+  { kw:"Thrusters", setup:["Stange oder Hanteln auf Schulterhöhe","Füße schulterbreit, Rumpf fest"], ablauf:["Tief absitzen, aus dem Stand direkt nach oben drücken","Eine flüssige Bewegung"], fehler:["Kniebeuge und Drücken getrennt ausführen","Ins Hohlkreuz drücken"] },
+  { kw:"Clean & Press", setup:["Stange über dem Mittelfuß, Hüfte tief","Rücken flach"], ablauf:["Explosiv aus der Hüfte, Stange auf die Schultern","Aus dem Stand über den Kopf drücken"], fehler:["Technisch anspruchsvoll — leicht anfangen","Mit den Armen ziehen statt aus der Hüfte"] },
+  { kw:"Burpees", setup:["Aufrechter Stand, Rumpf fest","Platz nach vorn"], ablauf:["Ablegen, Liegestütz, aufstehen, Strecksprung","Gleichmäßiges Tempo halten"], fehler:["Hüfte hängt beim Liegestütz durch","Unkontrolliert landen"] },
+  { kw:"Turkish Get-Up", setup:["Rückenlage, ein Arm senkrecht mit Gewicht","Blick bleibt am Gewicht"], ablauf:["Schrittweise aufstehen, Arm bleibt senkrecht","Denselben Weg zurück"], fehler:["Zu schnell — jede Position kurz halten","Arm kippt aus der Senkrechten"] },
+  { kw:"Wall Balls", setup:["Ball vor der Brust, Ziel an der Wand markieren","Füße schulterbreit"], ablauf:["Tief absitzen, aus dem Stand den Ball zum Ziel werfen","Fangen und direkt in die nächste Kniebeuge"], fehler:["Nur mit den Armen werfen","Kniebeuge wird immer flacher"] },
+  { kw:"Bear Crawl", setup:["Vierfüßlerstand, Knie schweben handbreit über dem Boden","Rücken flach"], ablauf:["Gegenüberliegende Hand und Fuß gleichzeitig bewegen","Hüfte bleibt tief und ruhig"], fehler:["Hüfte schaukelt seitlich","Gesäß zu hoch"] },
+];
+function technikFor(name){
+  if(!name) return null;
+  let treffer = null;
+  for(let i = 0; i < TECHNIK_DB.length; i++){
+    const e = TECHNIK_DB[i];
+    if(name.indexOf(e.kw) !== -1 && (!treffer || e.kw.length > treffer.kw.length)) treffer = e;
+  }
+  return treffer;
+}
+
 function muscleInfoFor(name){
   for(let i=0;i<MUSCLE_DB.length;i++){
     if(name.includes(MUSCLE_DB[i].kw)) return MUSCLE_DB[i];
@@ -7108,6 +7452,21 @@ function buildExerciseCard(ex, dayColor, el){
           inner += '<p class="hist-empty" style="margin-bottom:10px;">Keine Muskel-Info für diese eigene Übung hinterlegt.</p>';
         }
         inner += '</div></div>';
+        const tech = technikFor(ex.name);
+        if(tech){
+          const liste = function(titel, punkte){
+            if(!punkte || !punkte.length) return "";
+            return '<p class="technik-titel">' + titel + '</p><ul class="technik-liste">' +
+              punkte.map(function(p){ return '<li>' + escapeHtml(p) + '</li>'; }).join("") + '</ul>';
+          };
+          inner += '<div class="technik-block">';
+          inner += liste("Ausgangsposition", tech.setup);
+          inner += liste("Ausführung", tech.ablauf);
+          inner += liste("Häufige Fehler", tech.fehler);
+          inner += '</div>';
+        } else {
+          inner += '<p class="hist-empty" style="margin-top:10px;">Für diese eigene Übung sind keine Technikhinweise hinterlegt.</p>';
+        }
         inner += '<a href="' + videoSearchUrl(ex.name) + '" target="_blank" rel="noopener" class="btn btn-primary" style="display:inline-block;text-decoration:none;padding:9px 16px;font-size:12px;">▶ Video-Anleitung suchen</a>';
         inner += '<p class="hist-empty" style="margin-top:8px;">Öffnet eine YouTube-Suche zur korrekten Ausführung in einem neuen Tab.</p>';
         panel.innerHTML = inner;
