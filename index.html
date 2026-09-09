@@ -12404,7 +12404,13 @@ function zeigeLinkProblem(text){
 }
 
 async function initAccountSession(){
-  const client = getSupabaseClient();
+  /* Mit Warteschleife statt sofort aufzugeben. Das SDK kommt per <script defer> von unpkg;
+     bei langsamer Mobilverbindung ist es nach 800 ms noch nicht da. Vorher stieg diese
+     Funktion dann wortlos aus — und mit ihr fiel der Anmelden-Horcher weg, ohne den die
+     Oberfläche von keiner Anmeldung mehr etwas mitbekommt.
+     Auf die Adressauswertung hat das Warten keinen Einfluss: Die steht als Momentaufnahme
+     in ADRESSE_BEIM_START und kann nicht veralten. */
+  const client = await getSupabaseClientWithRetry();
   if(!client) return;
   // Ein Passwort-Reset-Link landet mit der Kennung "type=recovery" zurück in der App — je nach
   // Supabase-Projekteinstellung entweder im URL-Fragment (#...&type=recovery, älterer "implicit"
@@ -12414,6 +12420,45 @@ async function initAccountSession(){
   // statt erst ein neues Passwort abzufragen.
   const isRecoveryLink = /type=recovery/.test(ADRESSE_BEIM_START.hash + ADRESSE_BEIM_START.search);
   try{
+    /* Den Merker VOR dem Anmelden-Horcher setzen, nicht erst in showPasswordResetForm().
+       Sonst kann das Anmelde-Ereignis, das Supabase beim Einlösen des Links auslöst,
+       schneller sein — und onAccountLoggedIn() klappt das Formular wieder zu, bevor es
+       überhaupt zu sehen war. */
+    if(isRecoveryLink) passwortRuecksetzungLaeuft = true;
+
+    /* Den Horcher als ALLERERSTES anmelden — vor jeder Stelle, an der diese Funktion
+       aussteigen kann.
+
+       Genau hier lag der gemeldete Fehler "in der App passiert nichts": signInWithPassword()
+       aktualisiert die Oberfläche nicht selbst, das macht ausschließlich dieser Horcher.
+       Registriert wurde er aber ganz am Ende — hinter zwei return-Anweisungen für den Fall
+       eines kaputten Links. Startete die App also mit einer Fehlermeldung in der Adresse
+       (bei der installierten App bleibt die Startadresse erhalten, der Fehler kam so bei
+       jedem Öffnen wieder), stieg die Funktion vorher aus und der Horcher fehlte.
+
+       Die Folge war heimtückisch: Das Anmelden gelang serverseitig einwandfrei — im Log des
+       Projekts stehen acht erfolgreiche /token-Aufrufe hintereinander — nur erfuhr die
+       Oberfläche nie davon. Für den Nutzer passierte schlicht nichts, beliebig oft.
+
+       Ein Horcher schadet in keinem dieser Fälle; fehlt er, ist die App unbenutzbar. Also
+       zuerst anmelden, dann erst über Links nachdenken. */
+    if(!authListenerRegistered && client.auth && typeof client.auth.onAuthStateChange === "function"){
+      authListenerRegistered = true;
+      client.auth.onAuthStateChange(function(event, session){
+        try{
+          if(event === "PASSWORD_RECOVERY"){
+            showPasswordResetForm();
+            return;
+          }
+          if(session && session.user){
+            onAccountLoggedIn(session.user).catch(function(e){ console.error("Login-Verarbeitung fehlgeschlagen", e); });
+          } else {
+            onAccountLoggedOut();
+          }
+        }catch(e){ console.error("Auth-Status-Änderung fehlgeschlagen", e); }
+      });
+    }
+
     /* 1) Supabase schreibt Fehler direkt in die Adresse — abgelaufener Link, bereits benutzter
           Link, falsches Projekt. Bisher wurden die schlicht ignoriert und der Nutzer stand vor
           einer App, die so tat, als sei nichts gewesen. */
@@ -12452,12 +12497,10 @@ async function initAccountSession(){
       }
     }
 
-    /* Den Merker schon hier setzen, nicht erst in showPasswordResetForm(). Sonst kann das
-       Anmelde-Ereignis, das Supabase beim Einlösen des Links auslöst, schneller sein als der
-       Aufruf weiter unten — und onAccountLoggedIn() klappt das Formular wieder zu, bevor es
-       überhaupt zu sehen war. */
-    if(isRecoveryLink) passwortRuecksetzungLaeuft = true;
-
+    /* Auch hier defensiv: Seit diese Funktion auf das SDK wartet statt sofort aufzugeben,
+       erreicht sie auch einen Klienten, der noch nicht vollständig aufgebaut ist. Ein
+       Absturz an dieser Stelle würde den eben registrierten Horcher nutzlos machen. */
+    if(!client.auth || typeof client.auth.getSession !== "function") return;
     const { data } = await client.auth.getSession();
     if(isRecoveryLink && data && data.session && data.session.user){
       showPasswordResetForm();
@@ -12470,22 +12513,6 @@ async function initAccountSession(){
     } else if(data && data.session && data.session.user){
       try{ await onAccountLoggedIn(data.session.user); }
       catch(e){ console.error("Login-Verarbeitung fehlgeschlagen", e); }
-    }
-    if(!authListenerRegistered){
-      authListenerRegistered = true;
-      client.auth.onAuthStateChange(function(event, session){
-        try{
-          if(event === "PASSWORD_RECOVERY"){
-            showPasswordResetForm();
-            return;
-          }
-          if(session && session.user){
-            onAccountLoggedIn(session.user).catch(function(e){ console.error("Login-Verarbeitung fehlgeschlagen", e); });
-          } else {
-            onAccountLoggedOut();
-          }
-        }catch(e){ console.error("Auth-Status-Änderung fehlgeschlagen", e); }
-      });
     }
   }catch(e){ console.error("Konto-Sitzung konnte nicht geprüft werden", e); }
 }
