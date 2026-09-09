@@ -11630,7 +11630,25 @@ function mapAuthErrorMessage(e, context){
   if(/user already registered|already been registered/i.test(msg)){
     return "Für diese E-Mail-Adresse existiert bereits ein Konto — bitte stattdessen unten auf „Anmelden“ tippen.";
   }
+  /* Der E-Mail-Versand hat eine EIGENE, viel längere Sperre als das Anmelden — beides in
+     einen Topf zu werfen war irreführend. Der eingebaute Versand von Supabase erlaubt nur
+     wenige Mails pro Stunde; im Log des Projekts steht dann "429: email rate limit exceeded"
+     mit error_code "over_email_send_rate_limit". Die App riet trotzdem, eine Minute zu warten
+     — nach einer Minute kam natürlich dieselbe Sperre wieder. */
+  if(/email rate limit|over_email_send_rate_limit/i.test(msg) ||
+     (e && e.code === "over_email_send_rate_limit")){
+    return "Der E-Mail-Versand ist gerade gesperrt: Diese App darf über den Standard-Versand " +
+      "nur wenige E-Mails pro Stunde verschicken. Das ist eine Grenze des Cloud-Anbieters und " +
+      "liegt nicht an deiner Eingabe. Eine Minute reicht hier nicht — bitte etwa eine Stunde " +
+      "warten. Solange du dein altes Passwort noch weißt, kannst du dich oben normal anmelden.";
+  }
   if(/rate limit|too many requests|after \d+ seconds/i.test(msg)){
+    /* Wenn der Server eine konkrete Wartezeit nennt, die auch nennen statt zu raten. */
+    const sek = msg.match(/after (\d+) seconds/i);
+    if(sek){
+      return "Zu viele Versuche kurz hintereinander. Bitte " + sek[1] +
+        " Sekunden warten und dann erneut versuchen.";
+    }
     return "Zu viele Versuche kurz hintereinander. Bitte eine Minute warten und dann erneut versuchen.";
   }
   if(/invalid format/i.test(msg)){
