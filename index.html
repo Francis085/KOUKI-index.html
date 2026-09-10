@@ -7632,11 +7632,15 @@ function renderContent(){
   prevBtn.textContent = "← Zurück";
   prevBtn.disabled = currentExerciseIndex === 0;
   prevBtn.onclick = function(){ wechsleUebung(-1); };
+  /* Auf der letzten Übung stand hier ein toter Knopf: "Letzte Übung ✓", ausgegraut, ohne
+     Funktion. Genau an der Stelle, an der der Daumen nach dem letzten Satz sowieso liegt —
+     und die naheliegende Handlung, die Einheit abzuschließen, war weiter unten hinter der
+     Notiz versteckt. Jetzt steht sie dort, wo man ohnehin hinlangt. Der Knopf unten bleibt
+     zusätzlich bestehen; wer den Weg kennt, findet ihn weiterhin. */
   const nextBtn = document.createElement("button");
   nextBtn.className = "btn btn-primary";
-  nextBtn.textContent = isLast ? "Letzte Übung ✓" : "Nächste Übung →";
-  nextBtn.disabled = isLast;
-  nextBtn.onclick = function(){ wechsleUebung(1); };
+  nextBtn.textContent = isLast ? "Einheit abschließen ✓" : "Nächste Übung →";
+  nextBtn.onclick = isLast ? function(){ finishSession(); } : function(){ wechsleUebung(1); };
   navBtns.appendChild(prevBtn);
   navBtns.appendChild(nextBtn);
   el.appendChild(navBtns);
