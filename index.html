@@ -7687,6 +7687,10 @@ function renderContent(){
   const el = document.getElementById("dayContent");
   el.innerHTML = "";
   renderSkippedBanner(el);
+  /* Standard: sichtbar. Nur der Zweig unten blendet ihn aus, wenn oben dasselbe steht —
+     bricht das Rendern vorher ab (keine Übung übrig), bleibt er als einziger Weg bestehen. */
+  const untenStandard = document.getElementById("finishBtn");
+  if(untenStandard) untenStandard.style.display = "";
   const list = flatExerciseList();
   if(!list.length){
     if(skippedExercisesOfActiveDay().length){
@@ -7747,24 +7751,46 @@ function renderContent(){
 
   const navBtns = document.createElement("div");
   navBtns.className = "step-nav-btns";
-  const isLast = currentExerciseIndex === list.length - 1;
   const prevBtn = document.createElement("button");
   prevBtn.className = "btn btn-ghost";
   prevBtn.textContent = "← Zurück";
   prevBtn.disabled = currentExerciseIndex === 0;
   prevBtn.onclick = function(){ wechsleUebung(-1); };
+
   /* Auf der letzten Übung stand hier ein toter Knopf: "Letzte Übung ✓", ausgegraut, ohne
      Funktion. Genau an der Stelle, an der der Daumen nach dem letzten Satz sowieso liegt —
-     und die naheliegende Handlung, die Einheit abzuschließen, war weiter unten hinter der
-     Notiz versteckt. Jetzt steht sie dort, wo man ohnehin hinlangt. Der Knopf unten bleibt
-     zusätzlich bestehen; wer den Weg kennt, findet ihn weiterhin. */
+     und die naheliegende Handlung war weiter unten hinter der Notiz versteckt.
+
+     Jetzt zeigt der Knopf, was als Nächstes ansteht: die nächste offene Übung, notfalls die
+     weiter vorne liegen gebliebene — und erst wenn wirklich keine mehr offen ist, das
+     Abschließen der Einheit. */
+  const offen = naechsteOffeneUebung();
   const nextBtn = document.createElement("button");
   nextBtn.className = "btn btn-primary";
-  nextBtn.textContent = isLast ? "Einheit abschließen ✓" : "Nächste Übung →";
-  nextBtn.onclick = isLast ? function(){ finishSession(); } : function(){ wechsleUebung(1); };
+  if(offen === -1){
+    nextBtn.textContent = "Einheit abschließen ✓";
+    nextBtn.onclick = function(){ finishSession(); };
+  }else if(offen > currentExerciseIndex){
+    nextBtn.textContent = "Nächste Übung →";
+    nextBtn.onclick = function(){ springeZuUebung(offen); };
+  }else{
+    /* Der Sprung geht nach vorne im Plan zurück. Ein schlichtes "Nächste Übung →" wäre hier
+       gelogen, deshalb steht die Nummer dabei — sonst tippt man und landet unerwartet
+       woanders. Kurz gehalten, weil der Knopf auf einem SE nur gut 130px breit ist:
+       "↩ Übung 2 nachholen" brach dort auf zwei Zeilen um. */
+    nextBtn.textContent = "↩ Zu Übung " + (offen + 1);
+    nextBtn.onclick = function(){ springeZuUebung(offen); };
+  }
   navBtns.appendChild(prevBtn);
   navBtns.appendChild(nextBtn);
   el.appendChild(navBtns);
+
+  /* Zwei Knöpfe mit derselben Aufschrift übereinander stiften nur Zweifel, welcher gemeint
+     ist. Steht das Abschließen schon oben am Daumen, verschwindet der untere. Solange oben
+     noch eine Übung ansteht, bleibt er sichtbar — sonst gäbe es keinen Weg mehr, eine Einheit
+     bewusst mit offenen Übungen zu beenden. */
+  const untenBtn = document.getElementById("finishBtn");
+  if(untenBtn) untenBtn.style.display = (offen === -1) ? "none" : "";
 }
 function scrollToCurrentExercise(){
   const card = document.querySelector("#dayContent .exercise");
@@ -13116,6 +13142,41 @@ document.addEventListener("touchstart", function(e){
   // "ein Bereich weiter" — der Weg, den man in der Halle sowieso ständig geht.
   swipeInUebung = !!e.target.closest("#dayContent");
 }, { passive: true });
+
+/* Nächste noch offene Übung — von der aktuellen aus vorwärts und, wenn hinten nichts mehr
+   offen ist, vorne herum weiter.
+
+   Gemeldet: Ist ein Gerät besetzt, macht man die folgenden Übungen vor und kommt später
+   zurück. Bisher hieß "Nächste Übung" stur +1: Um die übersprungene wieder zu erreichen,
+   musste man sich durch alle dazwischen liegenden durchtippen. Jetzt überspringt der Knopf,
+   was bereits abgehakt ist, und führt am Ende zur offen gebliebenen Übung zurück.
+
+   Absichtlich nur beim Vorwärtsknopf: "Zurück" bleibt ein schlichter Schritt nach hinten.
+   Würden beide Knöpfe fertige Übungen überspringen, käme man über die Knöpfe an eine
+   abgehakte Übung gar nicht mehr heran — etwa um sich bei einem Gewicht zu korrigieren.
+
+   Rückgabe -1 heißt: außer der aktuellen ist keine mehr offen. */
+function naechsteOffeneUebung(){
+  const list = flatExerciseList();
+  const anzahl = list.length;
+  if(anzahl < 2) return -1;
+  for(let schritt = 1; schritt < anzahl; schritt++){
+    const i = (currentExerciseIndex + schritt) % anzahl;
+    if(!isEntryDone(list[i].ex)) return i;
+  }
+  return -1;
+}
+
+function springeZuUebung(i){
+  const anzahl = flatExerciseList().length;
+  if(i < 0 || i > anzahl - 1) return false;
+  currentExerciseIndex = i;
+  uebersichtOffen = false;
+  renderContent();
+  scrollToCurrentExercise();
+  merkeAnsicht();
+  return true;
+}
 
 // Eine Übung vor oder zurück, mit denselben Grenzen wie die beiden Knöpfe unter der Karte.
 function wechsleUebung(richtung){
