@@ -537,6 +537,24 @@
   }
   .icon-btn:active{transform:scale(.9);}
 
+  .gen-row{margin-bottom:6px;}
+  .gen-zusatz{opacity:.7;font-weight:400;}
+  .gen-vorschau{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
+  .gen-titel{font-family:var(--font-titel);font-weight:700;font-size:16px;color:var(--text-strong);margin:0;}
+  .gen-saetze{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;}
+  .gen-satz{flex:1 1 60px;text-align:center;border:1px solid var(--line);
+    border-radius:var(--radius-md);padding:7px 4px;}
+  .gen-satz .num{display:block;font-family:var(--font-zahl);font-weight:700;font-size:15px;color:var(--text-strong);}
+  .gen-satz .lbl{font-size:10px;color:var(--ink-soft);}
+  .gen-satz.wenig{border-color:var(--warn);}
+  .gen-satz.viel{border-color:var(--warn);}
+  .gen-tag{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--ink-soft);margin:14px 0 4px;}
+  .gen-liste{border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;}
+  .gen-uebung{display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-bottom:1px solid var(--line);}
+  .gen-uebung:last-child{border-bottom:0;}
+  .gen-uebung .n{font-weight:700;font-size:13.5px;color:var(--ink);}
+  .gen-uebung .s{font-size:12px;color:var(--ink-soft);font-family:var(--font-zahl);}
   .mob-ablauf{border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:10px;
     overflow:hidden;}
   .mob-ablauf-kopf{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;cursor:pointer;}
@@ -5219,6 +5237,425 @@ function renderNutritionTrend(){
     '<p class="rank-hint" style="margin-top:8px;">Ø letzte ' + n + ' Tage mit Eintrag: <strong style="color:var(--text-strong);">' + avg("kcal") + ' kcal</strong> · ' + avg("p") + 'g Eiweiß · ' + avg("c") + 'g Kohlenhydrate · ' + avg("f") + 'g Fett</p>';
 }
 
+/* ===== Plan-Generator =====================================================================
+   Bis hierher gab es fünf feste Vorlagen und einen Baukasten, in dem man jede Übung selbst
+   auswählt. Dazwischen fehlte das Naheliegende: "Ich habe vier Tage Zeit, trainiere seit zwei
+   Jahren, will Muskeln aufbauen — mach mir was."
+
+   Der Generator arbeitet mit denselben Zahlen, auf denen auch der Standardplan beruht:
+   - Pelland et al. (2025): ab etwa 4 harten Sätzen je Muskel und Woche entsteht Wachstum,
+     5-10 gelten als guter Bereich, darüber flacht der Ertrag deutlich ab.
+   - Baz-Valle et al. (2022): 12-20 Wochensätze je Muskel als Orientierung für Fortgeschrittene.
+   - Der Ertrag je EINHEIT flacht bei etwa 6-8 harten Sätzen pro Muskel ab — mehr in einer
+     Einheit ist verschenkte Zeit, deshalb wird Volumen über die Woche verteilt.
+   - Bei gleichem Wochenvolumen bringt höhere Frequenz keinen Vorteil; zwei- bis dreimal pro
+     Woche je Muskel ist mindestens so gut wie einmal.
+
+   Ausdrücklich KEIN eigenes Programm für "Definition": Trainiert wird dabei genauso wie beim
+   Muskelaufbau — der Unterschied liegt im Kalorienziel, nicht in den Sätzen. Alles andere wäre
+   ein Versprechen, das die Trainingslehre nicht hergibt. Der Generator sagt das auch so und
+   verweist auf den Ernährungsbereich.                                                        */
+
+/* Die Muskel-Bezeichnung ist bewusst feiner als "Beine" oder "Schultern": Quadrizeps,
+   Beinrückseite und Waden sind verschiedene Muskeln mit eigenem Volumenbedarf. Zusammengefasst
+   meldete die Vorschau für einen Vier-Tage-Plan 27 "Sätze für die Beine" — eine Zahl, die
+   niemandem etwas sagt und die Grenze von 25 grundlos sprengte, obwohl kein einzelner Muskel
+   auch nur in die Nähe kam.
+
+   Bausteine: für jeden Slot die passenden Übungen, gestaffelt nach Ausstattung. Die
+   Reihenfolge ist die Priorität — der Generator nimmt den ersten Eintrag, der nicht schon
+   an einem anderen Tag verwendet wurde, damit ein Plan nicht dreimal dieselbe Übung enthält.
+   Alle Namen stammen aus EXERCISE_LIBRARY, damit Muskelinfo und Technikhinweise greifen. */
+const PLAN_BAUSTEINE = {
+  beinDruck: { label:"Beine (Druck)", muskel:"Beine (vorne)",
+    studio:  ["Kniebeuge","Beinpresse","Hack Squat","Frontkniebeuge"],
+    hanteln: ["Goblet Squats","Bulgarian Split Squats","Ausfallschritte","Walking Lunges"],
+    koerper: ["Bulgarian Split Squats","Ausfallschritte","Pistol Squats","Step-Ups"] },
+  beinHuefte: { label:"Beine (Hüfte/Rückseite)", muskel:"Beine (hinten)",
+    studio:  ["Rumänisches Kreuzheben","Beinbeuger","Hüftstoßen","Good Mornings"],
+    hanteln: ["Rumänisches Kreuzheben","Hüftstoßen","Glute Bridge","Hüftstoßen einbeinig"],
+    koerper: ["Nordic Curls","Glute Bridge","Hüftstoßen einbeinig","Hyperextensions"] },
+  waden: { label:"Waden", muskel:"Waden",
+    studio:  ["Wadenheben stehend","Wadenheben sitzend","Wadenheben in der Beinpresse"],
+    hanteln: ["Wadenheben stehend","Wadenheben"],
+    /* "Zehenstand-Dehnung" stand hier zuerst — die gehört aber zu den Mobility-Übungen und
+       existiert in EXERCISE_LIBRARY gar nicht. Der Plan hätte eine Übung enthalten, zu der es
+       weder Muskelinfo noch Technikhinweise gibt. */
+    koerper: ["Wadenheben","Wadenheben stehend"] },
+  brust: { label:"Brust", muskel:"Brust",
+    studio:  ["Bankdrücken","Schrägbankdrücken","Kurzhantel-Bankdrücken","Brustpresse"],
+    hanteln: ["Kurzhantel-Bankdrücken","Schrägbankdrücken mit Kurzhanteln","Kurzhantel-Fliegende"],
+    koerper: ["Liegestütze","Dips","Deficit-Liegestütze","Archer Push-ups"] },
+  brustIso: { label:"Brust (Isolation)", muskel:"Brust",
+    studio:  ["Cable Crossover","Butterfly","Schrägbank-Fliegende","Low Cable Fly"],
+    hanteln: ["Kurzhantel-Fliegende","Schrägbank-Fliegende","Svend Press"],
+    koerper: ["Liegestütze breit","Erhöhte Liegestütze"] },
+  rueckenVert: { label:"Rücken (vertikal)", muskel:"Rücken",
+    studio:  ["Klimmzüge/Latzug","Latzug weit","Latzug eng","Klimmzüge eng/Untergriff"],
+    hanteln: ["Klimmzüge/Latzug","Überzüge","Klimmzüge eng/Untergriff"],
+    koerper: ["Klimmzüge/Latzug","Klimmzüge eng/Untergriff","Ring Rows / Australische Klimmzüge"] },
+  rueckenHor: { label:"Rücken (horizontal)", muskel:"Rücken",
+    studio:  ["Langhantelrudern","Kabelrudern","T-Bar Rudern","Brustgestütztes Rudern"],
+    hanteln: ["Einarmiges Kurzhantelrudern","Langhantelrudern","Kroc Rows"],
+    koerper: ["Ring Rows / Australische Klimmzüge","Superman"] },
+  schulterDruck: { label:"Schultern (Druck)", muskel:"Schultern (vorne)",
+    studio:  ["Schulterdrücken","Military Press","Kurzhantel-Schulterdrücken","Arnold Press"],
+    hanteln: ["Kurzhantel-Schulterdrücken","Arnold Press","Schulterdrücken"],
+    koerper: ["Pike Push-ups","Handstand-Liegestütze (an der Wand)"] },
+  schulterSeit: { label:"Schultern (seitlich)", muskel:"Schultern (seitlich)",
+    studio:  ["Seitheben","Kabel-Seitheben"],
+    hanteln: ["Seitheben","Frontheben"],
+    koerper: ["Pike Push-ups","Y-Raises"] },
+  schulterHint: { label:"Schultern (hinten)", muskel:"Schultern (hinten)",
+    studio:  ["Reverse Flys","Face Pulls","Reverse Butterfly"],
+    hanteln: ["Reverse Flys","Y-Raises"],
+    koerper: ["Superman","Y-Raises"] },
+  bizeps: { label:"Bizeps", muskel:"Bizeps",
+    studio:  ["SZ-Curls","Kabel-Curls","Scott-Curls","Hammercurls"],
+    hanteln: ["Kurzhantel-Curls","Hammercurls","Konzentrationscurls","Schrägbank-Curls"],
+    koerper: ["Klimmzüge eng/Untergriff","Ring Rows / Australische Klimmzüge"] },
+  trizeps: { label:"Trizeps", muskel:"Trizeps",
+    studio:  ["Trizepsdrücken am Kabel","Überkopf-Trizeps","Enges Bankdrücken","Trizepsdrücken am Seil"],
+    hanteln: ["Überkopf-Trizeps","French Press","Kickbacks"],
+    koerper: ["Diamond Push-ups","Bankdips","Enge Liegestütze"] },
+  bauch: { label:"Bauch", muskel:"Bauch",
+    studio:  ["Cable Crunches","Hanging Leg Raises","Ab Wheel Rollout","Plank"],
+    hanteln: ["Ab Wheel Rollout","Beinheben","Plank","Russian Twists"],
+    koerper: ["Hanging Leg Raises","Plank","Hollow Hold","Beinheben"] },
+};
+
+/* Die Aufteilungen. Jeder Tag nennt Slots mit einer Basis-Satzzahl; die Erfahrungsstufe
+   skaliert sie anschließend. Die Anzahl der Übungen pro Tag bleibt bewusst bei 5-7 —
+   darüber werden Einheiten lang, ohne mehr zu bringen. */
+const PLAN_SPLITS = {
+  2: { name:"Ganzkörper 2×/Woche", tage:["mon","thu"], hinweis:"Zwei Ganzkörpertage. Jeder Muskel wird zweimal pro Woche getroffen — das reicht für den wirksamen Bereich, wenn die Sätze hart sind.",
+       /* Höhere Basis als bei drei Tagen: Wer nur zweimal trainiert, trifft jeden Muskel
+          seltener und braucht pro Einheit mehr, um über die Woche im wirksamen Bereich zu
+          landen. Brust steht deshalb an beiden Tagen (schwer und als Isolation). */
+       vorlagen:[
+         { label:"Ganzkörper A", slots:[["beinDruck",4],["brust",4],["rueckenVert",4],["schulterSeit",3],["bizeps",3],["bauch",3]] },
+         { label:"Ganzkörper B", slots:[["beinHuefte",4],["rueckenHor",4],["brustIso",3],["schulterDruck",3],["trizeps",3],["waden",3]] },
+       ]},
+  3: { name:"Ganzkörper 3×/Woche", tage:["mon","wed","fri"], hinweis:"Drei Ganzkörpertage mit wechselnden Schwerpunkten. Für die meisten die beste Mischung aus Wirkung und Aufwand.",
+       vorlagen:[
+         { label:"Ganzkörper A", slots:[["beinDruck",3],["brust",3],["rueckenVert",3],["schulterSeit",3],["bizeps",3]] },
+         { label:"Ganzkörper B", slots:[["beinHuefte",3],["rueckenHor",3],["schulterDruck",3],["trizeps",3],["bauch",3]] },
+         { label:"Ganzkörper C", slots:[["beinDruck",3],["brustIso",3],["rueckenVert",3],["schulterHint",3],["waden",3]] },
+       ]},
+  4: { name:"Oberkörper / Unterkörper", tage:["mon","tue","thu","fri"], hinweis:"Zweimal Oberkörper, zweimal Unterkörper. Mehr Volumen je Muskel als bei drei Tagen, ohne dass die Einheiten lang werden.",
+       vorlagen:[
+         { label:"Oberkörper A", slots:[["brust",4],["rueckenVert",4],["schulterDruck",3],["rueckenHor",3],["bizeps",3],["trizeps",3]] },
+         { label:"Unterkörper A", slots:[["beinDruck",4],["beinHuefte",4],["waden",3],["bauch",3]] },
+         { label:"Oberkörper B", slots:[["schulterDruck",4],["rueckenHor",4],["brustIso",3],["schulterSeit",3],["schulterHint",3],["trizeps",3]] },
+         { label:"Unterkörper B", slots:[["beinHuefte",4],["beinDruck",3],["waden",3],["bauch",3]] },
+       ]},
+  5: { name:"Push / Pull / Beine + Oberkörper / Unterkörper", tage:["mon","tue","wed","fri","sat"], hinweis:"Fünf Einheiten mit klaren Schwerpunkten. Sinnvoll, wenn Zeit da ist und die Erholung stimmt — sonst sind vier Tage die bessere Wahl.",
+       vorlagen:[
+         { label:"Push", slots:[["brust",4],["schulterDruck",3],["brustIso",3],["schulterSeit",3],["trizeps",3]] },
+         { label:"Pull", slots:[["rueckenVert",4],["rueckenHor",4],["schulterHint",3],["bizeps",3]] },
+         { label:"Beine", slots:[["beinDruck",4],["beinHuefte",4],["waden",3],["bauch",3]] },
+         { label:"Oberkörper", slots:[["brust",3],["rueckenHor",3],["schulterSeit",3],["bizeps",3],["trizeps",3]] },
+         { label:"Unterkörper", slots:[["beinHuefte",4],["beinDruck",3],["waden",3],["bauch",3]] },
+       ]},
+};
+
+/* Erfahrung skaliert das Volumen. Anfänger brauchen weniger, um zu wachsen, und verkraften
+   weniger, bevor die Technik leidet — Erfahrene brauchen mehr für denselben Reiz. */
+const PLAN_ERFAHRUNG = {
+  /* maxSaetze stand hier zuerst auf 3 und kollidierte mit der Wochen-Untergrenze: Bei zwei
+     Trainingstagen kommt ein Muskel nur einmal vor, und mit Deckel 3 war die Grenze von vier
+     Wochensätzen rechnerisch unerreichbar — der Nachlauf lief ins Leere. Vier Sätze in einer
+     Übung sind für einen Anfänger unproblematisch; der Faktor hält das Volumen weiterhin
+     deutlich unter dem der anderen Stufen. */
+  anfaenger:      { label:"Anfänger",       zusatz:"unter 1 Jahr",  faktor:0.75, maxSaetze:4, rirBonus:1,
+                    hinweis:"Weniger Sätze, dafür saubere Technik. In den ersten Monaten wächst man auch bei wenig Volumen — der begrenzende Faktor ist die Ausführung, nicht die Menge." },
+  fortgeschritten:{ label:"Fortgeschritten", zusatz:"1–3 Jahre",    faktor:1.0,  maxSaetze:4, rirBonus:0,
+                    hinweis:"Volumen im Bereich, der sich in Übersichtsarbeiten als guter Kompromiss zeigt: genug Reiz, ohne dass die Erholung zum Engpass wird." },
+  erfahren:       { label:"Erfahren",       zusatz:"über 3 Jahre",  faktor:1.3,  maxSaetze:5, rirBonus:0,
+                    hinweis:"Mehr Sätze je Muskel, weil derselbe Reiz mit den Jahren weniger auslöst. Achte auf die Erholung — mehr ist hier nicht automatisch besser." },
+};
+
+/* Ziel bestimmt Wiederholungsbereich, Nähe zum Muskelversagen und Pausen. */
+const PLAN_ZIELE = {
+  aufbau: { label:"Muskelaufbau",
+    grund:"6-10", isolation:"10-15", rirGrund:"1–2", rirIso:"1–2", pauseGrund:150, pauseIso:90,
+    hinweis:"Mittlere Wiederholungszahlen, nah ans Muskelversagen. Entscheidend ist, dass die letzten Wiederholungen wirklich schwer sind." },
+  kraft:  { label:"Maximalkraft",
+    grund:"3-6", isolation:"8-12", rirGrund:"2–3", rirIso:"1–2", pauseGrund:210, pauseIso:120,
+    hinweis:"Schwere Grundübungen mit wenigen Wiederholungen und langen Pausen. Etwas Abstand zum Muskelversagen, damit die Technik unter Last hält." },
+  definition: { label:"Definition / Erhalt",
+    grund:"6-12", isolation:"10-15", rirGrund:"1–2", rirIso:"1–2", pauseGrund:120, pauseIso:75,
+    hinweis:"Trainiert wird praktisch wie beim Muskelaufbau — der Unterschied liegt im Kalorienziel, nicht in den Sätzen. Wer im Defizit ist, hält damit die Muskulatur. Das Ziel selbst stellst du unter Ernährung ein." },
+};
+
+const PLAN_AUSSTATTUNG = {
+  studio:  { label:"Studio",            zusatz:"Geräte und Freihantel" },
+  hanteln: { label:"Hanteln zuhause",   zusatz:"Kurzhanteln, Bank, Stange" },
+  koerper: { label:"Nur Körpergewicht", zusatz:"ggf. Klimmzugstange" },
+};
+
+/* Unter vier harten Sätzen je Muskel und Woche passiert nach der Datenlage praktisch nichts.
+   Der Generator darf diese Grenze in keiner Kombination unterschreiten. */
+const MINDEST_WOCHENSAETZE = 4;
+
+const PLAN_TAGESLABEL = { mon:"Montag", tue:"Dienstag", wed:"Mittwoch", thu:"Donnerstag",
+                          fri:"Freitag", sat:"Samstag", sun:"Sonntag" };
+
+/* Erzeugt den Plan. Gibt ein Objekt in genau der Form zurück, die getAllPlans() erwartet —
+   plus eine Begründung, damit nachvollziehbar bleibt, warum die Sätze so stehen. */
+function erzeugePlan(tage, erfahrungKey, zielKey, ausstattungKey){
+  const split = PLAN_SPLITS[tage];
+  const erf = PLAN_ERFAHRUNG[erfahrungKey];
+  const ziel = PLAN_ZIELE[zielKey];
+  const aus = PLAN_AUSSTATTUNG[ausstattungKey];
+  if(!split || !erf || !ziel || !aus) return null;
+
+  const benutzt = {};          // Slot -> schon vergebene Übungsnamen, für Abwechslung
+  const wochenSaetze = {};     // Muskel -> Sätze über die Woche, für die Begründung
+  const slotRefs = [];         // Verweise auf die erzeugten Übungen, für die Nachbesserung
+  const days = {};
+  const dayOrder = split.tage.slice(0, tage);
+
+  split.vorlagen.slice(0, tage).forEach(function(vorlage, ti){
+    const dayKey = dayOrder[ti];
+    const exercises = [];
+    vorlage.slots.forEach(function(paar, si){
+      const slotKey = paar[0], basis = paar[1];
+      const baustein = PLAN_BAUSTEINE[slotKey];
+      if(!baustein) return;
+      const kandidaten = baustein[ausstattungKey] || baustein.studio;
+      if(!kandidaten || !kandidaten.length) return;
+
+      if(!benutzt[slotKey]) benutzt[slotKey] = [];
+      /* Erster Kandidat, der in diesem Plan noch nicht vorkam. Sind alle durch, wird von
+         vorn begonnen — lieber eine Wiederholung als eine Lücke im Plan. */
+      let name = kandidaten.find(function(k){ return benutzt[slotKey].indexOf(k) === -1; });
+      if(!name) name = kandidaten[benutzt[slotKey].length % kandidaten.length];
+      benutzt[slotKey].push(name);
+
+      const saetze = Math.max(2, Math.min(erf.maxSaetze, Math.round(basis * erf.faktor)));
+      const istGrund = slotKey !== "waden" && slotKey !== "bauch" &&
+                       slotKey !== "bizeps" && slotKey !== "trizeps" &&
+                       slotKey !== "schulterSeit" && slotKey !== "schulterHint" &&
+                       slotKey !== "brustIso";
+      const wdh = istGrund ? ziel.grund : ziel.isolation;
+      const rir = istGrund ? ziel.rirGrund : ziel.rirIso;
+      const pause = istGrund ? ziel.pauseGrund : ziel.pauseIso;
+
+      wochenSaetze[baustein.muskel] = (wochenSaetze[baustein.muskel] || 0) + saetze;
+
+      const gebaut = {
+        id: dayKey + "_gen" + si,
+        name: name,
+        sets: saetze + "x" + wdh,
+        type: istGrund ? "grund" : "isolation",
+        rirTarget: rir,
+        restSeconds: pause,
+      };
+      /* Modus und Faktoren aus der Bibliothek übernehmen, sonst rechnet der Plattenrechner
+         bei Körpergewichtsübungen falsch. */
+      Object.keys(EXERCISE_LIBRARY).forEach(function(gruppe){
+        EXERCISE_LIBRARY[gruppe].forEach(function(lib){
+          if(lib.name !== name) return;
+          if(lib.mode) gebaut.mode = lib.mode;
+          if(typeof lib.bwFactor === "number") gebaut.bwFactor = lib.bwFactor;
+          if(lib.perSide) gebaut.perSide = true;
+        });
+      });
+      exercises.push(gebaut);
+      slotRefs.push({ ex: gebaut, muskel: baustein.muskel, wdh: wdh });
+    });
+    days[dayKey] = {
+      label: PLAN_TAGESLABEL[dayKey] || ("Tag " + (ti+1)),
+      sub: vorlage.label,
+      groups: [{ name: vorlage.label, exercises: exercises }],
+    };
+  });
+
+  /* Nachlauf: Kein Muskel unter MINDEST_WOCHENSAETZE.
+
+     Nötig, weil sich die Zahlen sonst gegenseitig aufheben können — bei zwei Tagen und
+     Anfänger-Faktor landete etwa der Bizeps bei zwei Sätzen pro Woche, also unter der
+     Schwelle, ab der überhaupt etwas passiert. Statt die Basiswerte pauschal zu erhöhen und
+     damit alle anderen Kombinationen aufzublähen, wird hier gezielt aufgefüllt: Der jeweils
+     kleinste Satz des betroffenen Muskels wächst um einen, bis die Schwelle erreicht ist.
+     Die Obergrenze der Erfahrungsstufe bleibt dabei bindend. */
+  Object.keys(wochenSaetze).forEach(function(muskel){
+    let versuche = 0;
+    while(wochenSaetze[muskel] < MINDEST_WOCHENSAETZE && versuche < 20){
+      versuche++;
+      const kandidaten = slotRefs.filter(function(r){
+        return r.muskel === muskel && parseInt(r.ex.sets, 10) < erf.maxSaetze;
+      });
+      if(!kandidaten.length) break;
+      kandidaten.sort(function(a, b){ return parseInt(a.ex.sets, 10) - parseInt(b.ex.sets, 10); });
+      const ziel2 = kandidaten[0];
+      const neu = parseInt(ziel2.ex.sets, 10) + 1;
+      ziel2.ex.sets = neu + "x" + ziel2.wdh;
+      wochenSaetze[muskel] += 1;
+    }
+  });
+
+  return {
+    id: "gen_" + Date.now(),
+    label: split.name.split("/")[0].trim() + " · " + ziel.label,
+    builtin: false,
+    dayOrder: dayOrder,
+    days: days,
+    begruendung: {
+      split: split.name,
+      splitHinweis: split.hinweis,
+      erfahrung: erf.label,
+      erfahrungHinweis: erf.hinweis,
+      ziel: ziel.label,
+      zielHinweis: ziel.hinweis,
+      ausstattung: aus.label,
+      wochenSaetze: wochenSaetze,
+    },
+  };
+}
+
+/* ---- Assistent -------------------------------------------------------------------------
+   Bewusst mit Vorschau: Der Plan wird erst erzeugt und gezeigt, übernommen wird er nur auf
+   ausdrücklichen Knopfdruck. Ein Generator, der ungefragt den aktiven Plan austauscht, wäre
+   in einer App, in der Trainingsdaten am Plan hängen, ein schlechter Tausch.                */
+let generatorAuswahl = null;
+let generatorVorschau = null;
+
+function openPlanGenerator(){
+  builderDraft = null;
+  generatorAuswahl = { tage:3, erfahrung:"fortgeschritten", ziel:"aufbau", ausstattung:"studio" };
+  generatorVorschau = null;
+  renderPlanGenerator();
+}
+function closePlanGenerator(){
+  generatorAuswahl = null;
+  generatorVorschau = null;
+  renderAll();
+}
+
+function renderPlanGenerator(){
+  const el = document.getElementById("builderArea");
+  if(!el) return;
+  if(!generatorAuswahl){ el.innerHTML = ""; return; }
+  const a = generatorAuswahl;
+
+  const chips = function(titel, eintraege, aktiv, feld){
+    let h = '<p class="measure-label">' + titel + '</p><div class="filter-row gen-row">';
+    eintraege.forEach(function(e){
+      h += '<div class="filter-chip' + (String(e.key) === String(aktiv) ? " active" : "") +
+        '" data-feld="' + feld + '" data-wert="' + e.key + '">' + escapeHtml(e.label) +
+        (e.zusatz ? ' <span class="gen-zusatz">' + escapeHtml(e.zusatz) + '</span>' : "") + '</div>';
+    });
+    return h + '</div>';
+  };
+
+  let html = '<div class="builder"><h3>Plan vorschlagen lassen</h3>' +
+    '<p class="rank-hint" style="margin:0 0 12px;">Vier Angaben, dann baut KOUKI einen Plan mit Sätzen, ' +
+    'Wiederholungen, Pausen und RIR-Vorgabe. Du siehst ihn erst als Vorschau — übernommen wird nichts von selbst.</p>';
+
+  html += chips("Tage pro Woche", [2,3,4,5].map(function(n){
+    return { key:n, label:n + " Tage", zusatz: PLAN_SPLITS[n].name.replace(/ ?\d+×\/Woche/, "") };
+  }), a.tage, "tage");
+
+  html += chips("Erfahrung", Object.keys(PLAN_ERFAHRUNG).map(function(k){
+    return { key:k, label:PLAN_ERFAHRUNG[k].label, zusatz:PLAN_ERFAHRUNG[k].zusatz };
+  }), a.erfahrung, "erfahrung");
+
+  html += chips("Ziel", Object.keys(PLAN_ZIELE).map(function(k){
+    return { key:k, label:PLAN_ZIELE[k].label };
+  }), a.ziel, "ziel");
+
+  html += chips("Ausstattung", Object.keys(PLAN_AUSSTATTUNG).map(function(k){
+    return { key:k, label:PLAN_AUSSTATTUNG[k].label, zusatz:PLAN_AUSSTATTUNG[k].zusatz };
+  }), a.ausstattung, "ausstattung");
+
+  html += '<button class="btn btn-primary" id="genBauenBtn" style="width:100%;margin-top:12px;">Plan erzeugen</button>';
+  html += '<div id="genVorschau"></div>';
+  html += '<button class="btn btn-ghost" id="genAbbrechenBtn" style="width:100%;margin-top:10px;">Abbrechen</button>';
+  html += '</div>';
+  el.innerHTML = html;
+
+  Array.prototype.forEach.call(el.querySelectorAll(".gen-row .filter-chip"), function(chip){
+    chip.onclick = function(){
+      const feld = chip.getAttribute("data-feld");
+      const wert = chip.getAttribute("data-wert");
+      generatorAuswahl[feld] = (feld === "tage") ? parseInt(wert, 10) : wert;
+      generatorVorschau = null;
+      renderPlanGenerator();
+    };
+  });
+  document.getElementById("genBauenBtn").onclick = function(){
+    generatorVorschau = erzeugePlan(a.tage, a.erfahrung, a.ziel, a.ausstattung);
+    renderGeneratorVorschau();
+  };
+  document.getElementById("genAbbrechenBtn").onclick = closePlanGenerator;
+
+  if(generatorVorschau) renderGeneratorVorschau();
+}
+
+function renderGeneratorVorschau(){
+  const ziel = document.getElementById("genVorschau");
+  if(!ziel) return;
+  if(!generatorVorschau){ ziel.innerHTML = ""; return; }
+  const p = generatorVorschau, b = p.begruendung;
+
+  let h = '<div class="gen-vorschau"><p class="gen-titel">' + escapeHtml(p.label) + '</p>';
+
+  /* Die Wochensätze je Muskel offenlegen. Das ist die Zahl, an der sich ein Plan messen
+     lassen muss — ohne sie ist jede Vorgabe Behauptung. */
+  const muskeln = Object.keys(b.wochenSaetze);
+  h += '<p class="measure-label" style="margin-top:12px;">Sätze pro Muskel und Woche</p><div class="gen-saetze">';
+  muskeln.forEach(function(m){
+    const n = b.wochenSaetze[m];
+    /* Unter 4 Sätzen passiert wenig, ab etwa 20 flacht der Ertrag deutlich ab. */
+    const stufe = n < 4 ? "wenig" : (n > 20 ? "viel" : "gut");
+    h += '<div class="gen-satz ' + stufe + '"><span class="num">' + n + '</span><span class="lbl">' + escapeHtml(m) + '</span></div>';
+  });
+  h += '</div>';
+
+  p.dayOrder.forEach(function(k){
+    const tag = p.days[k];
+    const uebungen = tag.groups[0].exercises;
+    h += '<p class="gen-tag">' + escapeHtml(tag.label) + ' · ' + escapeHtml(tag.sub) + '</p>';
+    h += '<div class="gen-liste">';
+    uebungen.forEach(function(ex){
+      h += '<div class="gen-uebung"><span class="n">' + escapeHtml(ex.name) + '</span>' +
+        '<span class="s">' + escapeHtml(ex.sets) + ' · RIR ' + escapeHtml(ex.rirTarget) +
+        ' · ' + Math.round(ex.restSeconds / 60 * 10) / 10 + ' Min Pause</span></div>';
+    });
+    h += '</div>';
+  });
+
+  h += '<p class="measure-label" style="margin-top:14px;">Warum so</p>';
+  h += '<ul class="technik-liste">' +
+    '<li><strong>' + escapeHtml(b.split) + ':</strong> ' + escapeHtml(b.splitHinweis) + '</li>' +
+    '<li><strong>' + escapeHtml(b.erfahrung) + ':</strong> ' + escapeHtml(b.erfahrungHinweis) + '</li>' +
+    '<li><strong>' + escapeHtml(b.ziel) + ':</strong> ' + escapeHtml(b.zielHinweis) + '</li>' +
+    '</ul>';
+
+  h += '<button class="btn btn-primary" id="genUebernehmenBtn" style="width:100%;margin-top:12px;">Diesen Plan übernehmen</button>';
+  h += '</div>';
+  ziel.innerHTML = h;
+  document.getElementById("genUebernehmenBtn").onclick = uebernehmeGeneriertenPlan;
+}
+
+function uebernehmeGeneriertenPlan(){
+  if(!generatorVorschau) return;
+  const plan = generatorVorschau;
+  delete plan.begruendung;      // gehört zur Vorschau, nicht in den gespeicherten Plan
+  if(!state.customPlans) state.customPlans = [];
+  state.customPlans.push(plan);
+  saveState();
+  currentPlanId = plan.id;
+  currentDay = plan.dayOrder[0];
+  currentExerciseIndex = 0;
+  generatorAuswahl = null;
+  generatorVorschau = null;
+  renderAll();
+  showToast('Plan "' + plan.label + '" angelegt');
+}
+
 function renderPlanSwitch(){
   const el = document.getElementById("planSwitch");
   el.innerHTML = "";
@@ -5236,10 +5673,16 @@ function renderPlanSwitch(){
     };
     el.appendChild(chip);
   });
+  const genChip = document.createElement("div");
+  genChip.className = "plan-chip add";
+  genChip.textContent = "✨ Vorschlagen";
+  genChip.onclick = function(){ openPlanGenerator(); };
+  el.appendChild(genChip);
+
   const addChip = document.createElement("div");
   addChip.className = "plan-chip add";
   addChip.textContent = "+ Neuer Plan";
-  addChip.onclick = function(){ openBuilder(); };
+  addChip.onclick = function(){ generatorAuswahl = null; openBuilder(); };
   el.appendChild(addChip);
 
   const delBtn = document.getElementById("deletePlanBtn");
