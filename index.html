@@ -537,6 +537,28 @@
   }
   .icon-btn:active{transform:scale(.9);}
 
+  .mob-ablauf{border:1px solid var(--line);border-radius:var(--radius-md);margin-bottom:10px;
+    overflow:hidden;}
+  .mob-ablauf-kopf{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;cursor:pointer;}
+  .mob-ablauf-kopf .haupt{flex:1;min-width:0;}
+  .mob-ablauf-kopf .titel{font-weight:700;font-size:14.5px;color:var(--ink);}
+  .mob-ablauf-kopf .detail{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .mob-pfeil{font-size:14px;color:var(--ink-soft);line-height:1.4;}
+  .mob-liste{padding:0 14px 14px;border-top:1px solid var(--line);}
+  .mob-schritt{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .mob-schritt:last-of-type{border-bottom:0;}
+  .mob-schritt .nr{flex:0 0 auto;width:22px;height:22px;border-radius:var(--radius-round);
+    background:var(--olive);color:var(--on-olive,#fff);font-size:11.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;margin-top:2px;}
+  .mob-schritt .haupt{flex:1;min-width:0;}
+  .mob-schritt .titel{font-weight:700;font-size:13.5px;color:var(--ink);}
+  .mob-schritt .detail{font-size:12px;color:var(--ink-soft);margin:2px 0 4px;}
+  .mob-uebung{padding:2px 0;border-bottom:1px solid var(--line);}
+  .mob-uebung:last-child{border-bottom:0;}
+  .mob-uebung-kopf{display:flex;align-items:flex-start;gap:10px;padding:11px 0;cursor:pointer;}
+  .mob-uebung-kopf .haupt{flex:1;min-width:0;}
+  .mob-uebung .titel{font-weight:700;font-size:14px;color:var(--ink);}
+  .mob-uebung .detail{font-size:12.5px;color:var(--ink-soft);margin:2px 0 0;}
   .cardio-select{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);
     padding:11px 13px;font-size:15px;font-family:var(--font-text);background:var(--bg);color:var(--ink);
     box-sizing:border-box;}
@@ -2001,6 +2023,32 @@
 
   </div>
 
+  <div id="frame-mobility" style="display:none;">
+
+    <div class="rank-card" id="mobilityWeekCard">
+      <div class="rank-head"><span class="rank-title">Diese Woche</span></div>
+      <div id="mobilityWeekArea"></div>
+    </div>
+
+    <div class="rank-card" id="mobilityAblaufCard">
+      <div class="rank-head"><span class="rank-title">Fertige Abläufe</span></div>
+      <p class="rank-hint" style="margin:0 0 10px;">Antippen zum Aufklappen. Jede Übung mit Dauer und Hinweisen.</p>
+      <div id="mobilityAblaufArea"></div>
+    </div>
+
+    <div class="rank-card" id="mobilityUebungCard">
+      <div class="rank-head"><span class="rank-title">Alle Übungen</span></div>
+      <div class="filter-row" id="mobilityFilterRow"></div>
+      <div id="mobilityUebungArea"></div>
+    </div>
+
+    <div class="rank-card" id="mobilityLogCard">
+      <div class="rank-head"><span class="rank-title">Verlauf</span></div>
+      <div id="mobilityLogArea"></div>
+    </div>
+
+  </div>
+
   <div id="frame-progress-overview" style="display:none;">
     <p class="rank-hint" style="margin-bottom:8px;">Zeitraum wählen, um Körpergewicht, Trainingsvolumen und Trainingsfrequenz für diesen Abschnitt zu sehen.</p>
     <div class="filter-row" id="progressRangeRow"></div>
@@ -3377,7 +3425,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, cardioLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpLog:{}, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, cardioLog:{}, mobilityLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpLog:{}, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -6370,6 +6418,8 @@ const XP_QUELLEN = {
   schritte:         { xp:10,  proTag:1, label:"Schritte eingetragen",         bereich:"Körper" },
   cardio:           { xp:20,  proTag:1, label:"Cardio-Einheit eingetragen",   bereich:"Training" },
   cardioZiel:       { xp:30,  proTag:1, label:"Cardio-Wochenziel erreicht",   bereich:"Training" },
+  mobility:         { xp:15,  proTag:1, label:"Mobility-Einheit gemacht",     bereich:"Training" },
+  mobilityZiel:     { xp:25,  proTag:1, label:"Mobility-Wochenziel erreicht", bereich:"Training" },
   schrittZiel:      { xp:20,  proTag:1, label:"10.000 Schritte geschafft",    bereich:"Körper" },
   wasser:           { xp:10,  proTag:1, label:"Trinkziel erreicht",           bereich:"Körper" },
   supplement:       { xp:3,   proTag:6, label:"Supplement abgehakt",          bereich:"Körper" },
@@ -8677,6 +8727,320 @@ function updateStepsCalorieHint(){
                   : "dein Tagesziel sinkt dadurch um ca. " + Math.abs(diff) + " kcal.");
     }
   }
+}
+
+/* ===== Mobility ==========================================================================
+   Die vierte Säule neben Kraft, Ausdauer und Ernährung — und die einzige, die sich nicht
+   sinnvoll in Kilogramm oder Kalorien messen lässt. Der Nutzen liegt hier nicht im
+   Protokollieren, sondern darin, überhaupt zu WISSEN, was man tun soll.
+
+   Deshalb steht die Anleitung im Vordergrund: jede Übung mit Zielbereich, Dauer und drei
+   knappen Hinweisen. Dazu vier fertige Abläufe, damit niemand vor 31 Einzelübungen steht und
+   sich selbst etwas zusammenstellen muss.
+
+   Statisch vs. dynamisch ist bewusst ausgewiesen: Langes Halten VOR dem Krafttraining senkt
+   kurzfristig die Maximalkraft, danach ist es unproblematisch. Die Abläufe berücksichtigen
+   das — "Vor dem Training" enthält ausschließlich dynamische Übungen.                       */
+
+const MOBILITY_UEBUNGEN = [
+  /* --- Hüfte --- */
+  { key:"hueftbeuger", name:"Hüftbeuger im Ausfallschritt", bereich:"Hüfte", art:"statisch", dauer:"30 Sek. je Seite", seite:true,
+    hinweise:["Hinteres Knie ablegen, Becken aufrichten statt ins Hohlkreuz zu fallen","Gesäß der hinteren Seite anspannen — das verstärkt die Dehnung deutlich","Oberkörper aufrecht, nicht nach vorn kippen"] },
+  { key:"neunzig", name:"90/90 Hüftrotation", bereich:"Hüfte", art:"dynamisch", dauer:"8 Wechsel je Seite", seite:true,
+    hinweise:["Beide Knie 90°, vorderes Schienbein parallel zum Körper","Knie kontrolliert von einer Seite zur anderen kippen","Oberkörper bleibt aufrecht, Hände dürfen stützen"] },
+  { key:"tiefehocke", name:"Tiefe Hocke halten", bereich:"Hüfte", art:"statisch", dauer:"30–60 Sek.", seite:false,
+    hinweise:["Füße schulterbreit, Zehen leicht nach außen","Ellbogen drücken die Knie sanft nach außen","Fersen bleiben am Boden — sonst etwas erhöht stellen"] },
+  { key:"taube", name:"Taubenstellung", bereich:"Hüfte", art:"statisch", dauer:"45 Sek. je Seite", seite:true,
+    hinweise:["Vorderes Schienbein möglichst quer, hinteres Bein lang gestreckt","Becken gerade halten, nicht zur Seite kippen","Bei Knieschmerzen: Variante in Rückenlage wählen"] },
+  { key:"frosch", name:"Frosch-Dehnung", bereich:"Hüfte", art:"statisch", dauer:"45 Sek.", seite:false,
+    hinweise:["Knie weit auseinander, Unterschenkel im rechten Winkel","Auf Unterarme abstützen, Rücken flach","Langsam vor- und zurückschieben statt federn"] },
+  { key:"beinschwingen", name:"Beinschwingen vor/zurück", bereich:"Hüfte", art:"dynamisch", dauer:"12 je Seite", seite:true,
+    hinweise:["An einer Wand festhalten, Standbein leicht gebeugt","Bewegungsumfang langsam steigern, nicht sofort maximal","Rumpf bleibt fest, das Becken kippt nicht mit"] },
+  { key:"cossack", name:"Seitlicher Ausfallschritt (Cossack)", bereich:"Hüfte", art:"dynamisch", dauer:"8 je Seite", seite:true,
+    hinweise:["Sehr breiter Stand, Gewicht auf eine Seite verlagern","Gestreckte Seite: Zehen zeigen nach oben","Fersen bleiben am Boden, Brust bleibt offen"] },
+  { key:"schmetterling", name:"Schmetterling", bereich:"Hüfte", art:"statisch", dauer:"45 Sek.", seite:false,
+    hinweise:["Fußsohlen zusammen, Fersen Richtung Körper","Aus der Hüfte nach vorn neigen, Rücken bleibt lang","Knie nicht nach unten drücken — Eigengewicht reicht"] },
+
+  /* --- Brustwirbelsäule & Schultern --- */
+  { key:"katzekuh", name:"Katze-Kuh", bereich:"Brustwirbelsäule", art:"dynamisch", dauer:"10 Wiederholungen", seite:false,
+    hinweise:["Vierfüßlerstand, Hände unter den Schultern","Wirbel für Wirbel rollen statt nur Kopf und Becken zu kippen","Mit der Bewegung atmen: aufrunden ausatmen, absenken einatmen"] },
+  { key:"threadneedle", name:"Brustwirbelsäulen-Rotation (Thread the Needle)", bereich:"Brustwirbelsäule", art:"dynamisch", dauer:"8 je Seite", seite:true,
+    hinweise:["Vierfüßlerstand, einen Arm unter dem Körper durchführen","Schulter und Ohr Richtung Boden, Hüfte bleibt über den Knien","Danach denselben Arm weit zur Decke öffnen"] },
+  { key:"tuerrahmen", name:"Brustöffner am Türrahmen", bereich:"Schultern", art:"statisch", dauer:"30 Sek. je Position", seite:false,
+    hinweise:["Unterarme am Rahmen, Ellbogen auf Schulterhöhe","Einen Schritt nach vorn, Rippen unten lassen","Drei Höhen durchgehen: tief, mittig, hoch"] },
+  { key:"stockkreisen", name:"Schulterkreisen mit Stock", bereich:"Schultern", art:"dynamisch", dauer:"10 Wiederholungen", seite:false,
+    hinweise:["Besenstiel oder Handtuch weit greifen","Gestreckte Arme über den Kopf nach hinten führen","Griff so weit, dass die Ellbogen gestreckt bleiben"] },
+  { key:"wandengel", name:"Wandengel", bereich:"Schultern", art:"dynamisch", dauer:"10 Wiederholungen", seite:false,
+    hinweise:["Rücken, Kopf und Arme berühren die Wand","Arme langsam nach oben und unten führen","Kontakt zur Wand halten — lieber kleiner Weg als abheben"] },
+  { key:"latkind", name:"Kindeshaltung mit Latissimus-Dehnung", bereich:"Schultern", art:"statisch", dauer:"45 Sek.", seite:false,
+    hinweise:["Gesäß Richtung Fersen, Arme weit nach vorn","Hände zu einer Seite wandern lassen für mehr Flanke","Ruhig in die Flanke atmen"] },
+  { key:"armkreisen", name:"Armkreisen", bereich:"Schultern", art:"dynamisch", dauer:"15 je Richtung", seite:false,
+    hinweise:["Klein beginnen, Kreise langsam größer werden lassen","Schultern bleiben unten, nicht hochziehen","Beide Richtungen gleich lang"] },
+
+  /* --- Beinrückseite --- */
+  { key:"beinrueckseite", name:"Beinrückseite im Sitzen", bereich:"Beinrückseite", art:"statisch", dauer:"45 Sek. je Seite", seite:true,
+    hinweise:["Ein Bein gestreckt, aus der Hüfte nach vorn neigen","Rücken bleibt lang — lieber weniger weit","Zehen zum Schienbein ziehen verstärkt die Dehnung"] },
+  { key:"jefferson", name:"Jefferson Curl (leicht)", bereich:"Beinrückseite", art:"dynamisch", dauer:"6 Wiederholungen", seite:false,
+    hinweise:["Sehr leichtes Gewicht oder ganz ohne","Wirbel für Wirbel abrollen, Beine gestreckt","Genauso kontrolliert wieder aufrollen"] },
+  { key:"standwaage", name:"Standwaage-Reach", bereich:"Beinrückseite", art:"dynamisch", dauer:"8 je Seite", seite:true,
+    hinweise:["Auf einem Bein, Hüfte nach hinten schieben","Rücken flach, Blick zum Boden","Kontrolliert zurückkommen statt zu fallen"] },
+
+  /* --- Wade & Sprunggelenk --- */
+  { key:"wadenwand", name:"Wadendehnung an der Wand", bereich:"Sprunggelenk", art:"statisch", dauer:"40 Sek. je Seite", seite:true,
+    hinweise:["Hinteres Bein gestreckt, Ferse am Boden","Zweite Runde mit gebeugtem Knie für den tiefen Wadenmuskel","Fuß zeigt gerade nach vorn, nicht nach außen"] },
+  { key:"kniezurwand", name:"Knie-zur-Wand-Mobilisation", bereich:"Sprunggelenk", art:"dynamisch", dauer:"10 je Seite", seite:true,
+    hinweise:["Fuß eine Handbreit vor der Wand, Knie zur Wand schieben","Ferse bleibt unbedingt am Boden","Abstand vergrößern, sobald es leicht fällt"] },
+  { key:"zehenstand", name:"Zehenstand-Dehnung", bereich:"Sprunggelenk", art:"statisch", dauer:"30 Sek.", seite:false,
+    hinweise:["Zehen aufstellen, Fersen anheben, Gewicht langsam verlagern","Am Halt festhalten, nicht wackeln","Bei Krämpfen sofort lösen"] },
+
+  /* --- Nacken --- */
+  { key:"nackenseit", name:"Nackendehnung seitlich", bereich:"Nacken", art:"statisch", dauer:"30 Sek. je Seite", seite:true,
+    hinweise:["Ohr zur Schulter, Gegenschulter bewusst nach unten","Hand darf sanft nachhelfen — nicht ziehen","Kein Drehen dabei, nur seitlich neigen"] },
+  { key:"kinnbrust", name:"Kinn zur Brust", bereich:"Nacken", art:"statisch", dauer:"30 Sek.", seite:false,
+    hinweise:["Kopf langsam senken, Schultern bleiben unten","Kein Zug mit den Händen am Hinterkopf","Ruhig weiteratmen"] },
+  { key:"chintuck", name:"Kinn zurückziehen (Chin Tuck)", bereich:"Nacken", art:"dynamisch", dauer:"10 Wiederholungen", seite:false,
+    hinweise:["Kinn gerade nach hinten schieben, Doppelkinn machen","Kopf bleibt waagerecht, nicht nach unten nicken","Zwei Sekunden halten, dann lösen"] },
+
+  /* --- Rücken & Rumpf --- */
+  { key:"sphinx", name:"Sphinx / Kobra", bereich:"Rücken", art:"statisch", dauer:"40 Sek.", seite:false,
+    hinweise:["Bauchlage, Unterarme unter den Schultern","Gesäß locker lassen, Brust öffnen","Bei Ziehen im unteren Rücken tiefer bleiben"] },
+  { key:"kindeshaltung", name:"Kindeshaltung", bereich:"Rücken", art:"statisch", dauer:"45 Sek.", seite:false,
+    hinweise:["Knie auseinander, Gesäß Richtung Fersen","Stirn ablegen, Arme lang nach vorn","In den unteren Rücken atmen"] },
+  { key:"rotationliegend", name:"Liegende Wirbelsäulen-Rotation", bereich:"Rücken", art:"statisch", dauer:"45 Sek. je Seite", seite:true,
+    hinweise:["Rückenlage, ein Knie über die Gegenseite fallen lassen","Beide Schultern bleiben am Boden","Blick zur Gegenseite verstärkt die Rotation"] },
+  { key:"skorpion", name:"Skorpion", bereich:"Rücken", art:"dynamisch", dauer:"8 je Seite", seite:true,
+    hinweise:["Bauchlage, Arme seitlich ausgestreckt","Ein Bein angewinkelt zur Gegenseite führen","Kontrolliert, ohne Schwung — Schultern bleiben unten"] },
+
+  /* --- Handgelenke --- */
+  { key:"handbeuger", name:"Handgelenk-Dehnung (Beuger & Strecker)", bereich:"Handgelenke", art:"statisch", dauer:"30 Sek. je Richtung", seite:false,
+    hinweise:["Arm gestreckt, Hand mit der anderen sanft nach unten und oben ziehen","Ellbogen bleibt gestreckt","Beide Richtungen, beide Hände"] },
+  { key:"handkreisen", name:"Handgelenk-Kreisen und Stützen", bereich:"Handgelenke", art:"dynamisch", dauer:"10 je Richtung", seite:false,
+    hinweise:["Im Vierfüßler Gewicht sanft nach vorn und hinten verlagern","Finger auch mal nach hinten zeigen lassen","Vor Stützübungen immer aufwärmen"] },
+];
+
+/* Fertige Abläufe. "Vor dem Training" enthält bewusst NUR dynamische Übungen — langes
+   statisches Dehnen unmittelbar davor senkt kurzfristig die Maximalkraft. */
+const MOBILITY_ABLAEUFE = [
+  { key:"vor", name:"Vor dem Training", dauer:6, beschreibung:"Nur dynamisch — bringt Gelenke auf Temperatur, ohne die Kraft zu dämpfen.",
+    /* "tiefehocke" stand hier zuerst — sie ist aber ein statisches Halten und widerspricht
+       damit genau dem Grundsatz, für den dieser Ablauf gebaut ist. Ersetzt durch die 90/90-
+       Rotation: öffnet dieselbe Hüfte, aber in Bewegung. */
+    uebungen:["armkreisen","beinschwingen","cossack","katzekuh","neunzig","kniezurwand"] },
+  { key:"nach", name:"Nach dem Training", dauer:8, beschreibung:"Ruhiges Halten, wenn die Muskulatur warm ist.",
+    uebungen:["hueftbeuger","beinrueckseite","tuerrahmen","latkind","wadenwand","kindeshaltung"] },
+  { key:"schreibtisch", name:"Für den Schreibtisch", dauer:5, beschreibung:"Gegen das, was langes Sitzen anrichtet — Nacken, Brust, Hüftbeuger.",
+    uebungen:["chintuck","nackenseit","tuerrahmen","threadneedle","hueftbeuger","handbeuger"] },
+  { key:"ganz", name:"Ganzkörper", dauer:12, beschreibung:"Einmal durch alle Bereiche, für einen ruhigen Tag.",
+    uebungen:["katzekuh","threadneedle","neunzig","taube","beinrueckseite","rotationliegend","tuerrahmen","wadenwand","kindeshaltung"] },
+];
+
+/* Zwei bis drei Einheiten pro Woche gelten als Richtwert für Beweglichkeitsarbeit
+   (u.a. ACSM). Drei ist hier das Ziel — erreichbar, ohne beliebig zu sein. */
+const MOBILITY_WOCHENZIEL = 3;
+
+function mobilityUebung(key){
+  for(let i = 0; i < MOBILITY_UEBUNGEN.length; i++){
+    if(MOBILITY_UEBUNGEN[i].key === key) return MOBILITY_UEBUNGEN[i];
+  }
+  return null;
+}
+function mobilityAblauf(key){
+  for(let i = 0; i < MOBILITY_ABLAEUFE.length; i++){
+    if(MOBILITY_ABLAEUFE[i].key === key) return MOBILITY_ABLAEUFE[i];
+  }
+  return null;
+}
+/* Die Bereiche in der Reihenfolge, in der sie in MOBILITY_UEBUNGEN zuerst vorkommen —
+   so bestimmt die Datenliste selbst die Sortierung und nicht eine zweite, die veralten kann. */
+function mobilityBereiche(){
+  const raus = [];
+  MOBILITY_UEBUNGEN.forEach(function(u){ if(raus.indexOf(u.bereich) === -1) raus.push(u.bereich); });
+  return raus;
+}
+
+function mobilityEintraege(datumKey){
+  const l = (state.mobilityLog || {})[datumKey];
+  return Array.isArray(l) ? l : [];
+}
+/* Gleitendes Sieben-Tage-Fenster wie bei Cardio, aus demselben Grund: Am Montagmorgen
+   soll nicht alles vom Wochenende verschwunden sein. */
+function mobilityWoche(){
+  const summe = { einheiten:0, minuten:0, tage:0 };
+  for(let i = 0; i < 7; i++){
+    const d = new Date(Date.now() - i * 86400000);
+    const key = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    const eintraege = mobilityEintraege(key);
+    if(!eintraege.length) continue;
+    summe.tage += 1;
+    summe.einheiten += eintraege.length;
+    eintraege.forEach(function(e){ summe.minuten += e.minuten || 0; });
+  }
+  return summe;
+}
+
+function logMobility(ablaufKey){
+  const ablauf = mobilityAblauf(ablaufKey);
+  if(!ablauf) return;
+  const key = todayKey();
+  if(!state.mobilityLog) state.mobilityLog = {};
+  if(!state.mobilityLog[key]) state.mobilityLog[key] = [];
+  state.mobilityLog[key].push({ ablauf: ablauf.key, name: ablauf.name, minuten: ablauf.dauer, ts: Date.now() });
+  saveState();
+  renderMobility();
+
+  let gemeldet = !!vergibXP("mobility");
+  if(mobilityWoche().einheiten >= MOBILITY_WOCHENZIEL) gemeldet = !!vergibXP("mobilityZiel") || gemeldet;
+  if(!gemeldet) showToast('"' + ablauf.name + '" eingetragen');
+}
+
+function loescheMobilityEintrag(datumKey, index){
+  const liste = mobilityEintraege(datumKey);
+  const entfernt = liste[index];
+  if(!entfernt) return;
+  liste.splice(index, 1);
+  if(!liste.length) delete state.mobilityLog[datumKey];
+  saveState();
+  renderMobility();
+  zeigeRueckgaengig('"' + entfernt.name + '" gelöscht.', function(){
+    if(!state.mobilityLog[datumKey]) state.mobilityLog[datumKey] = [];
+    state.mobilityLog[datumKey].splice(index, 0, entfernt);
+    saveState();
+    renderMobility();
+    showToast("Eintrag wiederhergestellt");
+  });
+}
+
+let offenerAblauf = "";
+let offeneMobilityUebung = "";
+let mobilityBereichFilter = "";
+
+function renderMobility(){
+  const zielArea = document.getElementById("mobilityWeekArea");
+  if(!zielArea) return;
+
+  // --- Woche ---
+  const woche = mobilityWoche();
+  const anteil = Math.min(100, Math.round((woche.einheiten / MOBILITY_WOCHENZIEL) * 100));
+  zielArea.innerHTML =
+    '<p class="rank-hint" style="margin:0 0 4px;">Zwei bis drei Einheiten pro Woche gelten als Richtwert für Beweglichkeitsarbeit. ' +
+      'Schon fünf Minuten zählen — regelmäßig schlägt lang.</p>' +
+    '<div class="cardio-ziel-track"><div class="cardio-ziel-fill" style="width:' + anteil + '%;"></div></div>' +
+    '<p class="rank-hint" style="margin:0;">' + woche.einheiten + ' von ' + MOBILITY_WOCHENZIEL +
+      ' Einheiten in den letzten 7 Tagen' +
+      (woche.einheiten >= MOBILITY_WOCHENZIEL ? ' — Ziel erreicht.' : ' (' + anteil + ' %).') +
+      (woche.minuten ? ' Zusammen rund ' + woche.minuten + ' Minuten.' : '') + '</p>';
+
+  // --- Abläufe ---
+  const ablaufArea = document.getElementById("mobilityAblaufArea");
+  let ah = "";
+  MOBILITY_ABLAEUFE.forEach(function(a){
+    const offen = offenerAblauf === a.key;
+    ah += '<div class="mob-ablauf">' +
+      '<div class="mob-ablauf-kopf" data-ablauf="' + a.key + '" role="button" tabindex="0" aria-expanded="' + (offen ? "true" : "false") + '">' +
+        '<div class="haupt"><div class="titel">' + escapeHtml(a.name) + '</div>' +
+        '<div class="detail">ca. ' + a.dauer + ' Min · ' + a.uebungen.length + ' Übungen</div>' +
+        '<div class="detail">' + escapeHtml(a.beschreibung) + '</div></div>' +
+        '<span class="mob-pfeil">' + (offen ? "▴" : "▾") + '</span>' +
+      '</div>';
+    if(offen){
+      ah += '<div class="mob-liste">';
+      a.uebungen.forEach(function(k, n){
+        const u = mobilityUebung(k);
+        if(!u) return;
+        ah += '<div class="mob-schritt">' +
+          '<span class="nr">' + (n+1) + '</span>' +
+          '<div class="haupt">' +
+            '<div class="titel">' + escapeHtml(u.name) + '</div>' +
+            '<div class="detail">' + escapeHtml(u.dauer) + ' · ' + u.art + ' · ' + escapeHtml(u.bereich) + '</div>' +
+            '<ul class="technik-liste">' + u.hinweise.map(function(h){ return '<li>' + escapeHtml(h) + '</li>'; }).join("") + '</ul>' +
+          '</div></div>';
+      });
+      ah += '<button class="btn btn-primary mob-fertig" data-ablauf="' + a.key + '" style="width:100%;margin-top:10px;">Als erledigt eintragen</button>';
+      ah += '</div>';
+    }
+    ah += '</div>';
+  });
+  ablaufArea.innerHTML = ah;
+  Array.prototype.forEach.call(ablaufArea.querySelectorAll(".mob-ablauf-kopf"), function(el){
+    const auf = function(){
+      const k = el.getAttribute("data-ablauf");
+      offenerAblauf = (offenerAblauf === k) ? "" : k;
+      renderMobility();
+    };
+    el.onclick = auf;
+    el.onkeydown = function(ev){ if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); auf(); } };
+  });
+  Array.prototype.forEach.call(ablaufArea.querySelectorAll(".mob-fertig"), function(btn){
+    btn.onclick = function(ev){ ev.stopPropagation(); logMobility(btn.getAttribute("data-ablauf")); };
+  });
+
+  // --- Einzelübungen mit Bereichs-Filter ---
+  const filterRow = document.getElementById("mobilityFilterRow");
+  const bereiche = mobilityBereiche();
+  let fh = '<div class="filter-chip' + (mobilityBereichFilter === "" ? " active" : "") + '" data-bereich="">Alle</div>';
+  bereiche.forEach(function(b){
+    fh += '<div class="filter-chip' + (mobilityBereichFilter === b ? " active" : "") + '" data-bereich="' + escapeHtml(b) + '">' + escapeHtml(b) + '</div>';
+  });
+  filterRow.innerHTML = fh;
+  Array.prototype.forEach.call(filterRow.querySelectorAll(".filter-chip"), function(chip){
+    chip.onclick = function(){ mobilityBereichFilter = chip.getAttribute("data-bereich"); renderMobility(); };
+  });
+
+  const liste = document.getElementById("mobilityUebungArea");
+  const gefiltert = MOBILITY_UEBUNGEN.filter(function(u){
+    return !mobilityBereichFilter || u.bereich === mobilityBereichFilter;
+  });
+  /* Die Hinweise stehen hier eingeklappt. Ausgeschrieben ergaben die 31 Übungen eine Seite
+     von über 13.000 Pixeln — man scrollte minutenlang an Text vorbei, statt eine Übung zu
+     finden. Name, Dauer, Art und Bereich reichen zum Suchen; die Hinweise kommen auf Tipp. */
+  liste.innerHTML = gefiltert.map(function(u){
+    const offen = offeneMobilityUebung === u.key;
+    return '<div class="mob-uebung">' +
+      '<div class="mob-uebung-kopf" data-uebung="' + u.key + '" role="button" tabindex="0" aria-expanded="' + (offen ? "true" : "false") + '">' +
+        '<div class="haupt">' +
+          '<div class="titel">' + escapeHtml(u.name) + '</div>' +
+          '<div class="detail">' + escapeHtml(u.dauer) + ' · ' + u.art + ' · ' + escapeHtml(u.bereich) + '</div>' +
+        '</div><span class="mob-pfeil">' + (offen ? "▴" : "▾") + '</span>' +
+      '</div>' +
+      (offen ? '<ul class="technik-liste" style="margin-top:6px;">' +
+        u.hinweise.map(function(h){ return '<li>' + escapeHtml(h) + '</li>'; }).join("") + '</ul>' : "") +
+      '</div>';
+  }).join("");
+  Array.prototype.forEach.call(liste.querySelectorAll(".mob-uebung-kopf"), function(el){
+    const auf = function(){
+      const k = el.getAttribute("data-uebung");
+      offeneMobilityUebung = (offeneMobilityUebung === k) ? "" : k;
+      renderMobility();
+    };
+    el.onclick = auf;
+    el.onkeydown = function(ev){ if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); auf(); } };
+  });
+
+  // --- Verlauf ---
+  const logArea = document.getElementById("mobilityLogArea");
+  const tage = Object.keys(state.mobilityLog || {}).filter(function(k){ return mobilityEintraege(k).length; })
+    .sort().reverse().slice(0, 30);
+  if(!tage.length){
+    logArea.innerHTML = '<p class="rank-hint" style="margin:0;">Noch nichts eingetragen. Öffne oben einen Ablauf und tippe danach auf „Als erledigt eintragen".</p>';
+    return;
+  }
+  let lh = "";
+  tage.forEach(function(k){
+    lh += '<p class="cardio-tagtitel">' + formatDate(k) + '</p>';
+    mobilityEintraege(k).forEach(function(e, i){
+      lh += '<div class="cardio-eintrag"><div class="haupt">' +
+        '<div class="titel">' + escapeHtml(e.name || "Mobility") + '</div>' +
+        '<div class="detail">ca. ' + (e.minuten || 0) + ' Min</div></div>' +
+        '<button class="icon-btn mob-del" data-datum="' + k + '" data-index="' + i +
+        '" aria-label="Eintrag löschen">×</button></div>';
+    });
+  });
+  logArea.innerHTML = lh;
+  Array.prototype.forEach.call(logArea.querySelectorAll(".mob-del"), function(btn){
+    btn.onclick = function(){
+      loescheMobilityEintrag(btn.getAttribute("data-datum"), parseInt(btn.getAttribute("data-index"), 10));
+    };
+  });
 }
 
 function aktualisiereCardioSchaetzung(){
@@ -11774,6 +12138,7 @@ function renderAll(){
   renderWater();
   renderSteps();
   renderCardio();
+  renderMobility();
   renderHome();
   renderDeloadBanner();
   renderWeeklyPlanReview();
@@ -12031,6 +12396,7 @@ const NAV_GROUPS = {
        gab. Fortschritt hat die Leiste ohnehin, hier kostet der Tab nichts. Inhaltlich passt
        es außerdem: Schritte, Gewicht und Trinkmenge werden hier ebenso protokolliert. */
     { label: "Cardio", frameId: "frame-cardio" },
+    { label: "Mobility", frameId: "frame-mobility" },
     { label: "Kalender", frameId: "frame-calendar" },
     { label: "Rang", frameId: "frame-progress" }
   ]},
@@ -12059,6 +12425,7 @@ const FRAME_HINTS = {
   "frame-nutrition": "Trag hier ein, was du gegessen hast — Kalorien und Eiweiß gegen dein Tagesziel. Körpergewicht, Schritte und Grundumsatz findest du unter Fortschritt · Körper.",
   "frame-body": "Körpergewicht, Trinkmenge, Schritte, Umfänge und Grundumsatz — hier eintragen und direkt den Verlauf sehen.",
   "frame-cardio": "Ausdauer-Einheiten eintragen: Art, Dauer und optional Distanz. Die Woche wird nach den Empfehlungen der WHO ausgewertet.",
+  "frame-mobility": "Fertige Beweglichkeits-Abläufe mit Anleitung — vor dem Training, danach, für den Schreibtisch oder ganz durch.",
   "frame-scanner": "Barcode scannen oder ein Lebensmittel suchen, um es direkt in dein Tageslog einzutragen.",
   "frame-recipes": "Rezepte mit Einkaufsliste und ausführlicher Kochanleitung — plane deine Woche direkt im Essensplaner.",
   "frame-supplements": "Infos zu gängigen Supplementen: Einnahmezeitpunkt, Dosierung und wofür sie gut sind.",
