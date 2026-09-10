@@ -1639,6 +1639,32 @@
   .measure-latest-row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft);padding:6px 0;border-bottom:1px solid var(--line);}
   .measure-latest-row:last-child{border-bottom:none;}
 
+  /* Rückfragen im App-Design statt im Systemfenster. Aufgebaut wie .day-modal, damit die App
+     eine Formsprache spricht: von unten einfahrendes Blatt, gleiche Radien, gleiche Knöpfe. */
+  .frage-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .frage-box{
+    background:var(--surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+    padding:22px calc(18px + var(--safe-right)) calc(24px + var(--safe-bottom)) calc(18px + var(--safe-left));
+    max-width:520px;width:100%;box-sizing:border-box;
+    animation:frageRein .18s ease-out;
+  }
+  @keyframes frageRein{ from{ transform:translateY(14px); opacity:.6; } to{ transform:none; opacity:1; } }
+  /* Wer "Bewegung reduzieren" eingestellt hat, bekommt keine. */
+  @media (prefers-reduced-motion: reduce){ .frage-box{ animation:none; } }
+  .frage-titel{
+    font-family:var(--font-titel);font-weight:700;font-size:16px;color:var(--text-strong);
+    margin:0 0 8px;
+  }
+  .frage-titel:empty{display:none;}
+  .frage-text{font-size:14.5px;line-height:1.55;color:var(--ink);margin:0;}
+  .frage-knoepfe{display:flex;gap:10px;margin-top:20px;}
+  .frage-knoepfe .btn{flex:1;}
+  /* Ein Löschen sieht anders aus als ein Bestätigen. */
+  .frage-knoepfe .btn.gefahr{background:var(--warn);color:var(--on-warn,#fff);border-color:var(--warn);}
+
   .day-modal-backdrop{
     position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;
     display:flex;align-items:flex-end;justify-content:center;
@@ -2541,6 +2567,17 @@
     </div>
 
     <p class="legal-footer">KOUKI · privates, nicht-kommerzielles Projekt · Stand: Juli 2026</p>
+  </div>
+
+  <div class="frage-backdrop" id="frageBackdrop" style="display:none;">
+    <div class="frage-box" role="alertdialog" aria-modal="true" aria-labelledby="frageText">
+      <p class="frage-titel" id="frageTitel"></p>
+      <p class="frage-text" id="frageText"></p>
+      <div class="frage-knoepfe">
+        <button class="btn btn-ghost" id="frageAbbrechen" type="button">Abbrechen</button>
+        <button class="btn btn-primary" id="frageOk" type="button">OK</button>
+      </div>
+    </div>
   </div>
 
   <div class="day-modal-backdrop" id="dayModalBackdrop" style="display:none;">
@@ -3827,6 +3864,87 @@ function meldeSpeicherProblem(e){
     try{ alert(text); }catch(x){}
   }
 }
+
+/* ===== Rückfragen im App-Design =========================================================
+   confirm() und alert() sind Systemfenster: eigene Schrift, eigene Farben, eigene Knöpfe,
+   und auf iOS steht dort "OK / Abbrechen" in Blau mitten in einer Oberfläche, die sonst
+   nichts Blaues hat. Der Bruch fällt genau in den Momenten auf, in denen es um etwas geht —
+   Daten ersetzen, Plan löschen, Konto löschen.
+
+   Wichtiger Unterschied im Verhalten: confirm() hält den ganzen Ablauf an und liefert das
+   Ergebnis sofort zurück. Ein eigener Dialog kann das nicht — er gibt ein Versprechen zurück,
+   auf das gewartet werden muss. Deshalb sind die aufrufenden Funktionen auf await umgestellt.
+
+   Der letzte Notnagel in meldeHinweisFallback() bleibt bewusst ein echtes alert(): Wenn schon
+   das Bauen eines DOM-Elements scheitert, hilft ein selbstgebauter Dialog auch nicht mehr.  */
+
+let frageOffen = null;          // { aufloesen, vorherFokus }
+
+function frageNach(text, optionen){
+  const opt = optionen || {};
+  return new Promise(function(aufloesen){
+    const backdrop = document.getElementById("frageBackdrop");
+    const titelEl = document.getElementById("frageTitel");
+    const textEl = document.getElementById("frageText");
+    const okBtn = document.getElementById("frageOk");
+    const abBtn = document.getElementById("frageAbbrechen");
+    /* Ohne die Elemente lieber auf das Systemfenster zurückfallen, als die Rückfrage
+       stillschweigend zu verschlucken — eine übersprungene Sicherheitsabfrage wäre
+       schlimmer als ein hässlicher Dialog. */
+    if(!backdrop || !textEl || !okBtn || !abBtn){
+      try{ aufloesen(window.confirm(text)); }catch(e){ aufloesen(false); }
+      return;
+    }
+    /* Läuft schon eine Frage, wird sie zuerst abgeräumt. Zwei übereinander wären für den
+       Nutzer nicht auseinanderzuhalten. */
+    if(frageOffen) schliesseFrage(false);
+
+    titelEl.textContent = opt.titel || "";
+    textEl.textContent = text;
+    okBtn.textContent = opt.okText || "OK";
+    abBtn.textContent = opt.abbrechenText || "Abbrechen";
+    okBtn.classList.toggle("gefahr", !!opt.gefahr);
+    abBtn.style.display = opt.nurOk ? "none" : "";
+
+    frageOffen = { aufloesen: aufloesen, vorherFokus: document.activeElement };
+    backdrop.style.display = "flex";
+    /* Fokus auf den bestätigenden Knopf, damit Tastatur und Screenreader sofort im Dialog
+       stehen und nicht hinter dem Overlay weiterlaufen. */
+    setTimeout(function(){ try{ okBtn.focus(); }catch(e){} }, 30);
+  });
+}
+
+/* Reiner Hinweis ohne Wahl — Ersatz für alert(). */
+function zeigeHinweis(text, titel){
+  return frageNach(text, { titel: titel, okText: "Verstanden", nurOk: true });
+}
+
+function schliesseFrage(antwort){
+  const offen = frageOffen;
+  frageOffen = null;
+  const backdrop = document.getElementById("frageBackdrop");
+  if(backdrop) backdrop.style.display = "none";
+  if(!offen) return;
+  try{ if(offen.vorherFokus && offen.vorherFokus.focus) offen.vorherFokus.focus(); }catch(e){}
+  offen.aufloesen(antwort);
+}
+
+(function verdrahteFrage(){
+  const backdrop = document.getElementById("frageBackdrop");
+  const okBtn = document.getElementById("frageOk");
+  const abBtn = document.getElementById("frageAbbrechen");
+  if(!backdrop || !okBtn || !abBtn) return;
+  okBtn.onclick = function(){ schliesseFrage(true); };
+  abBtn.onclick = function(){ schliesseFrage(false); };
+  /* Tippen daneben zählt wie Abbrechen — nie wie Bestätigen. */
+  backdrop.onclick = function(e){ if(e.target === backdrop) schliesseFrage(false); };
+  document.addEventListener("keydown", function(e){
+    if(!frageOffen) return;
+    if(e.key === "Escape"){ e.preventDefault(); schliesseFrage(false); }
+    if(e.key === "Enter"){ e.preventDefault(); schliesseFrage(true); }
+  });
+})();
+
 async function saveState(){
   try{ if(storageAvailable()) localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch(e){ meldeSpeicherProblem(e); }
@@ -3856,7 +3974,7 @@ function exportBackup(){
     if(!vergibXP("backup")) showToast("Backup gespeichert");
   }catch(e){
     console.error("Backup-Export fehlgeschlagen", e);
-    alert("Backup konnte nicht erstellt werden.");
+    zeigeHinweis("Backup konnte nicht erstellt werden.", "Das hat nicht geklappt");
   }
 }
 // --- Backup-Erinnerung ---
@@ -3963,7 +4081,7 @@ function importBackupFile(file){
       showToast("Backup wiederhergestellt");
     }catch(e){
       console.error("Backup-Import fehlgeschlagen", e);
-      alert("Diese Datei konnte nicht gelesen werden. Bitte prüfe, ob es eine gültige KOUKI-Backup-Datei ist.");
+      zeigeHinweis("Diese Datei konnte nicht gelesen werden. Bitte prüfe, ob es eine gültige KOUKI-Backup-Datei ist.", "Datei nicht lesbar");
     }
   };
   reader.readAsText(file);
@@ -3972,13 +4090,15 @@ document.getElementById("exportBackupBtn").onclick = exportBackup;
 document.getElementById("importBackupBtn").onclick = function(){
   document.getElementById("importFileInput").click();
 };
-document.getElementById("importFileInput").onchange = function(e){
-  const file = e.target.files[0];
+document.getElementById("importFileInput").onchange = async function(e){
+  const eingabe = e.target;          // vor dem Warten sichern
+  const file = eingabe.files[0];
   if(!file) return;
-  if(confirm("Deine aktuellen Daten in der App werden durch dieses Backup ersetzt. Fortfahren?")){
+  if(await frageNach("Deine aktuellen Daten in der App werden durch dieses Backup ersetzt. Fortfahren?",
+                     { titel:"Backup einspielen", okText:"Ersetzen", gefahr:true })){
     importBackupFile(file);
   }
-  e.target.value = "";
+  eingabe.value = "";
 };
 
 function exportTrainingPDF(){
@@ -4047,7 +4167,7 @@ function exportTrainingPDF(){
 
     const win = window.open("", "_blank");
     if(!win){
-      alert("Bitte erlaube Pop-ups für diese Seite, um den Bericht zu öffnen.");
+      zeigeHinweis("Bitte erlaube Pop-ups für diese Seite, um den Bericht zu öffnen.", "Bericht blockiert");
       return;
     }
     win.document.open();
@@ -4055,7 +4175,7 @@ function exportTrainingPDF(){
     win.document.close();
   }catch(e){
     console.error("Bericht konnte nicht erstellt werden", e);
-    alert("Bericht konnte nicht erstellt werden.");
+    zeigeHinweis("Bericht konnte nicht erstellt werden.", "Das hat nicht geklappt");
   }
 }
 document.getElementById("exportPdfBtn").onclick = exportTrainingPDF;
@@ -5690,7 +5810,7 @@ function renderPlanSwitch(){
   delBtn.onclick = deleteCurrentPlan;
 }
 
-function deleteCurrentPlan(){
+async function deleteCurrentPlan(){
   const plan = getPlanById(currentPlanId);
   if(plan.builtin) return;
   // Bis hierhin genügte ein einziger Tipp auf das Papierkorb-Symbol, um einen selbst gebauten
@@ -5699,7 +5819,8 @@ function deleteCurrentPlan(){
   // ausdrücklich, dass Verlauf und Rekorde erhalten bleiben (siehe Kommentar unten), damit
   // niemand aus Sorge um seine Historie zögert.
   const tage = Object.keys(plan.days || {}).length;
-  if(!confirm('Trainingsplan "' + (plan.label || "") + '" mit ' + tage + ' Trainingstagen wirklich löschen? Dein bisheriger Trainingsverlauf und deine Rekorde bleiben dabei erhalten.')) return;
+  if(!await frageNach('Trainingsplan "' + (plan.label || "") + '" mit ' + tage + ' Trainingstagen wirklich löschen? Dein bisheriger Trainingsverlauf und deine Rekorde bleiben dabei erhalten.',
+                      { titel:"Plan löschen", okText:"Löschen", gefahr:true })) return;
   // Verweise auf die Übungen dieses Plans mit aufräumen, damit keine verwaisten Einträge
   // dauerhaft im Speicher liegen bleiben. Trainingsverlauf und Rekorde bleiben bewusst
   // erhalten — die sind Teil der persönlichen Historie, auch wenn der Plan weg ist.
@@ -7632,11 +7753,15 @@ function renderContent(){
   prevBtn.textContent = "← Zurück";
   prevBtn.disabled = currentExerciseIndex === 0;
   prevBtn.onclick = function(){ wechsleUebung(-1); };
+  /* Auf der letzten Übung stand hier ein toter Knopf: "Letzte Übung ✓", ausgegraut, ohne
+     Funktion. Genau an der Stelle, an der der Daumen nach dem letzten Satz sowieso liegt —
+     und die naheliegende Handlung, die Einheit abzuschließen, war weiter unten hinter der
+     Notiz versteckt. Jetzt steht sie dort, wo man ohnehin hinlangt. Der Knopf unten bleibt
+     zusätzlich bestehen; wer den Weg kennt, findet ihn weiterhin. */
   const nextBtn = document.createElement("button");
   nextBtn.className = "btn btn-primary";
-  nextBtn.textContent = isLast ? "Letzte Übung ✓" : "Nächste Übung →";
-  nextBtn.disabled = isLast;
-  nextBtn.onclick = function(){ wechsleUebung(1); };
+  nextBtn.textContent = isLast ? "Einheit abschließen ✓" : "Nächste Übung →";
+  nextBtn.onclick = isLast ? function(){ finishSession(); } : function(){ wechsleUebung(1); };
   navBtns.appendChild(prevBtn);
   navBtns.appendChild(nextBtn);
   el.appendChild(navBtns);
@@ -11004,11 +11129,12 @@ function removeShoppingItem(idx){
   saveState();
   renderShoppingList();
 }
-function clearShoppingList(){
+async function clearShoppingList(){
   // "Liste leeren" löschte bisher die komplette Einkaufsliste mit einem einzigen Tipp und ohne
   // Weg zurück — inklusive aller von Hand ergänzten Einträge.
   if(!state.shoppingList.length) return;
-  if(!confirm("Komplette Einkaufsliste mit " + state.shoppingList.length + " Einträgen leeren? Das lässt sich nicht rückgängig machen.")) return;
+  if(!await frageNach("Komplette Einkaufsliste mit " + state.shoppingList.length + " Einträgen leeren? Das lässt sich nicht rückgängig machen.",
+                      { titel:"Liste leeren", okText:"Leeren", gefahr:true })) return;
   state.shoppingList = [];
   saveState();
   renderShoppingList();
@@ -13599,7 +13725,8 @@ async function logoutAccount(){
 // kurze E-Mail an den Entwickler.
 async function deleteCloudAccount(){
   if(!currentUserId) return;
-  const sure = confirm("Deine Trainings- und Ernährungsdaten in der Cloud werden dabei unwiderruflich gelöscht — auf allen Geräten, die mit diesem Konto verbunden sind. Die Daten auf DIESEM Gerät bleiben lokal erhalten, du wirst nur abgemeldet. Fortfahren?");
+  const sure = await frageNach("Deine Trainings- und Ernährungsdaten in der Cloud werden dabei unwiderruflich gelöscht — auf allen Geräten, die mit diesem Konto verbunden sind. Die Daten auf DIESEM Gerät bleiben lokal erhalten, du wirst nur abgemeldet.",
+    { titel:"Konto endgültig löschen", okText:"Löschen", gefahr:true });
   if(!sure) return;
   const client = getSupabaseClient();
   if(!client){ showToast("Cloud-Funktion nicht verfügbar — bitte Internetverbindung prüfen"); return; }
@@ -13719,7 +13846,8 @@ async function syncFromCloudOrMigrate(){
   const client = getSupabaseClient();
   if(!client || !currentUserId) return;
   if(state.cloudOwnerId && state.cloudOwnerId !== currentUserId && localDataLooksMeaningful()){
-    const resetLocal = confirm("Auf diesem Gerät liegen noch lokale Trainings-/Ernährungsdaten von einem ANDEREN Konto. Damit sie nicht versehentlich in dieses Konto übernommen werden, jetzt zurücksetzen? (OK = lokalen Stand hier verwerfen und sauber mit diesem Konto starten. Abbrechen = lokalen Stand trotzdem behalten, z.B. wenn du diese Daten bewusst mitnehmen möchtest.)");
+    const resetLocal = await frageNach("Auf diesem Gerät liegen noch lokale Trainings-/Ernährungsdaten von einem ANDEREN Konto. Damit sie nicht versehentlich in dieses Konto übernommen werden, jetzt zurücksetzen? Verwerfen heißt: sauber mit diesem Konto starten. Behalten heißt: diese Daten wandern mit in dieses Konto.",
+      { titel:"Fremder lokaler Stand", okText:"Verwerfen", abbrechenText:"Behalten", gefahr:true });
     if(resetLocal){
       state = {};
       normalizeState();
@@ -13752,7 +13880,9 @@ async function syncFromCloudOrMigrate(){
       // Hier liegt wirklich ein fremder bzw. neuerer Stand vor (anderes Gerät hat gespeichert,
       // oder dieses Gerät synchronisiert zum ersten Mal mit diesem Konto). Nur dann fragen.
       const wann = data.updated_at ? formatCloudTimestamp(data.updated_at) : "";
-      if(confirm("In der Cloud liegt ein Stand" + (wann ? " von " + wann : "") + ", der nicht von diesem Gerät stammt. Jetzt laden? (Der aktuelle lokale Stand auf diesem Gerät wird dabei ersetzt.)")){
+      if(await frageNach("In der Cloud liegt ein Stand" + (wann ? " von " + wann : "") +
+            ", der nicht von diesem Gerät stammt. Der aktuelle Stand auf diesem Gerät wird dabei ersetzt.",
+            { titel:"Cloud-Stand laden?", okText:"Laden", gefahr:true })){
         state = data.data;
         normalizeState();
         state.cloudOwnerId = currentUserId;
@@ -13866,7 +13996,8 @@ async function loadCloudStateManually(){
     if(error) throw error;
     if(!data || !data.data || !Object.keys(data.data).length){ showToast("In der Cloud liegt noch kein Stand"); return; }
     const wann = data.updated_at ? formatCloudTimestamp(data.updated_at) : "";
-    if(!confirm("Cloud-Stand" + (wann ? " von " + wann : "") + " jetzt laden? Der aktuelle Stand auf diesem Gerät wird dabei ersetzt.")) return;
+    if(!await frageNach("Cloud-Stand" + (wann ? " von " + wann : "") + " jetzt laden? Der aktuelle Stand auf diesem Gerät wird dabei ersetzt.",
+                        { titel:"Cloud-Stand laden?", okText:"Laden", gefahr:true })) return;
     state = data.data;
     normalizeState();
     state.cloudOwnerId = currentUserId;
