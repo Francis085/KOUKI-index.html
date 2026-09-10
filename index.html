@@ -537,6 +537,35 @@
   }
   .icon-btn:active{transform:scale(.9);}
 
+  .cardio-select{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:11px 13px;font-size:15px;font-family:var(--font-text);background:var(--bg);color:var(--ink);
+    box-sizing:border-box;}
+  .cardio-felder{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0 0;}
+  .cardio-felder input{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:10px 8px;font-size:15px;font-family:var(--font-zahl);background:var(--bg);color:var(--ink);
+    box-sizing:border-box;}
+  .cardio-notiz{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:10px 12px;font-size:14px;margin-top:10px;background:var(--bg);color:var(--ink);
+    box-sizing:border-box;font-family:var(--font-text);}
+  .cardio-ziel-track{height:10px;border-radius:var(--radius-pill);background:var(--line);
+    overflow:hidden;margin:8px 0 6px;}
+  .cardio-ziel-fill{height:100%;background:var(--olive);border-radius:var(--radius-pill);}
+  .cardio-kennzahlen{display:flex;gap:8px;margin:10px 0 0;}
+  .cardio-kennzahlen div{flex:1;text-align:center;background:var(--card-soft,var(--bg));
+    border:1px solid var(--line);border-radius:var(--radius-md);padding:9px 4px;}
+  .cardio-kennzahlen .num{display:block;font-family:var(--font-titel);font-weight:700;
+    font-size:16px;color:var(--text-strong);}
+  .cardio-kennzahlen .lbl{font-size:10.5px;color:var(--ink-soft);}
+  .cardio-eintrag{display:flex;align-items:flex-start;gap:10px;padding:10px 0;
+    border-bottom:1px solid var(--line);}
+  .cardio-eintrag:last-child{border-bottom:0;}
+  .cardio-eintrag .haupt{flex:1;min-width:0;}
+  .cardio-eintrag .titel{font-weight:700;font-size:14px;color:var(--ink);}
+  .cardio-eintrag .detail{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .cardio-eintrag .notiz{font-size:12.5px;color:var(--ink-soft);margin-top:3px;font-style:italic;}
+  .cardio-tagtitel{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--ink-soft);margin:14px 0 2px;}
+  .cardio-tagtitel:first-child{margin-top:0;}
   .technik-block{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;}
 .technik-titel{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
   color:var(--ink-soft);margin:10px 0 4px;}
@@ -1931,6 +1960,47 @@
     </div>
   </div>
 
+  <div id="frame-cardio" style="display:none;">
+
+    <div class="bw-card" id="cardioAddCard">
+      <div class="bw-head">
+        <span class="bw-title"><span class="ti-icon" data-icon="schritte"></span>Cardio eintragen</span>
+      </div>
+      <div class="measure-group">
+        <p class="measure-label">Art</p>
+        <select id="cardioArt" class="cardio-select"></select>
+      </div>
+      <div class="cardio-felder">
+        <div>
+          <p class="measure-label">Dauer (Min.)</p>
+          <input type="number" inputmode="numeric" id="cardioMinuten" placeholder="30">
+        </div>
+        <div>
+          <p class="measure-label">km (optional)</p>
+          <input type="number" inputmode="decimal" step="0.1" id="cardioKm" placeholder="5,0">
+        </div>
+        <div>
+          <p class="measure-label">Puls (optional)</p>
+          <input type="number" inputmode="numeric" id="cardioPuls" placeholder="150">
+        </div>
+      </div>
+      <input type="text" id="cardioNotiz" class="cardio-notiz" placeholder="Notiz (optional) — z. B. Strecke, Gefühl, Wetter">
+      <p class="rank-hint" id="cardioSchaetzung" style="margin:10px 0 0;"></p>
+      <button class="btn btn-primary" id="cardioAddBtn" style="width:100%;margin-top:10px;">Einheit eintragen</button>
+    </div>
+
+    <div class="rank-card" id="cardioWeekCard">
+      <div class="rank-head"><span class="rank-title">Diese Woche</span></div>
+      <div id="cardioWeekArea"></div>
+    </div>
+
+    <div class="rank-card" id="cardioLogCard">
+      <div class="rank-head"><span class="rank-title">Einheiten</span></div>
+      <div id="cardioLogArea"></div>
+    </div>
+
+  </div>
+
   <div id="frame-progress-overview" style="display:none;">
     <p class="rank-hint" style="margin-bottom:8px;">Zeitraum wählen, um Körpergewicht, Trainingsvolumen und Trainingsfrequenz für diesen Abschnitt zu sehen.</p>
     <div class="filter-row" id="progressRangeRow"></div>
@@ -3307,7 +3377,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpLog:{}, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, cardioLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpLog:{}, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -6298,6 +6368,8 @@ const XP_QUELLEN = {
   koerpergewicht:   { xp:10,  proTag:1, label:"Körpergewicht eingetragen",    bereich:"Körper" },
   koerpermasse:     { xp:20,  proTag:1, label:"Körpermaße eingetragen",       bereich:"Körper" },
   schritte:         { xp:10,  proTag:1, label:"Schritte eingetragen",         bereich:"Körper" },
+  cardio:           { xp:20,  proTag:1, label:"Cardio-Einheit eingetragen",   bereich:"Training" },
+  cardioZiel:       { xp:30,  proTag:1, label:"Cardio-Wochenziel erreicht",   bereich:"Training" },
   schrittZiel:      { xp:20,  proTag:1, label:"10.000 Schritte geschafft",    bereich:"Körper" },
   wasser:           { xp:10,  proTag:1, label:"Trinkziel erreicht",           bereich:"Körper" },
   supplement:       { xp:3,   proTag:6, label:"Supplement abgehakt",          bereich:"Körper" },
@@ -8431,6 +8503,152 @@ function energieAbgleich(goalKey, tage){
   };
 }
 
+
+/* ===== Cardio ============================================================================
+   Ausdauer war bis hierher die einzige Trainingsform, die die App gar nicht kannte — es gab
+   Kraft, Schritte und Ernährung, aber nichts dazwischen.
+
+   Der Energieverbrauch wird über MET-Werte geschätzt (metabolisches Äquivalent, Compendium
+   of Physical Activities): 1 MET ist der Umsatz in völliger Ruhe, ein Wert von 8 bedeutet
+   also das Achtfache davon. Die Rechnung lautet MET × Körpergewicht in kg × Stunden.
+
+   Bewusst KEINE automatische Anrechnung auf das Tagesziel. Der Aktivitätsfaktor im
+   Grundumsatz unterstellt bereits ein gewisses Maß an Sport — würde der Verbrauch hier oben
+   drauf addiert, entstünde genau die Doppelzählung, die bei den Schritten schon einmal
+   ausgebaut werden musste. Stattdessen wird der Wert offen ausgewiesen und erklärt; ob das
+   Ziel angepasst gehört, beantwortet ohnehin verlässlicher der Abgleich mit dem echten
+   Gewichtsverlauf weiter unten in "Grundumsatz & Makros".                                  */
+
+const CARDIO_ARTEN = [
+  { key:"gehen",       label:"Gehen (zügig)",          met:3.5,  distanz:true  },
+  { key:"wandern",     label:"Wandern",                met:6.0,  distanz:true  },
+  { key:"joggen",      label:"Joggen (ca. 8 km/h)",    met:8.3,  distanz:true  },
+  { key:"laufen",      label:"Laufen (ca. 10 km/h)",   met:9.8,  distanz:true  },
+  { key:"laufenschnell",label:"Laufen (ca. 12 km/h)",  met:11.8, distanz:true  },
+  { key:"rad",         label:"Radfahren (locker)",     met:6.8,  distanz:true  },
+  { key:"radschnell",  label:"Radfahren (zügig)",      met:10.0, distanz:true  },
+  { key:"spinning",    label:"Spinning",               met:8.5,  distanz:false },
+  { key:"schwimmen",   label:"Schwimmen (locker)",     met:5.8,  distanz:true  },
+  { key:"schwimmenzuegig",label:"Schwimmen (zügig)",   met:9.8,  distanz:true  },
+  { key:"rudern",      label:"Rudergerät",             met:7.0,  distanz:true  },
+  { key:"rudernhart",  label:"Rudergerät (intensiv)",  met:8.5,  distanz:true  },
+  { key:"crosstrainer",label:"Crosstrainer",           met:5.0,  distanz:false },
+  { key:"stepper",     label:"Stepper",                met:9.0,  distanz:false },
+  { key:"treppen",     label:"Treppensteigen",         met:8.8,  distanz:false },
+  { key:"seilspringen",label:"Seilspringen",           met:12.3, distanz:false },
+  { key:"hiit",        label:"HIIT / Intervalle",      met:10.0, distanz:false },
+  { key:"boxen",       label:"Boxen / Sandsack",       met:7.8,  distanz:false },
+  { key:"fussball",    label:"Fußball",                met:7.0,  distanz:false },
+  { key:"basketball",  label:"Basketball",             met:6.5,  distanz:false },
+  { key:"tennis",      label:"Tennis",                 met:7.3,  distanz:false },
+  { key:"sonstiges",   label:"Sonstiges (moderat)",    met:5.0,  distanz:true  },
+];
+function cardioArt(key){
+  for(let i = 0; i < CARDIO_ARTEN.length; i++){ if(CARDIO_ARTEN[i].key === key) return CARDIO_ARTEN[i]; }
+  return null;
+}
+/* Ab 6 MET gilt eine Belastung als "intensiv" — das ist die Grenze, mit der auch die WHO
+   arbeitet. Sie entscheidet, ob eine Minute einfach oder doppelt aufs Wochenziel zählt. */
+function cardioIstIntensiv(met){ return met >= 6; }
+
+function cardioKcal(met, minuten, gewichtKg){
+  if(!met || !minuten || !gewichtKg) return null;
+  return met * gewichtKg * (minuten / 60);
+}
+
+/* Wochenziel nach WHO: 150 Minuten moderate ODER 75 Minuten intensive Ausdauer pro Woche,
+   wobei beides gegeneinander aufgerechnet werden darf. Deshalb hier eine gemeinsame
+   Währung: intensive Minuten zählen doppelt, das Ziel sind 150 Äquivalenzminuten. */
+const CARDIO_WOCHENZIEL = 150;
+
+function cardioEintraege(datumKey){
+  const l = (state.cardioLog || {})[datumKey];
+  return Array.isArray(l) ? l : [];
+}
+function cardioSummeTag(datumKey){
+  return cardioEintraege(datumKey).reduce(function(a, e){
+    return {
+      minuten: a.minuten + (e.minuten || 0),
+      kcal: a.kcal + (e.kcal || 0),
+      km: a.km + (e.distanzKm || 0),
+      aequiv: a.aequiv + (e.minuten || 0) * (cardioIstIntensiv(e.met) ? 2 : 1),
+    };
+  }, { minuten:0, kcal:0, km:0, aequiv:0 });
+}
+/* Die letzten sieben Tage einschließlich heute — bewusst ein gleitendes Fenster und nicht
+   die Kalenderwoche. Sonst stünde man montags früh immer wieder bei null, obwohl am
+   Wochenende trainiert wurde. */
+function cardioWoche(){
+  const summe = { minuten:0, kcal:0, km:0, aequiv:0, einheiten:0, tage:0 };
+  for(let i = 0; i < 7; i++){
+    const d = new Date(Date.now() - i * 86400000);
+    const key = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    const eintraege = cardioEintraege(key);
+    if(!eintraege.length) continue;
+    const t = cardioSummeTag(key);
+    summe.minuten += t.minuten; summe.kcal += t.kcal; summe.km += t.km; summe.aequiv += t.aequiv;
+    summe.einheiten += eintraege.length; summe.tage += 1;
+  }
+  return summe;
+}
+
+function addCardioEintrag(){
+  const artSel = document.getElementById("cardioArt");
+  const minInput = document.getElementById("cardioMinuten");
+  const kmInput = document.getElementById("cardioKm");
+  const pulsInput = document.getElementById("cardioPuls");
+  const notizInput = document.getElementById("cardioNotiz");
+  if(!artSel || !minInput) return;
+
+  const art = cardioArt(artSel.value);
+  if(!art){ showToast("Bitte eine Art auswählen"); return; }
+  /* Dieselbe Prüfung wie überall sonst: Eingaben wie "1e400" ergeben in JavaScript Infinity
+     und hätten hier eine unbrauchbare Kalorienzahl zur Folge. */
+  const minuten = pruefeZahl(minInput.value, 1, 600, true);
+  if(minuten === null){ showToast("Bitte eine Dauer zwischen 1 und 600 Minuten eingeben"); return; }
+  const km = kmInput && kmInput.value !== "" ? pruefeZahl(kmInput.value, 0, 500, false) : null;
+  if(kmInput && kmInput.value !== "" && km === null){ showToast("Bitte eine Distanz zwischen 0 und 500 km eingeben"); return; }
+  const puls = pulsInput && pulsInput.value !== "" ? pruefeZahl(pulsInput.value, 30, 250, true) : null;
+  if(pulsInput && pulsInput.value !== "" && puls === null){ showToast("Bitte einen Puls zwischen 30 und 250 eingeben"); return; }
+
+  const bw = latestBodyweight();
+  const kcal = bw ? cardioKcal(art.met, minuten, bw.weight) : null;
+  const key = todayKey();
+  if(!state.cardioLog) state.cardioLog = {};
+  if(!state.cardioLog[key]) state.cardioLog[key] = [];
+  state.cardioLog[key].push({
+    art: art.key, label: art.label, met: art.met, minuten: minuten,
+    distanzKm: km, puls: puls, kcal: kcal ? Math.round(kcal) : null,
+    notiz: (notizInput && notizInput.value || "").trim().slice(0, 200),
+    ts: Date.now(),
+  });
+  saveState();
+  minInput.value = ""; if(kmInput) kmInput.value = ""; if(pulsInput) pulsInput.value = "";
+  if(notizInput) notizInput.value = "";
+  renderCardio();
+
+  let gemeldet = !!vergibXP("cardio");
+  if(cardioWoche().aequiv >= CARDIO_WOCHENZIEL) gemeldet = !!vergibXP("cardioZiel") || gemeldet;
+  if(!gemeldet) showToast("Cardio-Einheit gespeichert");
+}
+
+function loescheCardioEintrag(datumKey, index){
+  const liste = cardioEintraege(datumKey);
+  const entfernt = liste[index];
+  if(!entfernt) return;
+  liste.splice(index, 1);
+  if(!liste.length) delete state.cardioLog[datumKey];
+  saveState();
+  renderCardio();
+  zeigeRueckgaengig('"' + entfernt.label + '" gelöscht.', function(){
+    if(!state.cardioLog[datumKey]) state.cardioLog[datumKey] = [];
+    state.cardioLog[datumKey].splice(index, 0, entfernt);
+    saveState();
+    renderCardio();
+    showToast("Eintrag wiederhergestellt");
+  });
+}
+
 function todayStepCalories(){
   const steps = state.stepsLog[todayKey()] || 0;
   const bw = latestBodyweight();
@@ -8460,6 +8678,104 @@ function updateStepsCalorieHint(){
     }
   }
 }
+
+function aktualisiereCardioSchaetzung(){
+  const hint = document.getElementById("cardioSchaetzung");
+  if(!hint) return;
+  const art = cardioArt((document.getElementById("cardioArt") || {}).value);
+  const minuten = parseFloat((document.getElementById("cardioMinuten") || {}).value);
+  const bw = latestBodyweight();
+  if(!art){ hint.textContent = ""; return; }
+  if(!bw){
+    hint.textContent = "Für die Kalorienschätzung fehlt noch dein Körpergewicht (Fortschritt · Körper).";
+    return;
+  }
+  if(!minuten || !isFinite(minuten) || minuten <= 0){
+    hint.textContent = art.label + " entspricht " + String(art.met).replace(".", ",") +
+      " MET. Trag eine Dauer ein, dann steht hier die geschätzte Kalorienzahl.";
+    return;
+  }
+  const kcal = cardioKcal(art.met, Math.min(minuten, 600), bw.weight);
+  hint.textContent = "Geschätzt rund " + Math.round(kcal) + " kcal (" +
+    String(art.met).replace(".", ",") + " MET bei " + bw.weight + " kg). " +
+    (cardioIstIntensiv(art.met) ? "Zählt als intensiv, also doppelt aufs Wochenziel."
+                                : "Zählt als moderat, also einfach aufs Wochenziel.");
+}
+
+function renderCardio(){
+  const sel = document.getElementById("cardioArt");
+  if(!sel) return;
+  if(!sel.options.length){
+    CARDIO_ARTEN.forEach(function(a){
+      const o = document.createElement("option");
+      o.value = a.key; o.textContent = a.label;
+      sel.appendChild(o);
+    });
+  }
+  aktualisiereCardioSchaetzung();
+
+  // --- Woche ---
+  const woche = cardioWoche();
+  const anteil = Math.min(100, Math.round((woche.aequiv / CARDIO_WOCHENZIEL) * 100));
+  const weekArea = document.getElementById("cardioWeekArea");
+  let wh = '<p class="rank-hint" style="margin:0 0 4px;">Die Weltgesundheitsorganisation empfiehlt ' +
+    CARDIO_WOCHENZIEL + ' Minuten moderate oder 75 Minuten intensive Ausdauer pro Woche. ' +
+    'Intensive Minuten zählen hier doppelt, damit sich beides vergleichen lässt.</p>';
+  wh += '<div class="cardio-ziel-track"><div class="cardio-ziel-fill" style="width:' + anteil + '%;"></div></div>';
+  wh += '<p class="rank-hint" style="margin:0;">' + Math.round(woche.aequiv) + ' von ' + CARDIO_WOCHENZIEL +
+    ' Äquivalenzminuten in den letzten 7 Tagen' +
+    (woche.aequiv >= CARDIO_WOCHENZIEL ? ' — Ziel erreicht.' : ' (' + anteil + ' %).') + '</p>';
+  wh += '<div class="cardio-kennzahlen">' +
+    '<div><span class="num">' + Math.round(woche.minuten) + '</span><span class="lbl">Minuten</span></div>' +
+    '<div><span class="num">' + woche.einheiten + '</span><span class="lbl">Einheiten</span></div>' +
+    '<div><span class="num">' + Math.round(woche.kcal) + '</span><span class="lbl">kcal (gesch.)</span></div>' +
+    (woche.km > 0 ? '<div><span class="num">' + woche.km.toFixed(1).replace(".", ",") + '</span><span class="lbl">km</span></div>' : '') +
+    '</div>';
+  /* Der wichtigste Satz auf dieser Seite: Der Verbrauch wird NICHT automatisch auf das
+     Tagesziel addiert. Wer das nicht weiß, isst die geschätzten Kalorien zusätzlich und
+     wundert sich. */
+  wh += '<p class="rank-hint" style="margin:10px 0 0;font-size:11.5px;">Die Kalorien sind eine Schätzung ' +
+    'über MET-Werte und werden <strong>nicht automatisch</strong> auf dein Tagesziel addiert — dein ' +
+    'Aktivitätsfaktor im Grundumsatz enthält bereits ein gewisses Maß an Sport. Ob dein Ziel wirklich ' +
+    'passt, zeigt dir der Abgleich mit dem Gewichtsverlauf unter Fortschritt · Körper.</p>';
+  weekArea.innerHTML = wh;
+
+  // --- Einheiten, nach Tag gruppiert ---
+  const logArea = document.getElementById("cardioLogArea");
+  const tage = Object.keys(state.cardioLog || {}).filter(function(k){ return cardioEintraege(k).length; })
+    .sort().reverse().slice(0, 30);
+  if(!tage.length){
+    logArea.innerHTML = '<p class="rank-hint" style="margin:0;">Noch keine Einheit eingetragen. ' +
+      'Auch ein zügiger Spaziergang zählt — trag ihn oben ein.</p>';
+    return;
+  }
+  let lh = "";
+  tage.forEach(function(k){
+    const t = cardioSummeTag(k);
+    lh += '<p class="cardio-tagtitel">' + formatDate(k) + ' · ' + Math.round(t.minuten) + ' Min' +
+      (t.kcal ? ' · ca. ' + Math.round(t.kcal) + ' kcal' : '') + '</p>';
+    cardioEintraege(k).forEach(function(e, i){
+      const teile = [e.minuten + " Min"];
+      if(e.distanzKm) teile.push(String(e.distanzKm).replace(".", ",") + " km");
+      if(e.kcal) teile.push("ca. " + e.kcal + " kcal");
+      if(e.puls) teile.push("Ø " + e.puls + " bpm");
+      lh += '<div class="cardio-eintrag"><div class="haupt">' +
+        '<div class="titel">' + escapeHtml(e.label || "Cardio") + '</div>' +
+        '<div class="detail">' + teile.join(" · ") + '</div>' +
+        (e.notiz ? '<div class="notiz">' + escapeHtml(e.notiz) + '</div>' : '') +
+        '</div>' +
+        '<button class="icon-btn cardio-del" data-datum="' + k + '" data-index="' + i +
+        '" aria-label="Einheit löschen">×</button></div>';
+    });
+  });
+  logArea.innerHTML = lh;
+  Array.prototype.forEach.call(logArea.querySelectorAll(".cardio-del"), function(btn){
+    btn.onclick = function(){
+      loescheCardioEintrag(btn.getAttribute("data-datum"), parseInt(btn.getAttribute("data-index"), 10));
+    };
+  });
+}
+
 function renderSteps(){
   const input = document.getElementById("stepsInput");
   if(!input) return;
@@ -8492,6 +8808,15 @@ document.getElementById("stepsInput").oninput = function(){
   clearTimeout(stepsSaveTimer);
   stepsSaveTimer = setTimeout(function(){ saveStepsFromInput(false); }, 500);
 };
+const cardioAddBtnEl = document.getElementById("cardioAddBtn");
+if(cardioAddBtnEl) cardioAddBtnEl.onclick = addCardioEintrag;
+["cardioArt","cardioMinuten"].forEach(function(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.addEventListener("input", aktualisiereCardioSchaetzung);
+  el.addEventListener("change", aktualisiereCardioSchaetzung);
+});
+
 document.getElementById("stepsSaveBtn").onclick = function(){
   clearTimeout(stepsSaveTimer);
   saveStepsFromInput(true);
@@ -11448,6 +11773,7 @@ function renderAll(){
   renderMeasurements();
   renderWater();
   renderSteps();
+  renderCardio();
   renderHome();
   renderDeloadBanner();
   renderWeeklyPlanReview();
@@ -11698,6 +12024,13 @@ const NAV_GROUPS = {
     // Körperdaten lagen früher unter "Ernährung" — eintragen dort, Verlauf hier. Jetzt
     // stehen Eingabe und Verlauf im selben Bereich.
     { label: "Körper", frameId: "frame-body" },
+    /* Cardio steht bewusst hier und nicht unter "Trainingsplan": Dort hätte es als zweiter
+       Untertab eine Chip-Leiste erzwungen, die es vorher nicht gab — gemessen 36px, die bei
+       JEDER Krafteinheit oben verloren gehen. Auf dem iPhone SE rutschte das erste
+       Gewichtsfeld dadurch wieder unter die Falz, obwohl es genau dafür schon einmal Arbeit
+       gab. Fortschritt hat die Leiste ohnehin, hier kostet der Tab nichts. Inhaltlich passt
+       es außerdem: Schritte, Gewicht und Trinkmenge werden hier ebenso protokolliert. */
+    { label: "Cardio", frameId: "frame-cardio" },
     { label: "Kalender", frameId: "frame-calendar" },
     { label: "Rang", frameId: "frame-progress" }
   ]},
@@ -11725,6 +12058,7 @@ const FRAME_HINTS = {
   "frame-progress": "Dein Kraft-Rang je Grundübung im Vergleich zu deinem Körpergewicht, plus Körpermaße-Verlauf.",
   "frame-nutrition": "Trag hier ein, was du gegessen hast — Kalorien und Eiweiß gegen dein Tagesziel. Körpergewicht, Schritte und Grundumsatz findest du unter Fortschritt · Körper.",
   "frame-body": "Körpergewicht, Trinkmenge, Schritte, Umfänge und Grundumsatz — hier eintragen und direkt den Verlauf sehen.",
+  "frame-cardio": "Ausdauer-Einheiten eintragen: Art, Dauer und optional Distanz. Die Woche wird nach den Empfehlungen der WHO ausgewertet.",
   "frame-scanner": "Barcode scannen oder ein Lebensmittel suchen, um es direkt in dein Tageslog einzutragen.",
   "frame-recipes": "Rezepte mit Einkaufsliste und ausführlicher Kochanleitung — plane deine Woche direkt im Essensplaner.",
   "frame-supplements": "Infos zu gängigen Supplementen: Einnahmezeitpunkt, Dosierung und wofür sie gut sind.",
