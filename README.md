@@ -122,3 +122,15 @@ Einzelne Datei, keine Build-Schritte:
 python3 -m http.server 9333
 # http://localhost:9333/index.html
 ```
+
+---
+
+## §34d Übungsquiz (separate App)
+
+Im Ordner [`34d/`](34d/) liegt ein eigenständiges Übungsquiz für die Sachkundeprüfung
+nach § 34d GewO. Es hat nichts mit KOUKI zu tun und teilt keine Daten mit der App.
+
+* Aufruf: `https://francis085.github.io/KOUKI-index.html/34d/`
+* Eine einzelne HTML-Datei, läuft offline, kein Konto nötig.
+* Der Lernfortschritt bleibt im Browser der jeweiligen Person (Schlüssel `quiz34d_*`).
+  Wer den Link öffnet, startet mit eigenem, leerem Fortschritt.
