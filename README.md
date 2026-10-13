@@ -122,3 +122,43 @@ Einzelne Datei, keine Build-Schritte:
 python3 -m http.server 9333
 # http://localhost:9333/index.html
 ```
+
+## Tests
+
+Die App besteht aus einer einzigen Datei ohne Build und ohne Typprüfung. Ein falsch gesetztes
+Zeichen legt sie vollständig lahm, und eine falsch verknüpfte Zahl fällt gar nicht auf — sie
+zeigt einfach das falsche Ergebnis an. Die Tests fahren die App deshalb in einem echten
+Browser und prüfen, was am Ende auf dem Bildschirm steht.
+
+```bash
+npm install                 # einmalig
+npx playwright install chromium
+
+npm test                    # alle Tests
+node tests/alle.js geraete  # nur passende Dateien
+npm run test:syntax         # nur Syntaxprüfung, braucht keinen Browser
+```
+
+`tests/alle.js` startet den Webserver selbst. Ein einzelner Test lässt sich auch direkt
+aufrufen, dann muss der Server schon laufen:
+
+```bash
+python3 -m http.server 9333 &
+node tests/geraete_test.js
+```
+
+Jede Datei ist ein eigenständiges Node-Skript und endet mit Exit-Code 0 oder 1 — kein
+Testrahmen, genau eine Abhängigkeit. Bei Fehlern legen manche Tests Bildschirmfotos im
+Projektverzeichnis ab; die sind beim Nachsehen oft aufschlussreicher als die Meldung.
+
+| Datei | Prüft |
+|---|---|
+| `bestand_test.js` | Übungsbestand, Technikhinweise, Muskeldiagramme, Plangenerator, Suche, Rundgang durch alle Ansichten |
+| `kabel_test.js` | dass jede Kabelzug-Griffvariante ihren eigenen Technik- und Muskeleintrag trifft |
+| `diagramm_test.js` | Farbkontrast des Muskelbilds in allen fünf Themes, hell und dunkel, an echten Bildpunkten gemessen |
+| `tausch_test.js` | Übungstausch: gilt nur für den Tag, leert die Gewichte, verfälscht den Verlauf nicht |
+| `geraete_test.js` | Geräte je Übung: getrennte Zählung, Bestandsschutz, gemessener Geräteunterschied |
+| `verlauf_test.js` | dass vergangene Einheiten der Übung zugeordnet bleiben, die damals gemacht wurde |
+
+Bei jedem Push läuft dasselbe über GitHub Actions (`.github/workflows/tests.yml`).
+
