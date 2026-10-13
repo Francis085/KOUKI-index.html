@@ -1,13 +1,22 @@
 name: Tests
 
-# Läuft bei jedem Push und bei jedem Pull Request auf main. Der Zweck ist nicht Vollständigkeit,
-# sondern Zeitpunkt: Ein Rückschritt soll auffallen, bevor er auf dem Handy landet.
+# Läuft bei jedem Pull Request auf main und auf main selbst. Der Zweck ist nicht
+# Vollständigkeit, sondern Zeitpunkt: Ein Rückschritt soll auffallen, bevor er auf dem Handy
+# landet.
+#
+# Bewusst NICHT bei jedem Push auf jeden Zweig: Zu einem Zweig mit offenem PR liefe der
+# Testlauf sonst doppelt — einmal für den Push, einmal für den PR, mit identischem Ergebnis.
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
+
+# Ein neuer Push auf denselben Zweig macht den vorigen Lauf hinfällig.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
