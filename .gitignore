@@ -1,0 +1,6 @@
+# Nur für die Tests, gehört nicht ins Repository
+node_modules/
+
+# Bildschirmfotos, die Tests zur Begutachtung ablegen
+*.png
+!bilder/*.png

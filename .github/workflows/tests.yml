@@ -1,0 +1,57 @@
+name: Tests
+
+# Läuft bei jedem Pull Request auf main und auf main selbst. Der Zweck ist nicht
+# Vollständigkeit, sondern Zeitpunkt: Ein Rückschritt soll auffallen, bevor er auf dem Handy
+# landet.
+#
+# Bewusst NICHT bei jedem Push auf jeden Zweig: Zu einem Zweig mit offenem PR liefe der
+# Testlauf sonst doppelt — einmal für den Push, einmal für den PR, mit identischem Ergebnis.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Ein neuer Push auf denselben Zweig macht den vorigen Lauf hinfällig.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Nur eine Abhängigkeit: Playwright. Die Tests sind eigenständige Node-Skripte.
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      # Nur Chromium — die App läuft auf dem Handy, geprüft wird in dessen Maschinerie.
+      - name: Chromium holen
+        run: npx playwright install --with-deps chromium
+
+      # Fängt Tippfehler ab, bevor 280 Browsertests darüber stolpern.
+      - name: Syntax des Hauptskripts prüfen
+        run: node tests/syntax.js
+
+      - name: Tests
+        run: node tests/alle.js
+
+      # Die Tests legen bei Fehlern Bildschirmfotos ab — die sind beim Nachsehen Gold wert.
+      - name: Bildschirmfotos sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bildschirmfotos
+          path: '*.png'
+          if-no-files-found: ignore
+          retention-days: 7

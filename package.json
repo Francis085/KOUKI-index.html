@@ -1,0 +1,13 @@
+{
+  "name": "kouki",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KOUKI — Trainings- und Ernährungs-App als einzelne HTML-Datei. Dieses package.json dient allein den Tests; die App selbst braucht keinen Build und keine Abhängigkeiten.",
+  "scripts": {
+    "test": "node tests/alle.js",
+    "test:syntax": "node tests/syntax.js"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

@@ -4159,18 +4159,6 @@ function exportTrainingPDF(){
     const startStr = ymd(fourWeeksAgo);
     const dates = state.completedDays.filter(function(d){ return d >= startStr; }).sort().reverse();
 
-    const idToName = {};
-    getAllPlans().forEach(function(plan){
-      Object.keys(plan.days).forEach(function(dKey){
-        plan.days[dKey].groups.forEach(function(g){
-          // Getauschte Übung berücksichtigen — sonst würde hier trotz Tausch weiterhin der
-          // ursprüngliche Übungsname aus der Planvorlage auftauchen (state.exerciseSwaps ist
-          // global nach Übungs-ID, unabhängig davon, aus welchem Plan gerade gescannt wird).
-          g.exercises.forEach(function(ex){ const t = tauschHeute(ex.id); idToName[ex.id] = (t && t.name) || ex.name; });
-        });
-      });
-    });
-
     let bodyHtml = "";
     if(!dates.length){
       bodyHtml = "<p>Keine Einheiten in den letzten 4 Wochen.</p>";
@@ -4181,9 +4169,8 @@ function exportTrainingPDF(){
         const rows = [];
         Object.keys(state.history).forEach(function(id){
           const found = (state.history[id] || []).find(function(h){ return h.date === dateStr; });
-          // idToName kennt nur Übungen der aktuellen Pläne; für frühere greift der im
-          // Verlaufseintrag mitgeschriebene Name.
-          if(found) rows.push({ name: idToName[id] || found.name || id, sets: found.sets });
+          // Wie im Tagesdetail: der Name der damals ausgeführten Übung.
+          if(found) rows.push({ name: nameDerEinheit(found, id), sets: found.sets });
         });
         if(rows.length){
           bodyHtml += "<ul>";
@@ -7494,6 +7481,42 @@ function stopSessionTimerForFinish(){
 }
 
 // --- Wochenvolumen pro Muskelgruppe ---
+/* ===== Wie hieß die Übung, als die Einheit geloggt wurde? ===============================
+   Der Verlauf liegt unter der Plan-Position (z. B. "fri_hacksquat"). Welche Übung dort
+   tatsächlich gemacht wurde, steht im Eintrag selbst — finishSession schreibt den Namen mit,
+   eben weil sich die Position durch einen Tausch ändern kann.
+
+   An mehreren Stellen wurde trotzdem gefragt, wie die Position HEUTE heißt. Für die
+   Vergangenheit ist das die falsche Frage, und die Antworten waren entsprechend falsch:
+   Eine Beinpresse-Einheit vom 20.09. erschien im Tagesdetail als "Bankdrücken", und ihre
+   Sätze landeten im Wochenvolumen unter "Brust" statt unter "Beine" — womit die
+   Volumenauswertung, an der die Trainingsempfehlungen hängen, auf falschen Zahlen stand.
+
+   Rückfall auf den heutigen Namen nur, wenn der Eintrag gar keinen führt: Einträge aus der
+   Zeit vor dem Namensfeld haben keinen besseren.                                           */
+function nameDerEinheit(h, id){
+  if(h && h.name) return h.name;
+  const planUebung = findExerciseById(id);
+  return exerciseNameById(id) || (planUebung && planUebung.name) || id;
+}
+
+/* Die Übung mit ihren Eigenschaften (Modus, pro Seite, Körpergewichtsanteil), so wie sie zum
+   Zeitpunkt der Einheit gegolten haben. Wichtig für die Lastberechnung: Ein Halt zählt
+   Sekunden statt Wiederholungen, eine "pro Seite"-Übung bewegt die doppelte Menge. */
+function uebungDerEinheit(h, id){
+  const planUebung = findExerciseById(id);
+  const name = nameDerEinheit(h, id);
+  if(planUebung && planUebung.name === name) return planUebung;
+  let treffer = null;
+  Object.keys(EXERCISE_LIBRARY).forEach(function(g){
+    if(treffer) return;
+    EXERCISE_LIBRARY[g].forEach(function(e){ if(!treffer && e.name === name) treffer = e; });
+  });
+  if(!treffer) return planUebung;
+  // sets/restSeconds kommen weiter aus dem Plan, Art und Modus aus der Bibliothek
+  return Object.assign({}, planUebung || {}, treffer);
+}
+
 function buildExerciseGroupMap(){
   const map = {};
   Object.keys(EXERCISE_LIBRARY).forEach(function(g){
@@ -7503,22 +7526,14 @@ function buildExerciseGroupMap(){
 }
 function volumeByGroupInRange(start, end){
   const groupMap = buildExerciseGroupMap();
-  const idToName = {};
-  getAllPlans().forEach(function(plan){
-    Object.keys(plan.days).forEach(function(dKey){
-      plan.days[dKey].groups.forEach(function(g){
-        g.exercises.forEach(function(ex){ const t = tauschHeute(ex.id); idToName[ex.id] = (t && t.name) || ex.name; });
-      });
-    });
-  });
   const counts = {};
   Object.keys(state.history).forEach(function(id){
-    const name = idToName[id] || id;
-    const group = groupMap[name] || "Sonstiges";
     (state.history[id]||[]).forEach(function(h){
-      if(h.date >= start && h.date <= end){
-        counts[group] = (counts[group]||0) + (h.sets ? h.sets.length : 0);
-      }
+      if(h.date < start || h.date > end) return;
+      /* Die Gruppe richtet sich nach der Übung, die an diesem Tag gemacht wurde — nicht
+         danach, was heute an dieser Stelle im Plan steht. */
+      const group = groupMap[nameDerEinheit(h, id)] || "Sonstiges";
+      counts[group] = (counts[group]||0) + (h.sets ? h.sets.length : 0);
     });
   });
   return counts;
@@ -7550,9 +7565,10 @@ function weekRecapStats(){
   let totalWeight = 0;
   let totalHoldSeconds = 0;
   Object.keys(state.history).forEach(function(exId){
-    const ex = findExerciseById(exId);
     (state.history[exId] || []).forEach(function(h){
       if(h.date >= start && h.date <= end){
+        // Modus, "pro Seite" und Körpergewichtsanteil der TATSÄCHLICH ausgeführten Übung
+        const ex = uebungDerEinheit(h, exId);
         (h.sets || []).forEach(function(s){
           // Halte-Übungen tragen kein kg-Volumen bei (das reps-Feld sind dort Sekunden,
           // keine Wiederholungen) — die laufen stattdessen in die Halte-Zeit ein.
@@ -7739,11 +7755,13 @@ function checkGlobalDeloadSignal(){
   });
   let declining = 0, evaluated = 0;
   Object.keys(allExIds).forEach(function(id){
-    const h = state.history[id];
-    if(!h || h.length < 2) return;
-    evaluated++;
+    /* Früher zählte hier der ROHE Verlauf in den Nenner. trendFor() filtert aber nach Übung
+       und Gerät und liefert für manche gar keinen Trend — die kamen trotzdem in die Quote und
+       verwässerten sie. Gezählt wird jetzt nur, was auch wirklich bewertet werden konnte. */
     const t = trendFor(id);
-    if(t && t.cls === "down") declining++;
+    if(!t) return;
+    evaluated++;
+    if(t.cls === "down") declining++;
   });
   if(evaluated < 3) return null;
   if(declining >= 3 && (declining / evaluated) >= 0.4){
@@ -7923,9 +7941,9 @@ function openDayDetail(dateStr){
   Object.keys(state.history).forEach(function(id){
     if(seenIds[id]) return;
     const found = (state.history[id] || []).find(function(h){ return h.date === dateStr; });
-    // Steht die Übung nicht mehr im Plan, liefert exerciseNameById() nichts. Der Verlaufseintrag
-    // führt seinen Namen aber selbst mit — sonst stünde hier die rohe ID wie "mon_curl".
-    if(found){ rows.push({ name: exerciseNameById(id) || found.name || id, sets: found.sets }); seenIds[id] = true; }
+    // Der Name aus dem Eintrag selbst: Hier wird eine vergangene Einheit gezeigt, und die
+    // gehört zu der Übung, die DAMALS gemacht wurde.
+    if(found){ rows.push({ name: nameDerEinheit(found, id), sets: found.sets }); seenIds[id] = true; }
   });
 
   let html = '<div class="day-modal-head"><h3>' + formatDateLong(dateStr) + '</h3>' +
