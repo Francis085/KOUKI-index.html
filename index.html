@@ -537,6 +537,24 @@
   }
   .icon-btn:active{transform:scale(.9);}
 
+  .geraet-reihe{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;}
+  .geraet-chip{border:1px solid var(--pastel-border);background:var(--pastel-overlay);
+    color:var(--pastel-text);border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:600;
+    min-height:34px;cursor:pointer;}
+  .geraet-chip.active{background:var(--olive);color:var(--on-olive,#fff);border-color:var(--olive);}
+  .geraet-hinweis{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--pastel-text-soft);}
+  .geraet-liste{border:1px solid var(--pastel-border);border-radius:var(--radius-md);overflow:hidden;}
+  .geraet-zeile{display:flex;align-items:center;gap:8px;padding:8px 10px;
+    border-bottom:1px solid var(--pastel-border);}
+  .geraet-zeile:last-child{border-bottom:0;}
+  .gz-name{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--pastel-text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .gz-tag{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    opacity:.6;}
+  .gz-weg{min-width:44px;min-height:44px;border:0;background:transparent;
+    color:var(--pastel-text-soft);font-size:15px;cursor:pointer;}
+  .geraet-neu{display:flex;gap:8px;align-items:stretch;margin-top:10px;}
+  .geraet-neu .quickfill-btn{flex-shrink:0;}
   .gen-row{margin-bottom:6px;}
   .gen-zusatz{opacity:.7;font-weight:400;}
   .gen-vorschau{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
@@ -3500,7 +3518,7 @@ const STORAGE_KEY = "plan-data";
 window.addEventListener("error", function(e){ console.error("Globaler Fehler abgefangen:", e.message || e); e.preventDefault(); });
 window.addEventListener("unhandledrejection", function(e){ console.error("Unbehandelte Promise-Ablehnung abgefangen:", e.reason); e.preventDefault(); });
 
-let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, cardioLog:{}, mobilityLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpLog:{}, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
+let state = { entries:{}, history:{}, prs:{}, bodyweight:[], customPlans:[], bmr:{ height:"", age:"", sex:"m", activity:"1.55" }, bmrHistory:[], completedDays:[], completedDayColor:{}, dayNotes:{}, rewardedWeeks:[], favoriteQuotes:[], lastRewardQuotes:[], longestWeekStreak:0, measurements:{ waist:[], arm:[], thigh:[] }, waterLog:{}, suppLog:{}, suppSelection:[], suppSortByTime:false, bloodValues:{}, customRestTimes:{}, weakPoints:[], stepsLog:{}, cardioLog:{}, mobilityLog:{}, deloadDismissedDate:"", nutritionLog:{}, activeGoal:"maintain", xp:0, xpLog:{}, xpWeekBonusGiven:[], foodCache:{}, barcodeHistory:[], customFoods:[], favoriteFoods:[], exerciseSwaps:{}, shoppingList:[], reminderSettings:{ enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"", lastWeeklyRecapWeek:"" }, barbellWeight:20, supersets:{}, mealPlan:{}, leaderboardOptIn:false, leaderboardNickname:"", autoRestTimer:true, lastBackupDate:"", backupHintDismissedDate:"", skippedExercises:{}, geraete:{}, geraetWahl:{}, installHintDismissed:false, frameHintsSeen:{}, weeklyReviewDismissedDate:"", cloudOwnerId:"", firstStepsDismissed:false, lastCloudPushAt:"" };
 let currentPlanId = "default";
 let currentDay = "mon";
 let currentExerciseIndex = 0;
@@ -3513,6 +3531,7 @@ let plateWeightOverride = {};
 let openSuperset = {};
 let openSetNote = {};
 let openExMenu = {};      // "Mehr"-Menü je Übungskarte
+let openGeraete = {};     // Geräte-/Stationsverwaltung je Übungskarte
 let uebersichtOffen = false;   // Sitzungsübersicht über der aktuellen Übung
 let bwWerteOffen = false;      // Einzelwerte unter dem Gewichtsverlauf
 let manuellOffen = false;      // Formular "Mahlzeit manuell hinzufügen"
@@ -3797,6 +3816,8 @@ function normalizeState(){
   if(!state.barcodeHistory) state.barcodeHistory = [];
   if(!state.customFoods) state.customFoods = [];
   if(!state.favoriteFoods) state.favoriteFoods = [];
+  if(!state.geraete) state.geraete = {};
+  if(!state.geraetWahl) state.geraetWahl = {};
   if(!state.exerciseSwaps) state.exerciseSwaps = {};
   /* Tausche galten früher dauerhaft und haben deshalb kein Datum. Sie bekommen das heutige
      und laufen danach normal aus — so verschwindet nichts schlagartig, und ab morgen gilt
@@ -4834,7 +4855,7 @@ function setNotesForHistoryEntry(h){
    vom Hack Squat stammten. Jetzt derselbe Namensfilter wie beim Verlauf. */
 function trendFor(id){
   const planUebung = findExerciseById(id);
-  const h = verlaufNachName(id, planUebung ? planUebung.name : "");
+  const h = verlaufFuer(id, planUebung ? planUebung.name : "");
   if(h.length < 2) return null;
   const getauscht = tauschHeute(id);
   // Für die Lastberechnung zählt die TATSÄCHLICH ausgeführte Übung: eine gegen eine
@@ -4870,8 +4891,127 @@ function verlaufNachName(id, ersatzName){
     return h.name === aktuell;
   });
 }
+/* ===== Geräte/Stationen je Übung ========================================================
+   Gemeldet: Dieselbe Übung an einem anderen Gerät — der Latzug in der anderen Hallenhälfte,
+   eine Beinpresse mit anderem Winkel — und die App meldet einen Rückschritt. Zu Recht aus
+   ihrer Sicht: 70 kg stehen gegen 80 kg. Nur misst sie damit die Übersetzung des Geräts und
+   nicht die Kraft des Trainierenden. Rollenzug, Hebel und Reibung unterscheiden sich von
+   Hersteller zu Hersteller deutlich; die Skalen sind schlicht nicht vergleichbar.
+
+   Lösung in drei Teilen:
+     1. Zu einer Übung lassen sich Geräte benennen ("Technogym", "Halle 2", "alte Maschine").
+     2. Verlauf, Trend, Vorschläge und Rekorde werden je Gerät getrennt geführt.
+     3. Liegen für zwei Geräte genug Einheiten vor, rechnet die App den Unterschied selbst
+        aus und sagt ihn an — "Halle 2 liegt bei etwa 88 % von Technogym". Damit ist der
+        vermeintliche Rückschritt als das benannt, was er ist: eine andere Skala.
+
+   Wichtig für den Bestand: Ein Verlaufseintrag ohne Gerät zählt zum ERSTEN Gerät der Liste.
+   Wer nach zwei Jahren Latzug ein zweites Gerät anlegt, verliert damit keine einzige Einheit —
+   die gesamte bisherige Historie gehört weiterhin dem Stammgerät. Und solange weniger als
+   zwei Geräte benannt sind, verhält sich die App exakt wie vorher.                        */
+
+function geraeteFor(uebungsName){
+  const l = state.geraete && state.geraete[uebungsName];
+  return Array.isArray(l) ? l : [];
+}
+function hatGeraete(uebungsName){ return geraeteFor(uebungsName).length >= 2; }
+
+function aktivesGeraet(uebungsName){
+  const liste = geraeteFor(uebungsName);
+  if(!liste.length) return null;
+  const gewaehlt = state.geraetWahl && state.geraetWahl[uebungsName];
+  return liste.indexOf(gewaehlt) !== -1 ? gewaehlt : liste[0];
+}
+/* Ohne Eintrag gilt das erste Gerät — siehe Begründung oben. */
+function geraetVonEintrag(h, liste){
+  if(h && h.geraet && liste.indexOf(h.geraet) !== -1) return h.geraet;
+  return liste[0];
+}
+
+function waehleGeraet(uebungsName, geraet){
+  if(!state.geraetWahl) state.geraetWahl = {};
+  state.geraetWahl[uebungsName] = geraet;
+  saveState();
+  renderContent();
+}
+function fuegeGeraetHinzu(uebungsName, geraet){
+  const sauber = (geraet || "").trim().slice(0, 40);
+  if(!sauber) return false;
+  if(!state.geraete) state.geraete = {};
+  const liste = geraeteFor(uebungsName).slice();
+  if(liste.indexOf(sauber) !== -1) return false;
+  if(liste.length >= 6) return false;      // mehr als ein halbes Dutzend Stationen pro Übung
+  liste.push(sauber);                       // hat niemand, und die Chipreihe bliebe lesbar
+  state.geraete[uebungsName] = liste;
+  if(!state.geraetWahl[uebungsName]) state.geraetWahl[uebungsName] = liste[0];
+  saveState();
+  return true;
+}
+function loescheGeraet(uebungsName, geraet){
+  const liste = geraeteFor(uebungsName).filter(function(g){ return g !== geraet; });
+  if(liste.length) state.geraete[uebungsName] = liste;
+  else delete state.geraete[uebungsName];
+  /* Die Verlaufseinträge behalten ihren Gerätenamen. Wird das Gerät später wieder angelegt,
+     hängen sie wieder daran; bis dahin zählen sie über geraetVonEintrag zum ersten Gerät.
+     Zahlen zu löschen, weil ein Etikett entfernt wurde, wäre der falsche Handel. */
+  if(state.geraetWahl && state.geraetWahl[uebungsName] === geraet){
+    if(liste.length) state.geraetWahl[uebungsName] = liste[0];
+    else delete state.geraetWahl[uebungsName];
+  }
+  saveState();
+}
+
+/* Mittlere Bestlast je Gerät aus den letzten Einheiten. Bewusst der Mittelwert mehrerer
+   Einheiten und nicht der Bestwert: Ein einzelner guter Tag an einem Gerät würde den
+   Vergleich sonst kippen. */
+function geraetMittelLast(verlauf, ex, liste, geraet, maxEinheiten){
+  const werte = [];
+  for(let i = verlauf.length - 1; i >= 0 && werte.length < (maxEinheiten || 3); i--){
+    const h = verlauf[i];
+    if(geraetVonEintrag(h, liste) !== geraet) continue;
+    const w = dayBestWeight(h, ex);
+    if(w !== null && !isNaN(w) && w > 0) werte.push(w);
+  }
+  if(!werte.length) return null;
+  return { mittel: werte.reduce(function(a, b){ return a + b; }, 0) / werte.length, einheiten: werte.length };
+}
+
+/* Verhältnis zweier Geräte, nur wenn für beide genug vorliegt. Zwei Einheiten je Gerät sind
+   das Minimum — bei einer einzigen misst man den Tagesform-Zufall, nicht das Gerät. */
+const GERAET_MIN_EINHEITEN = 2;
+function geraetVergleich(ex, uebungsName){
+  const liste = geraeteFor(uebungsName);
+  if(liste.length < 2) return null;
+  const aktiv = aktivesGeraet(uebungsName);
+  const bezug = liste[0];
+  if(aktiv === bezug) return null;
+  const alle = verlaufNachName(ex.id, ex.name);
+  const a = geraetMittelLast(alle, ex, liste, aktiv);
+  const b = geraetMittelLast(alle, ex, liste, bezug);
+  if(!a || !b) return null;
+  if(a.einheiten < GERAET_MIN_EINHEITEN || b.einheiten < GERAET_MIN_EINHEITEN) return null;
+  const anteil = a.mittel / b.mittel;
+  if(!isFinite(anteil) || anteil <= 0) return null;
+  return {
+    aktiv: aktiv, bezug: bezug, anteil: anteil,
+    prozent: Math.round(anteil * 100),
+    // Was an diesem Gerät dem zuletzt am Bezugsgerät bewegten Gewicht entspricht
+    entspricht: Math.round(b.mittel * anteil * 2) / 2,
+    bezugMittel: Math.round(b.mittel * 2) / 2,
+  };
+}
+/* Name UND Gerät. Sind keine zwei Geräte benannt, bleibt es beim reinen Namensfilter —
+   dann verhält sich alles wie vorher. */
+function verlaufFuer(id, ersatzName){
+  const name = exerciseNameById(id) || ersatzName;
+  const alle = verlaufNachName(id, ersatzName);
+  const liste = geraeteFor(name);
+  if(liste.length < 2) return alle;
+  const aktiv = aktivesGeraet(name);
+  return alle.filter(function(h){ return geraetVonEintrag(h, liste) === aktiv; });
+}
 function historyFor(ex){
-  return verlaufNachName(ex.id, ex.name);
+  return verlaufFuer(ex.id, ex.name);
 }
 
 // --- Trainingstag automatisch zum heutigen Wochentag wählen ------------------------------
@@ -4918,15 +5058,25 @@ function selectTodaysTrainingDay(plan){
 // erscheinen. Deshalb liegt unter der ID jetzt eine Ebene tiefer eine Zuordnung nach
 // Übungsname — so bleiben beide Rekorde erhalten, auch wenn man hin und her tauscht.
 //   state.prs["fri_hacksquat"] = { "Hack Squat": {...}, "Beinpresse": {...} }
+/* Mit mehreren Geräten gehört ein Rekord zum Gerät, an dem er aufgestellt wurde — 80 kg am
+   einen und 80 kg am anderen sind nicht dieselbe Leistung. Das ERSTE Gerät behält bewusst
+   den bloßen Übungsnamen als Schlüssel: So bleiben alle bisher aufgestellten Rekorde ohne
+   Umschreiben dem Stammgerät zugeordnet. */
+function prSchluessel(uebungsName){
+  const liste = geraeteFor(uebungsName);
+  if(liste.length < 2) return uebungsName;
+  const aktiv = aktivesGeraet(uebungsName);
+  return aktiv === liste[0] ? uebungsName : (uebungsName + " @ " + aktiv);
+}
 function prFor(ex){
   const map = state.prs[ex.id];
   if(!map) return null;
-  return map[exerciseNameById(ex.id) || ex.name] || null;
+  return map[prSchluessel(exerciseNameById(ex.id) || ex.name)] || null;
 }
 
 function setPRFor(ex, rec){
   if(!state.prs[ex.id]) state.prs[ex.id] = {};
-  state.prs[ex.id][exerciseNameById(ex.id) || ex.name] = rec;
+  state.prs[ex.id][prSchluessel(exerciseNameById(ex.id) || ex.name)] = rec;
 }
 
 // Alle Rekorde flach mit ID und Übungsname — für Listen, Zählungen und den Kraft-Rang.
@@ -6667,6 +6817,10 @@ function toggleSwap(id){
   openSwap[id] = !openSwap[id];
   renderContent();
 }
+function toggleGeraete(id){
+  openGeraete[id] = !openGeraete[id];
+  renderContent();
+}
 
 /* Gemeldet: Ein Tausch galt für den ganzen Plan, nicht nur für den Tag. Ist ein Gerät
    besetzt und man weicht einmal aus, stand die Ersatzübung ab da dauerhaft im Plan — man
@@ -8040,6 +8194,43 @@ function buildExerciseCard(ex, dayColor, el){
       top.appendChild(actions);
       card.appendChild(top);
 
+      /* Die Chipreihe erscheint nur, wenn wirklich mehrere Geräte benannt sind. Bei den
+         allermeisten Übungen gibt es nur eines — dort wäre jede zusätzliche Zeile in der
+         Karte reine Belastung. */
+      if(hatGeraete(ex.name)){
+        const reihe = document.createElement("div");
+        reihe.className = "geraet-reihe";
+        const liste = geraeteFor(ex.name);
+        const aktiv = aktivesGeraet(ex.name);
+        liste.forEach(function(g){
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "geraet-chip" + (g === aktiv ? " active" : "");
+          chip.textContent = g;
+          chip.onclick = function(){ waehleGeraet(ex.name, g); };
+          reihe.appendChild(chip);
+        });
+        card.appendChild(reihe);
+
+        /* Der eigentliche Punkt der ganzen Übung: Steht an diesem Gerät weniger auf dem
+           Stapel, soll die App sagen, dass das an der Übersetzung liegt und nicht an der
+           Kraft — mit einer Zahl, die sie aus dem eigenen Verlauf errechnet hat. */
+        const verg = geraetVergleich(ex, ex.name);
+        if(verg){
+          const hinweis = document.createElement("p");
+          hinweis.className = "geraet-hinweis";
+          const richtung = verg.prozent < 100 ? "weniger" : "mehr";
+          const abstand = Math.abs(100 - verg.prozent);
+          hinweis.textContent = abstand < 3
+            ? ("„" + verg.aktiv + "\u201c und „" + verg.bezug + "\u201c liegen praktisch gleich — die Zahlen sind direkt vergleichbar.")
+            : ("An „" + verg.aktiv + "\u201c bewegst du im Schnitt " + abstand + " % " + richtung +
+               " als an „" + verg.bezug + "\u201c (" + verg.prozent + " %). Das ist die Übersetzung des Geräts, nicht dein Kraftniveau — " +
+               verg.bezugMittel + " kg dort entsprechen hier etwa " + verg.entspricht + " kg.");
+          card.appendChild(hinweis);
+        }
+      }
+
+
       if(openExMenu[ex.id]){
         const menu = document.createElement("div");
         menu.className = "ex-menu";
@@ -8052,6 +8243,11 @@ function buildExerciseCard(ex, dayColor, el){
           // Scheibenrechner nur bei echten Gewichtsübungen — sonst gibt es keine Hantel.
           exMode === "weight" ? { icon:"scheibe", label:"Hantelscheiben berechnen", fn:function(){ togglePlates(ex.id); } } : null,
           { icon:"kette", label:"Supersatz verknüpfen", fn:function(){ toggleSuperset(ex.id); } },
+          /* Nur bei Gewichts- und Körpergewichtsübungen sinnvoll: Bei einem Halt gibt es
+             keine Geräteskala, die sich unterscheiden könnte. */
+          exMode !== "hold" ? { icon:"tauschen", label:"Geräte / Stationen",
+            hint: hatGeraete(ex.name) ? ("Aktiv: " + aktivesGeraet(ex.name)) : "Für Geräte mit anderer Übersetzung",
+            fn:function(){ toggleGeraete(ex.id); } } : null,
           { icon:"ueberspringen", label:"Für heute überspringen", hint:"Der Plan bleibt unverändert", fn:function(){ skipExerciseToday(ex.id); } },
         ].filter(Boolean);
         eintraege.forEach(function(e){
@@ -8448,6 +8644,50 @@ function buildExerciseCard(ex, dayColor, el){
         });
       }
 
+      if(openGeraete[ex.id]){
+        const panel = document.createElement("div");
+        panel.className = "history-panel open";
+        const liste = geraeteFor(ex.name);
+        let inner = '<p class="hist-pr">🏋 Geräte / Stationen für "' + escapeHtml(ex.name) + '"</p>';
+        inner += '<p class="hist-empty" style="margin:-4px 0 8px;">Zwei Geräte derselben Bauart haben oft eine andere Übersetzung — 70 kg am einen können 80 kg am anderen entsprechen. Benenne sie hier, dann führt KOUKI Verlauf, Vorschläge und Rekorde getrennt und rechnet den Unterschied aus.</p>';
+        if(liste.length){
+          inner += '<div class="geraet-liste">';
+          liste.forEach(function(g, i){
+            inner += '<div class="geraet-zeile"><span class="gz-name">' + escapeHtml(g) +
+              (i === 0 ? ' <span class="gz-tag">Bezug</span>' : "") + '</span>' +
+              '<button type="button" class="gz-weg" data-geraet="' + escapeHtml(g) + '" aria-label="' + escapeHtml(g) + ' entfernen">✕</button></div>';
+          });
+          inner += '</div>';
+          if(liste.length === 1){
+            inner += '<p class="hist-empty" style="margin:8px 0 0;">Ein zweites Gerät anlegen, damit getrennt gezählt wird. Dein bisheriger Verlauf bleibt vollständig bei „' + escapeHtml(liste[0]) + '“.</p>';
+          }
+        }
+        inner += '<div class="geraet-neu"><input type="text" id="geraetNeu-' + ex.id + '" maxlength="40" placeholder="z. B. Technogym, Halle 2, alte Maschine" ' +
+          'style="flex:1;min-width:0;border:1px solid var(--pastel-border);border-radius:var(--radius-sm);padding:8px 11px;font-size:13px;background:var(--pastel-overlay);color:var(--pastel-text);box-sizing:border-box;">' +
+          '<button type="button" class="quickfill-btn" id="geraetAdd-' + ex.id + '">+ Gerät</button></div>';
+        panel.innerHTML = inner;
+        card.appendChild(panel);
+
+        const feld = panel.querySelector("#geraetNeu-" + ex.id);
+        const anlegen = function(){
+          if(fuegeGeraetHinzu(ex.name, feld.value)){ renderContent(); showToast("Gerät angelegt"); }
+          else { feld.value = ""; }
+        };
+        panel.querySelector("#geraetAdd-" + ex.id).onclick = anlegen;
+        feld.onkeydown = function(e){ if(e.key === "Enter"){ e.preventDefault(); anlegen(); } };
+        Array.prototype.forEach.call(panel.querySelectorAll(".gz-weg"), function(b){
+          b.onclick = async function(){
+            const g = b.getAttribute("data-geraet");
+            if(await frageNach("Gerät „" + g + "“ entfernen? Deine eingetragenen Einheiten bleiben erhalten — sie zählen dann wieder zum ersten Gerät.",
+              { titel:"Gerät entfernen", okText:"Entfernen", gefahr:true })){
+              loescheGeraet(ex.name, g);
+              renderContent();
+              showToast("Gerät entfernt");
+            }
+          };
+        });
+      }
+
       if(openSwap[ex.id]){
         const panel = document.createElement("div");
         panel.className = "history-panel open";
@@ -8726,6 +8966,9 @@ async function finishSession(){
         // Einträge zu welcher Übung gehören — und ein Progressionsvorschlag würde z.B.
         // Hack-Squat-Gewichte als Empfehlung für die Beinpresse ausgeben.
         name: exerciseNameById(ex.id) || ex.name,
+        // Ohne das Gerät ließe sich später nicht mehr sagen, auf welcher Skala diese Zahlen
+        // stehen — und genau daran scheiterte der Vergleich bisher.
+        geraet: aktivesGeraet(exerciseNameById(ex.id) || ex.name) || undefined,
         sets: performedSets.map(function(s){ return { weight: s.weight, reps: s.reps || "", rir: s.rir || "", note: s.note || "" }; })
       });
       if(state.history[ex.id].length > 30) state.history[ex.id].shift();
