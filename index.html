@@ -2773,6 +2773,8 @@ const EXERCISE_LIBRARY = {
     {name:"Beinpresse einbeinig", type:"grund"},
     {name:"Hüftstoßen einbeinig", type:"grund"},
     {name:"Wadenheben in der Beinpresse", type:"isolation"},
+    {name:"Gesäß-Kickback am Kabel", type:"isolation", perSide:true},
+    {name:"Abduktion am Kabel", type:"isolation", perSide:true},
   ],
   "Brust": [
     {name:"Bankdrücken", type:"grund"},
@@ -2799,6 +2801,9 @@ const EXERCISE_LIBRARY = {
     {name:"Archer Push-ups", type:"grund", mode:"bodyweight", bwFactor:0.75, perSide:true},
     {name:"Schrägbank-Fliegende", type:"isolation"},
     {name:"Low Cable Fly", type:"isolation"},
+    {name:"Kabel-Fliegende von oben", type:"isolation"},
+    {name:"Kabel-Fliegende auf Brusthöhe", type:"isolation"},
+    {name:"Kabel-Brustpresse einarmig", type:"grund", perSide:true},
     {name:"Svend Press", type:"isolation"},
     {name:"Landmine Press", type:"grund"},
   ],
@@ -2825,6 +2830,13 @@ const EXERCISE_LIBRARY = {
     {name:"Kroc Rows", type:"grund"},
     {name:"Überzüge", type:"isolation"},
     {name:"Latzug eng", type:"grund"},
+    {name:"Latzug Untergriff", type:"grund"},
+    {name:"Latzug Parallelgriff", type:"grund"},
+    {name:"Latzug einarmig", type:"grund", perSide:true},
+    {name:"Kabelrudern Parallelgriff", type:"grund"},
+    {name:"Kabelrudern Obergriff weit", type:"grund"},
+    {name:"Kabelrudern einarmig", type:"grund", perSide:true},
+    {name:"Überzüge am Kabelturm", type:"isolation"},
     {name:"Latzug weit", type:"grund"},
     {name:"Hyperextensions", type:"isolation", mode:"bodyweight", bwFactor:0.45},
     {name:"Dead Hang", type:"isolation", mode:"hold", bwFactor:1.0},
@@ -2845,6 +2857,8 @@ const EXERCISE_LIBRARY = {
     {name:"Y-Raises", type:"isolation"},
     {name:"Cuban Press", type:"isolation"},
     {name:"Kabel-Frontheben", type:"isolation"},
+    {name:"Kabel-Seitheben einarmig", type:"isolation", perSide:true},
+    {name:"Kabel-Reverse-Fly", type:"isolation"},
   ],
   "Bizeps": [
     {name:"SZ-Curls", type:"isolation"},
@@ -2860,6 +2874,10 @@ const EXERCISE_LIBRARY = {
     {name:"Spider Curls", type:"isolation"},
     {name:"Zottman-Curls", type:"isolation"},
     {name:"Schrägbank-Curls", type:"isolation"},
+    {name:"Kabel-Curls gerade Stange", type:"isolation"},
+    {name:"Kabel-Curls am Seil", type:"isolation"},
+    {name:"Kabel-Hammercurls", type:"isolation"},
+    {name:"Kabel-Curls einarmig über Kopf", type:"isolation", perSide:true},
   ],
   "Trizeps": [
     {name:"Trizepsdrücken", type:"isolation"},
@@ -2874,6 +2892,8 @@ const EXERCISE_LIBRARY = {
     {name:"JM Press", type:"grund"},
     {name:"Overhead-Kabel-Extension", type:"isolation"},
     {name:"Einarm-Trizepsdrücken", type:"isolation"},
+    {name:"Trizepsdrücken gerade Stange", type:"isolation"},
+    {name:"Trizepsdrücken Untergriff", type:"isolation"},
   ],
   "Bauch": [
     {name:"Crunches", type:"isolation"},
@@ -6065,6 +6085,29 @@ function renderProgressRing(){
 }
 
 const MUSCLE_DB = [
+  /* ---------- Kabelzug: Griffvarianten ----------
+     Stehen bewusst ganz oben: Der erste Treffer gewinnt, und "Latzug Untergriff" enthält
+     auch "Latzug". Stünde die allgemeine Fassung vorn, käme die Variante nie zum Zug. */
+  { kw:"Latzug Untergriff", primary:"Latissimus", secondary:"Bizeps, unterer Latissimusansatz", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Latzug Parallelgriff", primary:"Latissimus", secondary:"mittlerer Rücken, Bizeps", diagram:{ view:"back", active:["latL","latR","traps"] } },
+  { kw:"Latzug einarmig", primary:"Latissimus", secondary:"Rumpf (Stabilität)", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Kabelrudern Parallelgriff", primary:"mittlerer Rücken, Latissimus", secondary:"Bizeps, hintere Schulter", diagram:{ view:"back", active:["latL","latR","traps"] } },
+  { kw:"Kabelrudern Obergriff weit", primary:"hintere Schulter, oberer Rücken", secondary:"Latissimus", diagram:{ view:"back", active:["deltL","deltR","traps","latL","latR"] } },
+  { kw:"Kabelrudern einarmig", primary:"Latissimus", secondary:"mittlerer Rücken, Rumpf", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Überzüge am Kabelturm", primary:"Latissimus", secondary:"langer Trizepskopf, Rumpf", diagram:{ view:"back", active:["latL","latR"] } },
+  { kw:"Kabel-Fliegende von oben", primary:"Brust (unterer Anteil)", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Kabel-Fliegende auf Brusthöhe", primary:"Brust (mittlerer Anteil)", secondary:"vordere Schulter", diagram:{ view:"front", active:["pecL","pecR"] } },
+  { kw:"Kabel-Brustpresse einarmig", primary:"Brust", secondary:"vordere Schulter, Trizeps, Rumpf", diagram:{ view:"front", active:["pecL","pecR","deltL","deltR"] } },
+  { kw:"Kabel-Seitheben einarmig", primary:"seitliche Schulter", secondary:"Trapez", diagram:{ view:"front", active:["deltL","deltR"] } },
+  { kw:"Kabel-Reverse-Fly", primary:"hintere Schulter", secondary:"Trapez, Rautenmuskeln", diagram:{ view:"back", active:["deltL","deltR","traps"] } },
+  { kw:"Trizepsdrücken gerade Stange", primary:"Trizeps (seitlicher Kopf)", secondary:"Unterarm", diagram:{ view:"back", active:["tricepL","tricepR"] } },
+  { kw:"Trizepsdrücken Untergriff", primary:"Trizeps (innerer Kopf)", secondary:"Unterarm", diagram:{ view:"back", active:["tricepL","tricepR"] } },
+  { kw:"Kabel-Curls gerade Stange", primary:"Bizeps", secondary:"Unterarm", diagram:{ view:"front", active:["bicepL","bicepR"] } },
+  { kw:"Kabel-Curls am Seil", primary:"Bizeps", secondary:"Unterarm (Supination)", diagram:{ view:"front", active:["bicepL","bicepR","forearmL","forearmR"] } },
+  { kw:"Kabel-Hammercurls", primary:"Bizeps, Brachialis", secondary:"Unterarm (Oberseite)", diagram:{ view:"front", active:["bicepL","bicepR","forearmL","forearmR"] } },
+  { kw:"Kabel-Curls einarmig über Kopf", primary:"Bizeps (kurzer Kopf)", secondary:"vordere Schulter", diagram:{ view:"front", active:["bicepL","bicepR"] } },
+  { kw:"Gesäß-Kickback am Kabel", primary:"Gesäß", secondary:"hintere Oberschenkel", diagram:{ view:"back", active:["gluteL","gluteR","hamL","hamR"] } },
+  { kw:"Abduktion am Kabel", primary:"Gesäßmuskulatur (seitlich)", secondary:"Rumpf (Stabilität)", diagram:{ view:"back", active:["gluteL","gluteR"] } },
   // --- Muskelinfos zu den neu aufgenommenen Übungen. Wie oben gilt: Der erste Treffer
   // per name.includes(kw) gewinnt, deshalb stehen längere/spezifischere Namen vorn.
   { kw:"Frontkniebeuge", primary:"Quadrizeps", secondary:"Gesäß, Rumpf, oberer Rücken", diagram:{ view:"front", active:["quadL","quadR","absCore"] } },
@@ -6238,6 +6281,30 @@ const MUSCLE_DB = [
    ist. Hier gewinnt stattdessen das LÄNGSTE passende Schlüsselwort. Damit schlägt
    "Enges Bankdrücken" automatisch "Bankdrücken", ganz gleich wie die Liste sortiert ist. */
 const TECHNIK_DB = [
+  /* ---------- Kabelzug: Griffvarianten ----------
+     Am Kabel liegt die Last über den ganzen Weg an, nicht nur im schwersten Winkel wie bei
+     freien Gewichten. Das verzeiht weniger Schwung — deshalb stehen bei allen Varianten
+     Haltung und Tempo im Vordergrund, nicht das Gewicht. */
+  { kw:"Latzug Untergriff", setup:["Griff schulterbreit, Handflächen zeigen zu dir","Oberschenkel fest unter dem Polster","Brust raus, leichte Rücklage von etwa 10–15°"], ablauf:["Ellbogen eng am Körper nach unten und hinten ziehen","Stange zum oberen Brustbein, Schulterblätter nach unten","Oben kontrolliert ausstrecken, Schultern lang werden lassen"], fehler:["Mit dem Oberkörper nach hinten schaukeln","Nur mit den Armen ziehen — die Ellbogen führen","Zu weiter Griff: dann arbeitet der Bizeps kaum noch mit"] },
+  { kw:"Latzug Parallelgriff", setup:["V-Griff oder enger Parallelgriff einhängen","Handflächen zeigen zueinander, Daumen oben","Oberkörper fast senkrecht"], ablauf:["Griff zum Brustbein ziehen, Ellbogen dicht am Rumpf","Unten eine Sekunde halten, Schulterblätter zusammen","Langsam nach oben ausstrecken"], fehler:["Griff zum Bauch statt zur Brust ziehen","Schultern zu den Ohren hochziehen","Mit dem Rücken wegkippen, um mehr Gewicht zu bewegen"] },
+  { kw:"Latzug einarmig", setup:["Einzelgriff am oberen Kabel, seitlich oder frontal sitzen","Freie Hand am Polster oder an der Hüfte","Rumpf fest, Becken bleibt gerade"], ablauf:["Ellbogen nach unten und hinten führen","Unten den Latissimus bewusst anspannen","Oben die Schulter weit nach oben ausstrecken lassen"], fehler:["Oberkörper zur Gegenseite verdrehen","Nur bis zur Schulterhöhe ziehen","Die stärkere Seite unbemerkt schwerer fahren — Gewicht beidseitig gleich halten"] },
+  { kw:"Kabelrudern Parallelgriff", setup:["Füße fest am Brett, Knie leicht gebeugt","Oberkörper aufrecht, unterer Rücken leicht hohl","Arme gestreckt, Schultern vorn lang"], ablauf:["Griff zum unteren Brustbein ziehen, Ellbogen am Körper","Schulterblätter hinten zusammenführen, kurz halten","Kontrolliert ausstrecken, Oberkörper bleibt aufrecht"], fehler:["Mit dem Oberkörper vor und zurück rudern","Rundrücken beim Ausstrecken","Ellbogen nach außen abspreizen"] },
+  { kw:"Kabelrudern Obergriff weit", setup:["Breite Stange, Handflächen zeigen nach unten","Oberkörper aufrecht, Brust raus","Ellbogen zeigen nach außen"], ablauf:["Stange zum oberen Bauch bis unteren Brustkorb ziehen","Ellbogen auf Schulterhöhe nach hinten führen","Hinten die Schulterblätter zusammen, kurz halten"], fehler:["Griff zum Bauchnabel ziehen — dann arbeitet der Latissimus statt der hinteren Schulter","Schultern hochziehen","Schwung aus dem Rücken"] },
+  { kw:"Kabelrudern einarmig", setup:["Einzelgriff, Oberkörper aufrecht","Freie Hand am Oberschenkel","Becken bleibt gerade, keine Drehung"], ablauf:["Ellbogen dicht am Körper nach hinten ziehen","Hinten die Schulter nach unten und hinten führen","Vorn die Schulter kontrolliert nach vorn laufen lassen"], fehler:["Oberkörper mitdrehen, um weiter zu kommen","Nur den Arm beugen statt die Schulter zu bewegen","Gewicht fallen lassen statt zu führen"] },
+  { kw:"Überzüge am Kabelturm", setup:["Stange oder Seil am oberen Kabel, Arme fast gestreckt","Hüfte leicht nach hinten, Oberkörper vorgeneigt","Ellbogen bleiben über die ganze Bewegung fast gestreckt"], ablauf:["Mit gestreckten Armen zu den Oberschenkeln ziehen","Unten den Latissimus eine Sekunde anspannen","Oben die Arme weit nach vorn oben laufen lassen"], fehler:["Ellbogen beugen — dann wird daraus ein Trizepsdrücken","Oberkörper auf und ab bewegen","Zu schwer gewählt, dadurch kein voller Bewegungsumfang"] },
+  { kw:"Kabel-Fliegende von oben", setup:["Beide Kabel in die obere Position, Schritt nach vorn","Leichte Vorlage, ein Fuß vorn für den Stand","Ellbogen leicht gebeugt und über die ganze Bewegung so lassen"], ablauf:["Hände auf einer Bogenbahn nach unten vorn zusammenführen","Vor der Hüfte kurz anspannen, Hände dürfen sich kreuzen","Kontrolliert zurück, bis die Brust gedehnt ist"], fehler:["Ellbogenwinkel unterwegs verändern — daraus wird ein Drücken","Zu weit zurückgehen, Schulter wird nach vorn gezogen","Mit dem Oberkörper nachhelfen"] },
+  { kw:"Kabel-Fliegende auf Brusthöhe", setup:["Beide Kabel auf Brusthöhe einstellen","Schritt nach vorn, Brust raus, Schulterblätter hinten","Ellbogen leicht gebeugt, Handflächen zeigen nach vorn"], ablauf:["Arme auf Brusthöhe waagerecht zusammenführen","In der Mitte eine Sekunde anspannen","Langsam öffnen, bis die Brust spürbar gedehnt ist"], fehler:["Hände über Schulterhöhe führen","Schultern nach vorn rollen lassen","Schwung durch Vor- und Zurückwippen"] },
+  { kw:"Kabel-Brustpresse einarmig", setup:["Kabel auf Brusthöhe, Rücken zum Turm","Schritt nach vorn, fester Stand, Rumpf angespannt","Freie Hand an der Hüfte"], ablauf:["Griff auf Brusthöhe nach vorn drücken","Vorn die Brust kurz anspannen, Schulter bleibt unten","Kontrolliert zurückführen, bis die Brust gedehnt ist"], fehler:["Oberkörper mitdrehen — der Rumpf hält dagegen","Schulter nach vorn schieben statt die Brust zu nutzen","Ins Hohlkreuz ausweichen"] },
+  { kw:"Kabel-Seitheben einarmig", setup:["Kabel ganz unten, seitlich zum Turm stehen","Griff mit der turmfernen Hand vor dem Körper","Freie Hand am Turm zum Stabilisieren"], ablauf:["Arm seitlich bis Schulterhöhe heben, Ellbogen leicht gebeugt","Oben kurz halten, kleiner Finger leicht höher als Daumen","Langsam ablassen, Spannung bleibt"], fehler:["Über Schulterhöhe heben — dann übernimmt der Trapez","Mit dem Oberkörper zur Seite kippen","Zu schwer, dadurch Schwung aus den Beinen"] },
+  { kw:"Kabel-Reverse-Fly", setup:["Beide Kabel auf Schulterhöhe, überkreuzt greifen","Schritt zurück, leichte Vorlage, Rumpf fest","Ellbogen leicht gebeugt"], ablauf:["Arme auf Schulterhöhe nach außen hinten öffnen","Hinten die Schulterblätter zusammenführen, kurz halten","Kontrolliert zurück vor den Körper"], fehler:["Ellbogen stark beugen — daraus wird ein Rudern","Schultern zu den Ohren ziehen","Zu schwer gewählt, dadurch Schwung aus dem Rücken"] },
+  { kw:"Trizepsdrücken gerade Stange", setup:["Gerade Stange am oberen Kabel, Obergriff schulterbreit","Ellbogen am Körper, Oberarme bleiben senkrecht","Leichte Vorlage, Rumpf fest"], ablauf:["Nur den Unterarm bewegen, bis die Arme ganz gestreckt sind","Unten eine Sekunde anspannen","Kontrolliert zurück bis etwa 90° Ellbogenbeugung"], fehler:["Ellbogen wandern nach vorn oder außen","Mit dem Oberkörper nachdrücken","Nur halber Weg — unten nicht ganz durchstrecken"] },
+  { kw:"Trizepsdrücken Untergriff", setup:["Gerade Stange, Handflächen zeigen nach oben","Ellbogen eng am Körper, Handgelenke gerade","Deutlich leichter wählen als im Obergriff"], ablauf:["Nach unten strecken, Ellbogen bleiben an Ort und Stelle","Unten kurz anspannen, besonders der innere Kopf arbeitet","Langsam zurückführen"], fehler:["Handgelenke abknicken","Zu schwer gewählt — dieser Griff ist schwächer","Ellbogen vom Körper lösen"] },
+  { kw:"Kabel-Curls gerade Stange", setup:["Gerade Stange am unteren Kabel, Untergriff schulterbreit","Ellbogen am Körper, Oberkörper aufrecht","Ein kleiner Schritt vom Turm weg für konstante Spannung"], ablauf:["Stange bis zur Brust curlen, Oberarme bleiben ruhig","Oben kurz anspannen","Kontrolliert ablassen, unten nicht ganz entspannen"], fehler:["Ellbogen nach vorn ziehen","Mit dem Rücken zurücklehnen","Unten die Spannung ganz verlieren"] },
+  { kw:"Kabel-Curls am Seil", setup:["Seil am unteren Kabel, Enden locker greifen","Handflächen zeigen zueinander","Ellbogen am Körper"], ablauf:["Hochcurlen und oben die Hände nach außen drehen","Oben eine Sekunde anspannen","Beim Ablassen die Drehung wieder zurücknehmen"], fehler:["Das Seil nur hochziehen, ohne zu drehen","Ellbogen vorwandern lassen","Schwung aus der Hüfte"] },
+  { kw:"Kabel-Hammercurls", setup:["Seil am unteren Kabel, neutraler Griff (Daumen oben)","Ellbogen am Körper, Handgelenke gerade","Oberkörper aufrecht"], ablauf:["Ohne Drehung hochcurlen, Daumen bleiben oben","Oben kurz anspannen","Langsam ablassen"], fehler:["Unterwegs in den Untergriff drehen","Mit den Schultern mithelfen","Handgelenke abknicken"] },
+  { kw:"Kabel-Curls einarmig über Kopf", setup:["Kabel auf Schulterhöhe oder höher, seitlich zum Turm","Arm waagerecht ausgestreckt, Handfläche nach oben","Oberarm bleibt die ganze Zeit auf Schulterhöhe"], ablauf:["Hand zum Kopf curlen, Oberarm bleibt an Ort und Stelle","Am Ende eine Sekunde fest anspannen","Langsam zurückstrecken"], fehler:["Oberarm absinken lassen","Mit dem Oberkörper zur Seite kippen","Zu schwer gewählt — diese Übung lebt von der Anspannung, nicht vom Gewicht"] },
+  { kw:"Gesäß-Kickback am Kabel", setup:["Fußschlaufe am unteren Kabel, Blick zum Turm","Festhalten, Oberkörper leicht vorgeneigt","Standbein leicht gebeugt, Becken gerade"], ablauf:["Bein nach hinten strecken, Bewegung kommt aus der Hüfte","Hinten das Gesäß eine Sekunde fest anspannen","Kontrolliert zurückführen, ohne abzusetzen"], fehler:["Ins Hohlkreuz drücken statt die Hüfte zu strecken","Becken zur Seite kippen","Zu weit nach hinten — der untere Rücken übernimmt"] },
+  { kw:"Abduktion am Kabel", setup:["Fußschlaufe am unteren Kabel, seitlich zum Turm","Turmnahes Bein arbeitet, am Turm festhalten","Oberkörper aufrecht, Becken gerade"], ablauf:["Bein gestreckt zur Seite führen","Außen kurz halten, Gesäß seitlich anspannen","Langsam zurück, Spannung bleibt"], fehler:["Oberkörper zur Gegenseite kippen","Bein nach vorn statt zur Seite führen","Schwung statt kontrollierter Bewegung"] },
   /* ---------- Bestehende Übungen: Beine ---------- */
   { kw:"Kniebeuge", setup:["Stange auf dem Kapuzenmuskel, nicht auf den Halswirbeln","Füße schulterbreit, Zehen 15–30° nach außen","Vor dem Absitzen tief einatmen und den Bauch fest machen"], ablauf:["Hüfte und Knie gleichzeitig beugen, Hüfte leicht nach hinten","Mindestens bis die Oberschenkel waagerecht sind","Knie zeigen in Richtung der Fußspitzen"], fehler:["Knie fallen nach innen — bewusst nach außen drücken","Rundrücken im untersten Punkt","Fersen heben ab — Stand oder Beweglichkeit prüfen"] },
   { kw:"Hack Squat", setup:["Rücken und Schultern fest am Polster","Füße mittig auf der Platte, hüftbreit"], ablauf:["Kontrolliert bis 90° oder tiefer absenken","Über die ganze Fußsohle hochdrücken"], fehler:["Knie im obersten Punkt ganz durchdrücken","Gesäß hebt vom Polster ab"] },
@@ -6508,24 +6575,43 @@ let muscleDiagramUidCounter = 0;
 // `cfg` = {view:"front"|"back", active:[Formen-Schlüssel]}. Aus MUSCLE_GROUP_DIAGRAM (grob, pro
 // Bibliotheks-Kategorie) UND aus dem "diagram"-Feld einzelner MUSCLE_DB-Einträge (genau, pro
 // Übung) — beide nutzen dasselbe Format, damit hier keine Fallunterscheidung nötig ist.
+/* Der Sinn des Bildes ist, auf einen Blick zu zeigen, welcher Muskel arbeitet. Das tat es
+   bisher nicht: Der arbeitende Muskel bekam --olive, der ruhende --ink-soft. In "Natural"
+   sind das #292820 gegen #716F65 — beide entsättigt, beide dunkel, und der weiße Verlauf
+   darüber wusch den Unterschied vollends aus. Bei 66px Breite auf dem Handy war schlicht
+   nichts zu erkennen.
+
+   Jetzt tritt der ruhende Körper zurück (heller, weniger Deckkraft) und der arbeitende
+   Muskel behält seine Akzentfarbe statt sie weiß zu überblenden. Der Trick ist, beides in
+   dieselbe Richtung zu ändern: heller Körper UND satterer Akzent. Das trägt über alle fünf
+   Themes, weil --olive in jedem davon die Akzentfarbe ist (Gold, Grün, Türkis, Orange) —
+   nur in Natural ist sie fast schwarz, und gegen den aufgehellten Körper steht auch die.  */
 function muscleDiagramSVGFromConfig(cfg){
   if(!cfg) return "";
   const shapes = cfg.view === "back" ? MUSCLE_BACK_SHAPES : MUSCLE_FRONT_SHAPES;
   const uid = "md" + (muscleDiagramUidCounter++);
-  let s = '<svg viewBox="0 0 100 200" style="width:66px;height:132px;flex-shrink:0;" aria-hidden="true">';
+  let s = '<svg viewBox="0 0 100 200" style="width:78px;height:156px;flex-shrink:0;" aria-hidden="true">';
   s += '<defs>' +
     '<radialGradient id="mdBody' + uid + '" cx="35%" cy="25%" r="85%">' +
-      '<stop offset="0%" stop-color="var(--surface)" stop-opacity="0.5"/>' +
-      '<stop offset="100%" stop-color="var(--ink-soft)" stop-opacity="1"/>' +
+      '<stop offset="0%" stop-color="var(--surface)" stop-opacity="0.94"/>' +
+      '<stop offset="100%" stop-color="var(--ink-soft)" stop-opacity="0.26"/>' +
     '</radialGradient>' +
-    '<radialGradient id="mdActive' + uid + '" cx="35%" cy="25%" r="85%">' +
-      '<stop offset="0%" stop-color="var(--surface)" stop-opacity="0.55"/>' +
+    /* Der Lichtpunkt bleibt, läuft aber schon bei 30% in die volle Akzentfarbe. Vorher zog
+       er sich über die ganze Form und ließ gerade die kleinen Partien fast weiß. */
+    '<radialGradient id="mdActive' + uid + '" cx="32%" cy="22%" r="95%">' +
+      '<stop offset="0%" stop-color="var(--surface)" stop-opacity="0.38"/>' +
+      '<stop offset="30%" stop-color="var(--olive)" stop-opacity="0.9"/>' +
       '<stop offset="100%" stop-color="var(--olive)" stop-opacity="1"/>' +
     '</radialGradient>' +
   '</defs>';
   Object.keys(shapes).forEach(function(k){
     const active = cfg.active.indexOf(k) !== -1;
-    const attrs = 'fill="url(#' + (active ? "mdActive" : "mdBody") + uid + ')" stroke="var(--surface)" stroke-width="1.1" stroke-linejoin="round"';
+    /* Der arbeitende Muskel bekommt zusätzlich eine dunkle Kontur. Die Füllung allein trägt
+       nicht in jedem Theme: "Energy" (Grün) und "Sunset" (Orange) haben mittelhelle Akzente,
+       deren Helligkeitsabstand zum hellen Körper klein bleibt. Die Kontur zeichnet die Form
+       unabhängig davon nach — sie wirkt auch dort, wo die Farbe allein zu wenig hergibt. */
+    const kontur = active ? "var(--olive-2)" : "var(--surface)";
+    const attrs = 'fill="url(#' + (active ? "mdActive" : "mdBody") + uid + ')" stroke="' + kontur + '" stroke-width="1.1" stroke-linejoin="round"';
     s += shapes[k].replace('<path ', '<path ' + attrs + ' ').replace('<ellipse ', '<ellipse ' + attrs + ' ').replace('<circle ', '<circle ' + attrs + ' ');
   });
   s += '</svg>';
