@@ -3798,6 +3798,16 @@ function normalizeState(){
   if(!state.customFoods) state.customFoods = [];
   if(!state.favoriteFoods) state.favoriteFoods = [];
   if(!state.exerciseSwaps) state.exerciseSwaps = {};
+  /* Tausche galten früher dauerhaft und haben deshalb kein Datum. Sie bekommen das heutige
+     und laufen danach normal aus — so verschwindet nichts schlagartig, und ab morgen gilt
+     überall die neue Regel. Abgelaufene werden weggeräumt, damit der gespeicherte Stand
+     nicht mit alten Einträgen volläuft. */
+  Object.keys(state.exerciseSwaps).forEach(function(id){
+    const t = state.exerciseSwaps[id];
+    if(!t || typeof t !== "object"){ delete state.exerciseSwaps[id]; return; }
+    if(!t.datum){ t.datum = todayKey(); return; }
+    if(t.datum !== todayKey()) delete state.exerciseSwaps[id];
+  });
   if(!state.shoppingList) state.shoppingList = [];
   if(!state.reminderSettings) state.reminderSettings = { enabled:false, eveningHour:20, inactivityDays:3, lastDailyPromptDate:"", lastMotivationDate:"" };
   if(typeof state.reminderSettings.enabled !== "boolean") state.reminderSettings.enabled = false;
@@ -4135,7 +4145,7 @@ function exportTrainingPDF(){
           // Getauschte Übung berücksichtigen — sonst würde hier trotz Tausch weiterhin der
           // ursprüngliche Übungsname aus der Planvorlage auftauchen (state.exerciseSwaps ist
           // global nach Übungs-ID, unabhängig davon, aus welchem Plan gerade gescannt wird).
-          g.exercises.forEach(function(ex){ idToName[ex.id] = (state.exerciseSwaps[ex.id] && state.exerciseSwaps[ex.id].name) || ex.name; });
+          g.exercises.forEach(function(ex){ const t = tauschHeute(ex.id); idToName[ex.id] = (t && t.name) || ex.name; });
         });
       });
     });
@@ -4819,10 +4829,17 @@ function setNotesForHistoryEntry(h){
     return s.note ? { idx: i + 1, note: s.note } : null;
   }).filter(function(n){ return n; });
 }
+/* Der Pfeil las den Verlauf der Plan-Position ungefiltert. Bei getauschter Übung zeigte er
+   damit den Trend der ursprünglichen an — "▲ steigt" an der Beinpresse, obwohl die Zahlen
+   vom Hack Squat stammten. Jetzt derselbe Namensfilter wie beim Verlauf. */
 function trendFor(id){
-  const h = state.history[id];
-  if(!h || h.length < 2) return null;
-  const ex = findExerciseById(id);
+  const planUebung = findExerciseById(id);
+  const h = verlaufNachName(id, planUebung ? planUebung.name : "");
+  if(h.length < 2) return null;
+  const getauscht = tauschHeute(id);
+  // Für die Lastberechnung zählt die TATSÄCHLICH ausgeführte Übung: eine gegen eine
+  // Körpergewichtsübung getauschte Position rechnet sonst mit dem falschen Modus.
+  const ex = getauscht && planUebung ? Object.assign({}, planUebung, getauscht) : planUebung;
   const last = dayBestWeight(h[h.length-1], ex), prev = dayBestWeight(h[h.length-2], ex);
   if(last === null || prev === null) return null;
   if(last > prev) return { symbol:"▲ steigt", cls:"up" };
@@ -4844,14 +4861,17 @@ function repRangeFor(ex){
 // Einträge ohne Namen stammen aus der Zeit vor dieser Änderung: Sie gehören zu der Übung, die
 // damals im Slot stand. Steht heute keine getauschte Übung darin, ist das die aktuelle und sie
 // zählen mit; bei aktivem Tausch werden sie bewusst ausgelassen.
-function historyFor(ex){
-  const alle = state.history[ex.id] || [];
-  const aktuell = exerciseNameById(ex.id) || ex.name;
-  const getauscht = !!(state.exerciseSwaps && state.exerciseSwaps[ex.id]);
+function verlaufNachName(id, ersatzName){
+  const alle = state.history[id] || [];
+  const aktuell = exerciseNameById(id) || ersatzName;
+  const getauscht = !!tauschHeute(id);
   return alle.filter(function(h){
     if(!h || !h.name) return !getauscht;
     return h.name === aktuell;
   });
+}
+function historyFor(ex){
+  return verlaufNachName(ex.id, ex.name);
 }
 
 // --- Trainingstag automatisch zum heutigen Wochentag wählen ------------------------------
@@ -6647,18 +6667,76 @@ function toggleSwap(id){
   openSwap[id] = !openSwap[id];
   renderContent();
 }
+
+/* Gemeldet: Ein Tausch galt für den ganzen Plan, nicht nur für den Tag. Ist ein Gerät
+   besetzt und man weicht einmal aus, stand die Ersatzübung ab da dauerhaft im Plan — man
+   musste daran denken, sie von Hand zurückzutauschen.
+
+   Der Tausch trägt jetzt ein Datum und zählt nur an diesem Tag, genau wie das Überspringen
+   einer Übung (siehe isSkippedToday). Am nächsten Trainingstag steht wieder die Übung des
+   Plans da. Wer dauerhaft wechseln will, ändert den Plan selbst — dafür gibt es den
+   Plan-Baukasten. */
+function tauschHeute(id){
+  const t = state.exerciseSwaps && state.exerciseSwaps[id];
+  if(!t) return null;
+  /* Altbestand ohne Datum stammt aus der Zeit, als der Tausch dauerhaft war. Er wird beim
+     Laden auf das heutige Datum gesetzt (siehe normalizeState) und läuft dann normal aus —
+     er verschwindet also nicht schlagartig unter den Händen, gilt aber auch nicht ewig. */
+  if(!t.datum) return t;
+  return t.datum === todayKey() ? t : null;
+}
+
 function swapExercise(id, name, type, mode, bwFactor, perSide){
   // mode/bwFactor/perSide mitgeben, sonst würde z.B. eine gegen "Liegestütze" getauschte
   // Übung weiter als normale Gewichtsübung behandelt (falsches "kg"-Feld statt "+kg"-Zusatz).
-  state.exerciseSwaps[id] = { name: name, type: type, mode: mode || undefined, bwFactor: (typeof bwFactor === "number") ? bwFactor : undefined, perSide: perSide || undefined };
+  const vorhandenerTausch = tauschHeute(id);
+  /* Die bereits eingetragenen Sätze gehören zur bisherigen Übung. Sie werden beiseitegelegt
+     statt verworfen: Wer sich vertippt und gleich zurücktauscht, soll nicht alles neu
+     eintragen müssen. Lag schon ein Tausch an, bleibt dessen Sicherung erhalten — sonst
+     ginge beim Weitertauschen (A→B→C) der ursprüngliche Stand von A verloren. */
+  const bisher = state.entries[id];
+  const sicherung = vorhandenerTausch
+    ? vorhandenerTausch.vorherigeSaetze
+    : (bisher && Array.isArray(bisher.sets) ? JSON.parse(JSON.stringify(bisher.sets)) : null);
+
+  state.exerciseSwaps[id] = {
+    name: name, type: type, mode: mode || undefined,
+    bwFactor: (typeof bwFactor === "number") ? bwFactor : undefined,
+    perSide: perSide || undefined,
+    datum: todayKey(),
+    vorherigeSaetze: sicherung || undefined
+  };
+  /* Gemeldet: Nach dem Tausch stand weiter das Gewicht der alten Übung da — Hack Squat statt
+     Beinpresse. Die Eingaben hängen an der Plan-Position, nicht an der Übung, und blieben
+     deshalb stehen. Ein Gewicht von einem anderen Gerät ist aber nicht nur unpassend,
+     sondern gefährlich, wenn man es ungeprüft auflegt. Also leeren. Der Verlauf und die
+     grauen Vorschläge stammen ohnehin schon aus der Historie der richtigen Übung. */
+  leereSaetze(id);
   openSwap[id] = false;
   delete swapSearch[id];
   saveState();
   renderContent();
-  showToast("Übung ausgetauscht");
+  showToast("Für heute auf " + name + " getauscht");
 }
+
+/* Setzt die Eingaben einer Plan-Position zurück, ohne die Satzanzahl zu verändern. */
+function leereSaetze(id){
+  const e = state.entries[id];
+  if(!e || !Array.isArray(e.sets)) return;
+  e.sets.forEach(function(sz){ sz.weight = ""; sz.reps = ""; sz.rir = ""; sz.done = false; sz.note = ""; });
+}
+
 function resetSwap(id){
+  const t = state.exerciseSwaps && state.exerciseSwaps[id];
+  const gesichert = t && t.vorherigeSaetze;
   delete state.exerciseSwaps[id];
+  leereSaetze(id);
+  // Was vor dem Tausch eingetragen war, kommt zurück — soweit die Satzanzahl noch passt.
+  if(gesichert && state.entries[id] && Array.isArray(state.entries[id].sets)){
+    state.entries[id].sets.forEach(function(sz, i){
+      if(gesichert[i]) Object.assign(sz, gesichert[i]);
+    });
+  }
   openSwap[id] = false;
   delete swapSearch[id];
   saveState();
@@ -6732,7 +6810,7 @@ function supersetPartnerName(exId){
   const partnerId = state.supersets[exId];
   const entry = flatExerciseList().find(function(item){ return item.ex.id === partnerId; });
   if(!entry) return null;
-  const override = state.exerciseSwaps[partnerId];
+  const override = tauschHeute(partnerId);
   return override ? override.name : entry.ex.name;
 }
 function linkSuperset(idA, idB){
@@ -7275,7 +7353,7 @@ function volumeByGroupInRange(start, end){
   getAllPlans().forEach(function(plan){
     Object.keys(plan.days).forEach(function(dKey){
       plan.days[dKey].groups.forEach(function(g){
-        g.exercises.forEach(function(ex){ idToName[ex.id] = (state.exerciseSwaps[ex.id] && state.exerciseSwaps[ex.id].name) || ex.name; });
+        g.exercises.forEach(function(ex){ const t = tauschHeute(ex.id); idToName[ex.id] = (t && t.name) || ex.name; });
       });
     });
   });
@@ -7298,7 +7376,8 @@ function weeklyVolumeByGroup(){
 }
 // --- Wochenrückblick: Einheiten, bewegtes Gewicht und neue PRs dieser Kalenderwoche ---
 function exerciseNameById(id){
-  if(state.exerciseSwaps[id]) return state.exerciseSwaps[id].name;
+  const getauschtHeute = tauschHeute(id);
+  if(getauschtHeute) return getauschtHeute.name;
   let found = null;
   getAllPlans().forEach(function(plan){
     Object.keys(plan.days).forEach(function(dayKey){
@@ -7884,7 +7963,7 @@ function scrollToCurrentExercise(){
 }
 
 function buildExerciseCard(ex, dayColor, el){
-      const swapOverride = state.exerciseSwaps[ex.id];
+      const swapOverride = tauschHeute(ex.id);
       if(swapOverride) ex = Object.assign({}, ex, swapOverride);
       const entry = getEntry(ex);
       const exMode = exerciseMode(ex);
@@ -8373,6 +8452,7 @@ function buildExerciseCard(ex, dayColor, el){
         const panel = document.createElement("div");
         panel.className = "history-panel open";
         let inner = '<p class="hist-pr">🔄 Alternative statt "' + escapeHtml(ex.name) + '" (Sätze/Wdh./Pause bleiben gleich, nur die Übung wechselt)</p>';
+        inner += '<p class="hist-empty" style="margin:-4px 0 8px;">Gilt nur für heute — am nächsten Trainingstag steht wieder die Übung aus dem Plan hier. Bereits eingetragene Sätze werden geleert, weil sie zur anderen Übung gehören.</p>';
         inner += '<input type="text" id="swapSearch-' + ex.id + '" placeholder="🔍 Alle Übungen durchsuchen …" value="' + escapeHtml(swapSearch[ex.id] || "") + '" ' +
           'style="width:100%;border:1px solid var(--pastel-border);border-radius:var(--radius-sm);padding:8px 11px;font-size:13px;background:var(--pastel-overlay);color:var(--pastel-text);box-sizing:border-box;margin-bottom:8px;">';
         inner += '<div id="swapList-' + ex.id + '"></div>';
@@ -13028,7 +13108,7 @@ function renderHome(){
   getAllPlans().forEach(function(p){
     Object.keys(p.days).forEach(function(dKey){
       p.days[dKey].groups.forEach(function(g){
-        g.exercises.forEach(function(ex){ idToName[ex.id] = (state.exerciseSwaps[ex.id] && state.exerciseSwaps[ex.id].name) || ex.name; });
+        g.exercises.forEach(function(ex){ const t = tauschHeute(ex.id); idToName[ex.id] = (t && t.name) || ex.name; });
       });
     });
   });
