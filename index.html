@@ -491,14 +491,34 @@
   }
   /* Hinweis bei vollem Gerätespeicher. Liegt bewusst über allem und über der unteren Leiste:
      Wenn nichts mehr gespeichert wird, ist das die wichtigste Information auf dem Bildschirm. */
+  /* Das Band sitzt oben und bleibt, solange nicht gespeichert werden kann. Oben deshalb,
+     weil die untere Kante von der Navigationsleiste und der Rückgängig-Leiste belegt ist. */
+  .speicher-band{
+    position:fixed;left:0;right:0;top:0;z-index:10000;
+    display:flex;align-items:center;gap:10px;padding:8px 14px;
+    padding-top:calc(var(--safe-top, 0px) + 8px);
+    background:var(--warn);color:var(--on-warn,#fff);
+    font-family:var(--font-text);font-size:12.5px;font-weight:600;
+  }
+  .speicher-band span{flex:1;min-width:0;}
+  .speicher-band button{
+    flex:0 0 auto;min-height:32px;padding:0 12px;border:none;border-radius:var(--radius-sm);
+    background:rgba(255,255,255,.92);color:#24231F;font-size:12.5px;font-weight:700;cursor:pointer;
+  }
   .speicher-warnung{
     position:fixed;left:12px;right:12px;bottom:calc(var(--safe-bottom, 0px) + 12px);z-index:9999;
-    display:flex;align-items:flex-start;gap:10px;padding:14px 16px;
+    display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px;
     background:var(--warn);color:var(--on-warn,#fff);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);
     font-family:var(--font-text);font-size:13px;line-height:1.45;
   }
+  .sw-knoepfe{display:flex;gap:8px;}
+  .sw-knoepfe button{flex:1;}
+  /* Weiße Schrift auf halbdurchsichtigem Weiß über dem Warnrot war kaum zu lesen. Jetzt ein
+     Umriss-Knopf: kräftige Schrift in der Vordergrundfarbe, Rahmen statt Füllung. */
+  .speicher-warnung .sw-zu{background:transparent;color:var(--on-warn,#fff);
+    border:1.5px solid currentColor;font-weight:600;}
   .speicher-warnung button{
-    flex:0 0 auto;margin-left:auto;min-height:var(--tap-min,44px);padding:0 14px;border:none;
+    flex:0 0 auto;min-height:var(--tap-min,44px);padding:0 14px;border:none;
     border-radius:var(--radius-sm);background:rgba(255,255,255,.9);color:#24231F;cursor:pointer;
     font-family:var(--font-titel);font-weight:700;font-size:13px;
   }
@@ -543,6 +563,7 @@
     min-height:34px;cursor:pointer;}
   .geraet-chip.active{background:var(--olive);color:var(--on-olive,#fff);border-color:var(--olive);}
   .geraet-hinweis{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--pastel-text-soft);}
+  .geraet-uebertrag{margin-top:8px;width:100%;box-sizing:border-box;text-align:center;}
   .geraet-liste{border:1px solid var(--pastel-border);border-radius:var(--radius-md);overflow:hidden;}
   .geraet-zeile{display:flex;align-items:center;gap:8px;padding:8px 10px;
     border-bottom:1px solid var(--pastel-border);}
@@ -3890,25 +3911,79 @@ function migrateHistoryToSets(){
    wirklich hilft: Daten sichern und Platz schaffen. Einmal pro Sitzung deshalb, weil
    saveState() bei jeder Eingabe läuft und eine Meldung pro Tastendruck unbrauchbar wäre. */
 let speicherWarnungGezeigt = false;
+/* Die Warnung erschien bisher genau einmal pro Sitzung. Nach einem Tipp auf "Verstanden"
+   trainierte man weiter, hakte Sätze ab — und alles davon wurde stillschweigend verworfen.
+   Das ist der einzige Weg in dieser App, auf dem Trainingsdaten unwiederbringlich verloren
+   gehen, und ausgerechnet dort gab es nach dem ersten Hinweis kein Signal mehr.
+
+   Jetzt zweistufig: Der ausführliche Kasten kommt weiterhin nur einmal (ein Modal bei jedem
+   Satz wäre unbenutzbar), aber ein schmales Band bleibt stehen, solange das Speichern
+   scheitert, und verschwindet von selbst, sobald es wieder klappt. Dazu ein Knopf, der die
+   Sicherung sofort herunterlädt — "geh ins Profil" ist die falsche Antwort, wenn die Daten
+   nur noch im Arbeitsspeicher liegen und ein Neuladen sie vernichtet. */
+function speicherBandZeigen(){
+  try{
+    if(document.getElementById("speicherBand")) return;
+    const band = document.createElement("div");
+    band.id = "speicherBand";
+    band.className = "speicher-band";
+    band.setAttribute("role", "status");
+    const text = document.createElement("span");
+    text.textContent = "Nicht gespeichert — Speicher voll";
+    const sichern = document.createElement("button");
+    sichern.type = "button";
+    sichern.textContent = "Jetzt sichern";
+    sichern.onclick = function(){ try{ exportBackup(); }catch(e){ console.error(e); } };
+    band.appendChild(text);
+    band.appendChild(sichern);
+    document.body.appendChild(band);
+    /* Das Band liegt über allem. Ohne Ausgleich verdeckt es die Kopfzeile — ausgerechnet in
+       dem Moment, in dem jemand ins Profil zur Sicherung navigieren will. Also rückt die
+       Seite um genau seine Höhe nach unten. */
+    document.body.style.paddingTop = Math.ceil(band.getBoundingClientRect().height) + "px";
+  }catch(e){ /* ohne DOM kein Band — der Kasten unten bleibt der Notnagel */ }
+}
+function speicherWiederDa(){
+  if(!speicherWarnungGezeigt) return;
+  speicherWarnungGezeigt = false;
+  try{
+    const band = document.getElementById("speicherBand");
+    if(band) band.remove();
+    document.body.style.paddingTop = "";
+    if(typeof showToast === "function") showToast("Speichern klappt wieder");
+  }catch(e){}
+}
+
 function meldeSpeicherProblem(e){
   console.error("Speichern fehlgeschlagen", e);
+  // Das Band kommt bei JEDEM Fehlschlag, auch nach dem Wegtippen des Kastens.
+  speicherBandZeigen();
   if(speicherWarnungGezeigt) return;
   speicherWarnungGezeigt = true;
   const text = "Deine Eingaben lassen sich gerade nicht speichern — der Speicher dieses Geräts ist voll. " +
-    "Sichere deine Daten über Profil · Backup und schaffe etwas Platz, sonst geht diese Einheit verloren.";
+    "Lade jetzt eine Sicherung herunter, sonst geht diese Einheit verloren: Ein Neuladen der App " +
+    "verwirft alles, was seitdem eingetragen wurde.";
   try{
-    if(typeof zeigeRueckgaengig === "function"){ /* Toast-Leiste ist belegt, eigener Hinweis unten */ }
     const box = document.createElement("div");
     box.className = "speicher-warnung";
     box.setAttribute("role", "alert");
     const span = document.createElement("span");
     span.textContent = text;
+    const knoepfe = document.createElement("div");
+    knoepfe.className = "sw-knoepfe";
+    const sichern = document.createElement("button");
+    sichern.type = "button";
+    sichern.textContent = "Sicherung laden";
+    sichern.onclick = function(){ try{ exportBackup(); }catch(fehler){ console.error(fehler); } };
     const zu = document.createElement("button");
     zu.type = "button";
+    zu.className = "sw-zu";
     zu.textContent = "Verstanden";
     zu.onclick = function(){ box.remove(); };
+    knoepfe.appendChild(sichern);
+    knoepfe.appendChild(zu);
     box.appendChild(span);
-    box.appendChild(zu);
+    box.appendChild(knoepfe);
     document.body.appendChild(box);
   }catch(fehler){
     // Selbst der Hinweis konnte nicht gebaut werden — dann bleibt nur der blockierende Weg.
@@ -3997,7 +4072,12 @@ function schliesseFrage(antwort){
 })();
 
 async function saveState(){
-  try{ if(storageAvailable()) localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  try{
+    if(storageAvailable()){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      speicherWiederDa();
+    }
+  }
   catch(e){ meldeSpeicherProblem(e); }
   try{ if(typeof cloudSyncEnabled !== "undefined" && cloudSyncEnabled) scheduleCloudPush(); }
   catch(e){ /* Cloud-Sync noch nicht initialisiert, ignorieren */ }
@@ -5000,6 +5080,80 @@ function verlaufFuer(id, ersatzName){
 function historyFor(ex){
   return verlaufFuer(ex.id, ex.name);
 }
+
+/* Beim Wechsel auf ein anderes Gerät steht man vor einem leeren Feld: Der Verlauf ist nach
+   Gerät getrennt, und für das neue gibt es noch keinen. Der Vorschlag "noch keine Einheit
+   geloggt" stimmt zwar, hilft aber nicht — die Zahl vom Stammgerät ist der einzige
+   Anhaltspunkt, den es gibt.
+
+   Zwei Stufen, je nachdem, was die App weiß:
+     - Faktor bekannt (zwei Einheiten an beiden Geräten): die Werte werden umgerechnet.
+     - Faktor noch unbekannt: die Werte werden unverändert als Ausgangspunkt angeboten.
+   Im zweiten Fall ist das ausdrücklich eine Schätzung, und der Knopf sagt das auch. */
+function geraetUebertrag(ex){
+  const name = exerciseNameById(ex.id) || ex.name;
+  const liste = geraeteFor(name);
+  if(liste.length < 2) return null;
+  const aktiv = aktivesGeraet(name);
+  const bezug = liste[0];
+  if(aktiv === bezug) return null;
+
+  const alle = verlaufNachName(ex.id, ex.name);
+  const dort = alle.filter(function(h){ return geraetVonEintrag(h, liste) === bezug; });
+  if(!dort.length) return null;
+
+  /* Hat dieses Gerät eigene, aktuellere Zahlen, sind die besser als jede Umrechnung — dann
+     gibt es nichts anzubieten. Angeboten wird nur, wenn hier noch nie trainiert wurde oder
+     der letzte Besuch länger zurückliegt als der am Bezugsgerät: Dann ist die eigene Zahl
+     veraltet, und was man heute am Stammgerät bewegt, sagt mehr über die heutige Kraft. */
+  const hier = alle.filter(function(h){ return geraetVonEintrag(h, liste) === aktiv; });
+  const letzteDort = dort[dort.length - 1];
+  if(hier.length){
+    const letzteHier = hier[hier.length - 1];
+    if(!(letzteHier.date < letzteDort.date)) return null;
+  }
+
+  const verg = geraetVergleich(ex, name);
+  return {
+    bezug: bezug, aktiv: aktiv,
+    faktor: verg ? verg.anteil : 1,
+    gemessen: !!verg,
+    letzte: letzteDort,
+    veraltet: hier.length > 0,
+  };
+}
+
+/* Füllt nur LEERE Felder — wie "Letzte Werte übernehmen" auch. Wer schon etwas eingetragen
+   hat, soll es durch einen Fehlgriff nicht verlieren. */
+function uebernehmeVonGeraet(ex){
+  const u = geraetUebertrag(ex);
+  if(!u) return;
+  const entry = getEntry(ex);
+  const mode = exerciseMode(ex);
+  let gefuellt = 0;
+  entry.sets.forEach(function(sz, i){
+    const quelle = (u.letzte.sets || [])[i];
+    if(!quelle) return;
+    if(mode === "hold"){
+      if(!sz.reps){ sz.reps = quelle.reps || ""; gefuellt++; }
+      return;
+    }
+    if(sz.weight) return;
+    const w = parseFloat(quelle.weight);
+    if(isNaN(w)) return;
+    /* Nur runden, wenn tatsächlich umgerechnet wurde. 2,5 kg ist die kleinste Stufe, die an
+       Stapeln und Hanteln verlässlich existiert — eine Empfehlung von 73,4 kg wäre nicht
+       einstellbar und würde Genauigkeit vortäuschen, die der Faktor nicht hergibt. */
+    sz.weight = u.gemessen ? String(Math.round(w * u.faktor / 2.5) * 2.5) : quelle.weight;
+    if(!sz.reps) sz.reps = quelle.reps || "";
+    gefuellt++;
+  });
+  if(!gefuellt){ showToast("Hier steht schon etwas"); return; }
+  saveState();
+  renderContent();
+  showToast(u.gemessen ? ("Umgerechnet von „" + u.bezug + "“") : ("Werte von „" + u.bezug + "“ als Startpunkt"));
+}
+
 
 // --- Trainingstag automatisch zum heutigen Wochentag wählen ------------------------------
 // Bisher startete die App immer auf dem ERSTEN Tag des Plans (meist Montag). Wer freitags
@@ -8245,6 +8399,25 @@ function buildExerciseCard(ex, dayColor, el){
                " als an „" + verg.bezug + "\u201c (" + verg.prozent + " %). Das ist die Übersetzung des Geräts, nicht dein Kraftniveau — " +
                verg.bezugMittel + " kg dort entsprechen hier etwa " + verg.entspricht + " kg.");
           card.appendChild(hinweis);
+        }
+
+        /* Eigene Zeile statt in der Schnellfüll-Reihe: Die erscheint nur, wenn es für DIESES
+           Gerät schon eine Einheit gibt — und genau dann ist der Übertrag überflüssig. */
+        const u = geraetUebertrag(ex);
+        if(u){
+          const beispiel = parseFloat((u.letzte.sets && u.letzte.sets[0] || {}).weight);
+          const zahl = (!isNaN(beispiel) && u.gemessen)
+            ? (Math.round(beispiel * u.faktor / 2.5) * 2.5) : null;
+          const uebertragBtn = document.createElement("div");
+          uebertragBtn.className = "quickfill-btn geraet-uebertrag";
+          uebertragBtn.textContent = zahl !== null
+            ? ("⇄ " + zahl + " kg — umgerechnet von „" + u.bezug + "“")
+            : ("⇄ Werte von „" + u.bezug + "“ als Startpunkt");
+          uebertragBtn.title = u.gemessen
+            ? "Aus deinem gemessenen Unterschied zwischen den Geräten berechnet"
+            : "Noch kein gemessener Unterschied — unverändert übernommen, bitte am Gerät prüfen";
+          uebertragBtn.onclick = function(){ uebernehmeVonGeraet(ex); };
+          card.appendChild(uebertragBtn);
         }
       }
 
