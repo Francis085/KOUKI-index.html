@@ -100,10 +100,70 @@
   // "Zum Home-Bildschirm hinzufügen"-Erkennung der Browser.
   if("serviceWorker" in navigator){
     window.addEventListener("load", function(){
-      navigator.serviceWorker.register("sw.js").catch(function(e){
+      navigator.serviceWorker.register("sw.js").then(function(reg){
+        /* Der Service Worker liefert die App aus dem Cache aus und holt die neue Fassung erst
+           im Hintergrund nach (stale-while-revalidate). Das ist beim Start schnell und
+           funktioniert offline — hat beim Ausfall vom 25.09.2026 aber dazu geführt, dass
+           selbst ein ausgelieferter Fehlerbehebung erst beim ÜBERNÄCHSTEN Öffnen ankam.
+           Einmal öffnen holt sie, erst das nächste Öffnen zeigt sie.
+
+           Ein automatisches Neuladen wäre hier falsch: Es träfe jemanden mitten im Satz und
+           risse ihn aus der Eingabe. Stattdessen ein Band mit Knopf — der Nutzer entscheidet,
+           wann es passt. */
+        reg.addEventListener("updatefound", function(){
+          const neu = reg.installing;
+          if(!neu) return;
+          neu.addEventListener("statechange", function(){
+            // "installed" bei vorhandenem Controller heißt: Es gab schon eine Fassung, und
+            // jetzt liegt eine neuere bereit. Beim allerersten Besuch ist controller null —
+            // dann gibt es nichts anzukündigen.
+            if(neu.state === "installed" && navigator.serviceWorker.controller){
+              try{ zeigeNeueFassung(); }catch(e){ console.log("Update-Hinweis nicht möglich", e); }
+            }
+          });
+        });
+      }).catch(function(e){
         console.log("Service Worker konnte nicht registriert werden (Erinnerungen laufen dann nur, solange die App offen ist).", e);
       });
     });
+  }
+
+  /* Bewusst hier oben und ohne Abhängigkeit zum restlichen Programmcode: Dieses Band ist die
+     letzte Rettungsleine, wenn in der großen Datei etwas kaputt ist. Es muss auch dann
+     erscheinen, wenn weiter unten ein Fehler die App lahmlegt. */
+  function zeigeNeueFassung(){
+    if(document.getElementById("neueFassungBand")) return;
+    const band = document.createElement("div");
+    band.id = "neueFassungBand";
+    band.setAttribute("role", "status");
+    band.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:10001;display:flex;" +
+      "align-items:center;gap:10px;padding:8px 14px;padding-top:calc(env(safe-area-inset-top,0px) + 8px);" +
+      "background:#292820;color:#fff;font:600 12.5px/1.4 system-ui,-apple-system,sans-serif;";
+    const text = document.createElement("span");
+    text.style.flex = "1";
+    text.textContent = "Neue Fassung verfügbar";
+    const jetzt = document.createElement("button");
+    jetzt.type = "button";
+    jetzt.textContent = "Neu laden";
+    jetzt.style.cssText = "flex:0 0 auto;min-height:32px;padding:0 12px;border:0;border-radius:8px;" +
+      "background:#fff;color:#24231F;font:700 12.5px system-ui;cursor:pointer;";
+    jetzt.onclick = function(){ location.reload(); };
+    const spaeter = document.createElement("button");
+    spaeter.type = "button";
+    spaeter.setAttribute("aria-label", "Hinweis schließen");
+    spaeter.textContent = "✕";
+    spaeter.style.cssText = "flex:0 0 auto;min-width:32px;min-height:32px;border:0;background:transparent;" +
+      "color:#fff;font-size:15px;cursor:pointer;";
+    spaeter.onclick = function(){
+      band.remove();
+      document.body.style.paddingTop = "";
+    };
+    band.appendChild(text);
+    band.appendChild(jetzt);
+    band.appendChild(spaeter);
+    document.body.appendChild(band);
+    // Nichts verdecken — wie beim Speicher-Band.
+    document.body.style.paddingTop = Math.ceil(band.getBoundingClientRect().height) + "px";
   }
 </script>
 <style>
@@ -1908,21 +1968,25 @@
 
   @media (prefers-reduced-motion: reduce){ *{transition:none !important;animation:none !important;} }
 </style>
-<!-- Hier stand "@2" — das ist KEIN fester Stand, sondern ein Bereich: unpkg liefert damit
-     die jeweils neueste 2.x aus. Bei jedem Aufruf der App konnte also unbemerkt anderer
-     Programmcode geladen werden als beim letzten Mal, und dieser Code hat vollen Zugriff auf
-     die Anmeldedaten der Nutzer. Jetzt exakt festgenagelt auf den Stand, den "@2" zum
-     Zeitpunkt dieser Änderung ohnehin ausgeliefert hat (2.116.0 laut npm-Registry), also
-     ohne Verhaltensänderung.
-     Offen bleibt eine Prüfsumme (integrity="sha384-…"), die zusätzlich absichert, dass unpkg
-     wirklich genau diese Datei ausliefert. Aus dem offiziellen npm-Paket berechnet lautet sie:
-       sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP
-     Sie ist hier bewusst noch NICHT aktiv: unpkg ist aus dieser Arbeitsumgebung nicht
-     erreichbar, ich konnte also nicht nachweisen, dass die dort ausgelieferten Bytes mit
-     denen aus dem npm-Paket übereinstimmen. Stimmt die Prüfsumme nicht, lädt das SDK gar
-     nicht mehr und die Anmeldung fällt aus. Einmal von einem normalen Netz aus gegengeprüft,
-     kann das Attribut ergänzt werden. -->
-<script src="https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" defer crossorigin="anonymous"></script>
+<!-- Das Supabase-SDK lag bis hierher auf unpkg.com. Das hat am 25.09.2026 die Anmeldung für
+     alle Nutzer lahmgelegt: Ohne dieses Skript gibt es keinen Client, ohne Client keine
+     Anmeldung — und zwar auch dann, wenn mit Supabase selbst alles in Ordnung ist. In den
+     Server-Logs tauchte deshalb kein einziger fehlgeschlagener Versuch auf; die Anfragen
+     kamen nie an. Besonders hart traf es die vom Home-Bildschirm installierte App: Räumt
+     iOS deren Speicher nach ein paar Tagen Nichtnutzung ab, ist die Sitzung weg UND das
+     zwischengespeicherte Skript — und die Anmeldung war der einzige Weg zurück.
+
+     Jetzt liegt die Datei im Projekt selbst und kommt vom selben Server wie die App. Damit
+     hängt die Anmeldung an genau einer Erreichbarkeit statt an zweien, und die eine ist
+     ohnehin Voraussetzung dafür, dass die App überhaupt startet.
+
+     Die Datei stammt unverändert aus dem offiziellen npm-Paket @supabase/supabase-js@2.116.0.
+     Ihre Prüfsumme (sha384-iLddHTLokph6Omwoyid4XKxHaWa6w41BnoEj0q5oOrzmYPpHIKt1wyjReA7s//pP)
+     ist identisch mit der, die zuvor für die unpkg-Fassung dokumentiert war — es ist also
+     bitgenau derselbe Code wie bisher, kein Versionssprung.
+     Ein integrity-Attribut braucht es hier nicht mehr: Die Datei liegt im selben Repository
+     wie index.html. Wer sie austauschen könnte, könnte auch die Prüfsumme mit austauschen. -->
+<script src="vendor/supabase-js-2.116.0.js" defer></script>
 </head>
 <body>
 <div class="splash-screen" id="splashScreen">
