@@ -28,7 +28,23 @@ async function app(browser) {
   await page.evaluate(() => { const x = document.getElementById('onboardingCloseBtn'); if (x) x.click(); });
   await page.evaluate(() => showGroup('navTraining', 0));
   await page.waitForTimeout(400);
-  await page.evaluate(() => { window.__tag = '2026-10-13'; window.todayKey = () => window.__tag; });
+  await page.evaluate(() => {
+    /* Feste Datumsangaben lassen einen Test irgendwann ohne Zutun rot werden: Der Export
+       deckt die letzten 28 Tage ab, der Wochenrückblick die laufende Woche. Alles hier wird
+       deshalb relativ zum echten heutigen Tag gerechnet.
+       todayKey() bleibt trotzdem umgebogen — aber auf das echte Heute, damit die
+       Tagesbezüge der App (Tausch, Überspringen) berechenbar bleiben. */
+    const d0 = new Date();
+    window.__alsText = (d) => d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    window.__vorTagen = (n) => { const d = new Date(d0); d.setDate(d.getDate() - n); return window.__alsText(d); };
+    window.__montagDieserWoche = (function () {
+      const d = new Date(d0); const wt = d.getDay();
+      d.setDate(d.getDate() - ((wt + 6) % 7)); return window.__alsText(d);
+    })();
+    window.__tag = window.__alsText(d0);
+    window.todayKey = () => window.__tag;
+  });
   return { ctx, page, jsFehler };
 }
 
@@ -38,13 +54,14 @@ const AUFBAU = `(async () => {
   const ex = allExercisesOfActiveDay()[0];
   const original = ex.name;
   const andereGruppe = exerciseGroupName({ name: original }) === 'Brust' ? 'Kniebeuge' : 'Bankdrücken';
-  state.history[ex.id] = [{ date: '2026-09-20', name: original, sets: [
+  const alsTag = window.__vorTagen(10);
+  state.history[ex.id] = [{ date: alsTag, name: original, sets: [
     { weight: '70', reps: '10' }, { weight: '70', reps: '9' }] }];
-  state.completedDays = ['2026-09-20'];
+  state.completedDays = [alsTag];
   saveState();
   swapExercise(ex.id, andereGruppe, 'grund');
   await new Promise(r => setTimeout(r, 200));
-  return { id: ex.id, original, andereGruppe,
+  return { id: ex.id, original, andereGruppe, alsTag,
            gruppeOriginal: exerciseGroupName({ name: original }),
            gruppeNeu: exerciseGroupName({ name: andereGruppe }) };
 })()`;
@@ -56,7 +73,7 @@ const AUFBAU = `(async () => {
   {
     const { ctx, page, jsFehler } = await app(browser);
     const a = await page.evaluate(AUFBAU);
-    const r = await page.evaluate(() => volumeByGroupInRange('2026-09-14', '2026-09-27'));
+    const r = await page.evaluate(() => volumeByGroupInRange(window.__vorTagen(20), window.__vorTagen(0)));
     pruefe('die beiden Sätze stehen bei der ursprünglichen Gruppe',
       r[a.gruppeOriginal] === 2, { volumen: r, erwartet: a.gruppeOriginal });
     pruefe('und NICHT bei der Gruppe der heute getauschten Übung',
@@ -70,7 +87,7 @@ const AUFBAU = `(async () => {
     const { ctx, page } = await app(browser);
     const a = await page.evaluate(AUFBAU);
     const r = await page.evaluate(async () => {
-      openDayDetail('2026-09-20');
+      openDayDetail(window.__vorTagen(10));
       await new Promise(r => setTimeout(r, 400));
       return document.getElementById('dayModalBackdrop').textContent.replace(/\s+/g, ' ');
     });
@@ -113,8 +130,7 @@ const AUFBAU = `(async () => {
       // Eine normale Gewichtsübung in dieser Woche, Position heute auf einen HALT getauscht.
       // Würde mit dem heutigen Modus gerechnet, liefen die Wiederholungen als Sekunden ein
       // und das bewegte Gewicht fiele auf null.
-      const montag = (function () { const d = new Date('2026-10-13T00:00:00'); const t = d.getDay();
-        d.setDate(d.getDate() - ((t + 6) % 7)); return d.toISOString().slice(0, 10); })();
+      const montag = window.__montagDieserWoche;
       state.history[ex.id] = [{ date: montag, name: ex.name, sets: [{ weight: '100', reps: '10' }] }];
       state.completedDays = [montag];
       saveState();
@@ -142,11 +158,12 @@ const AUFBAU = `(async () => {
     const { ctx, page } = await app(browser);
     const r = await page.evaluate(async () => {
       const ex = allExercisesOfActiveDay()[0];
-      state.history[ex.id] = [{ date: '2026-09-20', sets: [{ weight: '50', reps: '10' }] }];
-      state.completedDays = ['2026-09-20'];
+      const alsTag = window.__vorTagen(10);
+      state.history[ex.id] = [{ date: alsTag, sets: [{ weight: '50', reps: '10' }] }];
+      state.completedDays = [alsTag];
       saveState();
       const name = nameDerEinheit(state.history[ex.id][0], ex.id);
-      openDayDetail('2026-09-20');
+      openDayDetail(alsTag);
       await new Promise(r => setTimeout(r, 350));
       const txt = document.getElementById('dayModalBackdrop').textContent;
       return { name, planName: ex.name, rohIdSichtbar: txt.indexOf(ex.id) !== -1 };
@@ -165,13 +182,13 @@ const AUFBAU = `(async () => {
       // Für die liefert trendFor() nichts, sie darf die Quote nicht verwässern.
       exs.slice(0, 3).forEach((ex, i) => {
         state.history[ex.id] = [
-          { date: '2026-10-01', name: ex.name, sets: [{ weight: String(100 - i), reps: '8' }] },
-          { date: '2026-10-08', name: ex.name, sets: [{ weight: String(90 - i), reps: '8' }] },
+          { date: window.__vorTagen(21), name: ex.name, sets: [{ weight: String(100 - i), reps: '8' }] },
+          { date: window.__vorTagen(14), name: ex.name, sets: [{ weight: String(90 - i), reps: '8' }] },
         ];
       });
       if (exs[3]) state.history[exs[3].id] = [
-        { date: '2026-10-01', name: 'Eine ganz andere Übung', sets: [{ weight: '50', reps: '8' }] },
-        { date: '2026-10-08', name: 'Eine ganz andere Übung', sets: [{ weight: '40', reps: '8' }] },
+        { date: window.__vorTagen(21), name: 'Eine ganz andere Übung', sets: [{ weight: '50', reps: '8' }] },
+        { date: window.__vorTagen(14), name: 'Eine ganz andere Übung', sets: [{ weight: '40', reps: '8' }] },
       ];
       saveState();
       return checkGlobalDeloadSignal ? checkGlobalDeloadSignal() : null;

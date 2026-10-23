@@ -131,13 +131,18 @@ self.addEventListener("notificationclick", function(event){
 
 // --- Offline-Caching: App-Shell zwischenspeichern, damit KOUKI auch ganz ohne
 // Internetverbindung startet und nutzbar bleibt (z. B. im Gym ohne Empfang). ---
-const APP_CACHE_NAME = "kouki-app-cache-v1";
+const APP_CACHE_NAME = "kouki-app-cache-v2";
 /* Die Logos gehören zur App-Schale, nicht zu den Inhalten: Splash-Bild, Kopfzeile und das
    Symbol der installierten App müssen auch beim allerersten Start ohne Netz da sein. Sie
    lagen früher als base64 im Dokument (dreimal dieselbe Kopie) und waren dadurch automatisch
    verfügbar — als eigene Dateien müssen sie hier ausdrücklich mit vorab geladen werden. */
 const APP_SHELL_URLS = [
   "./", "./index.html",
+  /* Das Supabase-SDK liegt seit dem Ausfall vom 25.09.2026 im Projekt statt auf unpkg und
+     gehört damit zur App-Schale. Es hier aufzuführen ist der Punkt der ganzen Übung: Beim
+     ersten Start wandert es mit in den Cache, und ab dann steht die Anmeldung auch ohne
+     Netz und ohne fremden Server zur Verfügung. */
+  "./vendor/supabase-js-2.116.0.js",
   "./bilder/kouki-icon.png",
   "./bilder/kouki-logo.png",
   "./bilder/kouki-icon-maskable.png",
@@ -252,18 +257,10 @@ self.addEventListener("fetch", function(event){
     return;
   }
 
-  // Das Supabase-JS-SDK (unpkg.com) ist reiner Programmcode — kein Nutzerdaten-Endpunkt.
-  // Der Kommentar behauptete hier "versionsfixiert", das stimmte nicht: die URL lautete
-  // "@2" und damit lieferte unpkg die jeweils neueste 2.x aus. Inzwischen steht in
-  // index.html eine exakte Version, jetzt trifft die Aussage zu.
-  // Ohne dieses Skript funktioniert die Anmeldung überhaupt nicht,
-  // deshalb stale-while-revalidate wie beim App-Schell: sobald es einmal geladen wurde,
-  // steht es auch bei wackliger/blockierter Verbindung zu unpkg.com sofort aus dem Cache
-  // zur Verfügung, statt dass jede Anmeldung von diesem einen externen Request abhängt.
-  if(url.hostname === "unpkg.com" && url.pathname.indexOf("supabase-js") !== -1){
-    event.respondWith(staleWhileRevalidate(req));
-    return;
-  }
+  /* Hier stand ein Sonderfall für das Supabase-SDK von unpkg.com. Die Datei liegt jetzt im
+     Projekt und läuft damit über den Zweig "gleiche Origin" weiter oben — der Sonderfall ist
+     gegenstandslos. Der Barcode-Scanner (@zxing) lädt weiterhin von unpkg; fällt der aus,
+     funktioniert nur das Scannen nicht, das Eintragen von Hand bleibt möglich. */
 
   // Alles andere (Supabase-API, Open Food Facts, Barcode-Scanner-Bibliothek, ...) bewusst
   // unverändert durchs Netz — dynamische bzw. authentifizierte Anfragen sollen nicht
